@@ -269,6 +269,9 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
             order={order} 
             currentUser={{
               id: 'current-user',
+              name: isSeller ? 'Freelancer' : 'Client',
+              email: 'user@example.com',
+              createdAt: new Date().toISOString(),
               role: isSeller ? 'freelancer' : 'client'
             }} 
             onStatusChange={(newStatus) => updateOrderStatus(newStatus as OrderStatus)} 

@@ -16,7 +16,14 @@ const FreelancerProfilePage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Colonne de gauche: Profil du freelancer */}
           <div className="md:col-span-2">
-            <FreelancerProfile userId={freelancerId} />
+            <FreelancerProfile 
+              freelancer={{
+                id: freelancerId,
+                name: "",
+                email: "",
+                createdAt: ""
+              }} 
+            />
             
             <Tabs defaultValue="portfolio" className="mt-6">
               <TabsList>

@@ -19,20 +19,24 @@ export type NavItem = {
 
 export interface User {
   id: string;
-  email?: string;
-  name?: string;
+  name: string;
+  email: string;
+  role?: string;
+  image?: string;
+  avatar?: string;
+  createdAt: string;
+  isVerified?: boolean;
+  specialty?: string;
+  bio?: string;
+  skills?: string[];
+  languages?: string[];
   username?: string;
   level?: string;
   rating?: number;
   memberSince?: Date;
-  isVerified?: boolean;
-  role?: 'client' | 'freelancer' | 'admin';
-  avatar?: string;
-  bio?: string;
   phone?: string;
   address?: string;
   website?: string;
-  createdAt?: string;
   updatedAt?: string;
   completedOrders?: number;
 }
@@ -267,6 +271,7 @@ export interface Deliverable {
   message: string;
   fileUrls: string[];
   createdAt: string;
+  isRevision?: boolean;
 }
 
 export interface RevisionRequest {
@@ -350,6 +355,12 @@ export interface FreelancerRanking {
     resolvedAgainst: number;
     disputeRatio: number; // ratio de litiges par commande
   };
+  warningBadges: Array<{
+    type: 'dispute_rate' | 'resolution_rate' | 'delivery_time' | 'response_time';
+    severity: 'low' | 'medium' | 'high';
+    label: string;
+    description: string;
+  }>;
   updatedAt: string;
 }
 

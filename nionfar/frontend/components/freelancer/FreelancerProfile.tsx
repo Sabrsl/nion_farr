@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Alert, Spinner } from '../ui/common';
+import { User, FreelancerRanking } from '../../types';
+import { FiUserCheck, FiStar, FiCalendar, FiShield, FiAlertTriangle, FiAward } from 'react-icons/fi';
+import rankingService from '../../services/rankingService';
+import FreelancerRankingCard from './FreelancerRankingCard';
+import { Tabs } from '../ui/common';
 
 interface FreelancerProfileProps {
-  userId: string;
+  freelancer: User;
+  showDetailed?: boolean;
   className?: string;
 }
 
@@ -28,233 +34,220 @@ interface FreelancerData {
   responseTime: string;
 }
 
-const FreelancerProfile: React.FC<FreelancerProfileProps> = ({ userId, className = '' }) => {
-  const [loading, setLoading] = useState<boolean>(true);
+const FreelancerProfile: React.FC<FreelancerProfileProps> = ({
+  freelancer,
+  showDetailed = false,
+  className = ''
+}) => {
+  const [activeTab, setActiveTab] = useState('about');
+  const [ranking, setRanking] = useState<FreelancerRanking | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<FreelancerData | null>(null);
-
+  
   useEffect(() => {
-    const fetchFreelancerProfile = async () => {
+    const fetchRanking = async () => {
       try {
         setLoading(true);
-        
-        // Simuler un appel à l'API
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // En production, remplacer par un appel réel à l'API
-        const mockProfile: FreelancerData = {
-          id: userId,
-          username: 'freelancer123',
-          fullName: 'Sophie Diouf',
-          avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-          coverImage: 'https://images.unsplash.com/photo-1579547945413-497e1b99dac0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-          title: 'Designer graphique & Illustratrice',
-          description: 'Je suis une designer graphique passionnée avec plus de 5 ans d\'expérience. Spécialisée dans la création d\'identités visuelles et d\'illustrations pour des marques et des entreprises. Je m\'engage à offrir un travail de qualité dans les délais impartis.',
-          location: 'Dakar, Sénégal',
-          joinedDate: '2021-03-15',
-          isVerified: true,
-          languages: [
-            { language: 'Français', level: 'Natif' },
-            { language: 'Anglais', level: 'Professionnel' },
-            { language: 'Wolof', level: 'Natif' }
-          ],
-          skills: ['Adobe Photoshop', 'Adobe Illustrator', 'Figma', 'UI/UX Design', 'Branding', 'Illustration'],
-          socialLinks: [
-            { platform: 'instagram', url: 'https://instagram.com/freelancer123' },
-            { platform: 'linkedin', url: 'https://linkedin.com/in/freelancer123' },
-            { platform: 'behance', url: 'https://behance.net/freelancer123' }
-          ],
-          contactEmail: 'contact@sophiediouf.com',
-          phone: '+221 xx xx xx xx',
-          categories: ['Design graphique', 'Illustration', 'Design d\'identité visuelle'],
-          responseTime: '2-3 heures'
-        };
-        
-        setProfile(mockProfile);
+        const rankingData = await rankingService.calculateFreelancerRanking(freelancer.id);
+        setRanking(rankingData);
         setError(null);
       } catch (err) {
-        console.error('Erreur lors du chargement du profil:', err);
-        setError('Impossible de charger les informations du profil');
+        console.error('Erreur lors du chargement du classement:', err);
+        setError('Impossible de charger les informations de classement');
       } finally {
         setLoading(false);
       }
     };
     
-    if (userId) {
-      fetchFreelancerProfile();
-    }
-  }, [userId]);
+    fetchRanking();
+  }, [freelancer.id]);
   
-  // Formater la date d'inscription
-  const formatJoinDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('fr-FR', { 
-      year: 'numeric', 
-      month: 'long' 
-    }).format(date);
+  // Fonction pour déterminer le niveau de risque basé sur les badges
+  const getRiskLevel = (): { label: string; color: string; icon: React.ReactElement } => {
+    if (!ranking || !ranking.warningBadges || ranking.warningBadges.length === 0) {
+      return {
+        label: 'Risque faible',
+        color: 'text-green-600',
+        icon: <FiShield className="mr-1 h-5 w-5" />
+      };
+    }
+    
+    // Vérifier la présence de badges à sévérité élevée
+    const hasHighSeverity = ranking.warningBadges.some(badge => badge.severity === 'high');
+    
+    // Vérifier le nombre total de badges
+    const totalBadges = ranking.warningBadges.length;
+    
+    if (hasHighSeverity || totalBadges >= 3) {
+      return {
+        label: 'Risque élevé',
+        color: 'text-red-600',
+        icon: <FiAlertTriangle className="mr-1 h-5 w-5" />
+      };
+    } else if (totalBadges >= 1) {
+      return {
+        label: 'Risque modéré',
+        color: 'text-amber-600',
+        icon: <FiAlertTriangle className="mr-1 h-5 w-5" />
+      };
+    }
+    
+    return {
+      label: 'Risque faible',
+      color: 'text-green-600',
+      icon: <FiShield className="mr-1 h-5 w-5" />
+    };
   };
   
-  if (loading) {
-    return (
-      <div className={`bg-white rounded-lg shadow-md p-6 flex justify-center items-center ${className}`}>
-        <Spinner size="medium" />
-        <span className="ml-2 text-gray-600">Chargement du profil...</span>
-      </div>
-    );
-  }
-  
-  if (error || !profile) {
-    return (
-      <Alert 
-        type="error"
-        title="Erreur de chargement"
-        message={error || "Données du profil non disponibles"}
-        className={className}
-      />
-    );
-  }
+  // Obtenir l'affichage du niveau de risque
+  const riskLevel = getRiskLevel();
   
   return (
     <div className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}>
-      {/* Image de couverture */}
-      <div className="relative h-48 bg-gray-200">
-        {profile.coverImage && (
-          <div className="w-full h-full relative">
-            {/* En production, utilisez l'élément Image de Next.js */}
-            <img
-              src={profile.coverImage}
-              alt="Couverture"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-      </div>
-      
-      {/* Informations de base */}
-      <div className="relative px-6 pb-5">
-        {/* Avatar */}
-        <div className="absolute -top-16 left-6 rounded-full border-4 border-white bg-white shadow-md">
-          <div className="w-32 h-32 rounded-full overflow-hidden relative">
-            {profile.avatar ? (
-              <img
-                src={profile.avatar}
-                alt={profile.fullName}
-                className="w-full h-full object-cover"
+      {/* En-tête du profil avec avatar et informations de base */}
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+        <div className="flex flex-col md:flex-row items-center">
+          <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+            {freelancer.avatar ? (
+              <img 
+                src={freelancer.avatar} 
+                alt={`${freelancer.name} avatar`}
+                className="h-24 w-24 rounded-full border-4 border-white object-cover" 
               />
             ) : (
-              <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                <span className="text-2xl text-gray-600">
-                  {profile.fullName.charAt(0)}
+              <div className="h-24 w-24 rounded-full bg-white flex items-center justify-center">
+                <span className="text-3xl font-bold text-indigo-600">
+                  {freelancer.name.charAt(0)}
                 </span>
               </div>
             )}
-            {profile.isVerified && (
-              <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1 border-2 border-white">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                </svg>
+          </div>
+          
+          <div className="text-center md:text-left">
+            <h1 className="text-2xl font-bold text-white">{freelancer.name}</h1>
+            <p className="text-indigo-100">{freelancer.specialty || 'Freelancer professionnel'}</p>
+            
+            <div className="mt-3 flex flex-wrap justify-center md:justify-start gap-2">
+              {/* Badge de vérification */}
+              {freelancer.isVerified && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <FiUserCheck className="mr-1 h-4 w-4" />
+                  Vérifié
+                </span>
+              )}
+              
+              {/* Badge de niveau */}
+              {ranking && (
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  ${ranking.tier === 'elite' ? 'bg-purple-100 text-purple-800' :
+                   ranking.tier === 'premium' ? 'bg-blue-100 text-blue-800' :
+                   ranking.tier === 'établi' ? 'bg-green-100 text-green-800' :
+                   'bg-gray-100 text-gray-800'}`
+                }>
+                  <FiAward className="mr-1 h-4 w-4" />
+                  {ranking.tier.charAt(0).toUpperCase() + ranking.tier.slice(1)}
+                </span>
+              )}
+              
+              {/* Badge d'expérience */}
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <FiCalendar className="mr-1 h-4 w-4" />
+                Depuis {new Date(freelancer.createdAt).getFullYear()}
+              </span>
+              
+              {/* Badge de risque, basé sur les badges d'avertissement */}
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                ${riskLevel.color === 'text-green-600' ? 'bg-green-100 text-green-800' :
+                 riskLevel.color === 'text-amber-600' ? 'bg-amber-100 text-amber-800' :
+                 'bg-red-100 text-red-800'}`
+              }>
+                {riskLevel.icon}
+                {riskLevel.label}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Onglets du profil */}
+      <Tabs
+        tabs={[
+          { id: 'about', label: 'À propos', icon: <FiUserCheck /> },
+          { id: 'ranking', label: 'Classement', icon: <FiStar /> },
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
+      
+      {/* Contenu des onglets */}
+      <div className="p-6">
+        {activeTab === 'about' && (
+          <div>
+            {/* Description */}
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">À propos</h2>
+              <p className="text-gray-700">
+                {freelancer.bio || 'Aucune bio fournie par ce freelancer.'}
+              </p>
+            </div>
+            
+            {/* Compétences */}
+            {freelancer.skills && freelancer.skills.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Compétences</h2>
+                <div className="flex flex-wrap gap-2">
+                  {freelancer.skills.map((skill, index) => (
+                    <span 
+                      key={index}
+                      className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Langues */}
+            {freelancer.languages && freelancer.languages.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Langues</h2>
+                <div className="flex flex-wrap gap-2">
+                  {freelancer.languages.map((language, index) => (
+                    <span 
+                      key={index}
+                      className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800"
+                    >
+                      {language}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
         
-        {/* Informations principales */}
-        <div className="mt-16 pt-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">{profile.fullName}</h1>
-              <p className="text-gray-600">{profile.title}</p>
-            </div>
-            <div className="flex space-x-2">
-              {profile.socialLinks.map((link, index) => (
-                <a 
-                  key={index} 
-                  href={link.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  {/* Icônes pour les réseaux sociaux (à remplacer par des icônes réelles) */}
-                  <span>{link.platform.charAt(0).toUpperCase()}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-          
-          <div className="flex items-center mt-2 text-sm text-gray-500">
-            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"></path>
-            </svg>
-            <span>{profile.location}</span>
-            <span className="mx-2">•</span>
-            <span>Membre depuis {formatJoinDate(profile.joinedDate)}</span>
-          </div>
-          
-          {/* Description */}
-          <div className="mt-4">
-            <p className="text-gray-700">{profile.description}</p>
-          </div>
-          
-          {/* Compétences */}
-          <div className="mt-4">
-            <h3 className="text-md font-semibold text-gray-700 mb-2">Compétences</h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.skills.map((skill, index) => (
-                <span 
-                  key={index} 
-                  className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-          
-          {/* Informations supplémentaires */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-md font-semibold text-gray-700 mb-2">Langues</h3>
-              <ul className="space-y-1">
-                {profile.languages.map((lang, index) => (
-                  <li key={index} className="text-sm text-gray-600">
-                    <span className="font-medium">{lang.language}</span>: {lang.level}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-md font-semibold text-gray-700 mb-2">Catégories</h3>
-              <ul className="space-y-1">
-                {profile.categories.map((category, index) => (
-                  <li key={index} className="text-sm text-gray-600">
-                    {category}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          
-          {/* Informations de contact */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="flex items-center">
-              <span className="text-sm font-medium text-gray-700 mr-4">Temps de réponse:</span>
-              <span className="text-sm text-gray-600">{profile.responseTime}</span>
-            </div>
-            
-            {profile.contactEmail && (
-              <div className="mt-2 flex items-center">
-                <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
-                </svg>
-                <a href={`mailto:${profile.contactEmail}`} className="text-sm text-blue-600 hover:underline">
-                  {profile.contactEmail}
-                </a>
+        {activeTab === 'ranking' && (
+          <div>
+            {loading ? (
+              <div className="flex justify-center items-center h-40">
+                <Spinner size="medium" />
+                <span className="ml-2 text-gray-600">Chargement du classement...</span>
               </div>
+            ) : error ? (
+              <Alert 
+                type="error" 
+                title="Erreur de chargement" 
+                message={error} 
+              />
+            ) : (
+              <FreelancerRankingCard 
+                userId={freelancer.id} 
+                showDetailed={showDetailed} 
+              />
             )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

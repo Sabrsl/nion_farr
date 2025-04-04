@@ -33,6 +33,13 @@ class SchedulerService {
       });
     }, 4 * 60 * 60 * 1000); // 4 heures
     
+    // Vérification du temps de réponse des vendeurs (toutes les heures)
+    this.intervalIds['sellerResponseTime'] = setInterval(() => {
+      this.runTask('Vérification du temps de réponse des vendeurs', async () => {
+        await orderService.checkSellerResponseTime();
+      });
+    }, 60 * 60 * 1000); // 1 heure
+    
     // Exécuter les vérifications immédiatement au démarrage
     this.runTask('Vérification initiale des délais des litiges', async () => {
       await disputeService.checkDisputeDeadlines();
@@ -40,6 +47,10 @@ class SchedulerService {
     
     this.runTask('Vérification initiale des délais de livraison', async () => {
       await orderService.checkDeliveryDeadlines();
+    });
+    
+    this.runTask('Vérification initiale du temps de réponse des vendeurs', async () => {
+      await orderService.checkSellerResponseTime();
     });
   }
   

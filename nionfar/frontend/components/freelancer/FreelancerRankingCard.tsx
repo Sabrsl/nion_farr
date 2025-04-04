@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FreelancerRanking, RankingFactor } from '../../types';
 import rankingService from '../../services/rankingService';
 import { Spinner, Alert } from '../ui/common';
+import { FiAlertTriangle, FiThumbsDown, FiClock } from 'react-icons/fi';
 
 interface FreelancerRankingCardProps {
   userId: string;
@@ -77,6 +78,35 @@ const FreelancerRankingCard: React.FC<FreelancerRankingCardProps> = ({
     }
   };
   
+  // Fonction pour obtenir l'icône d'un badge selon son type
+  const getBadgeIcon = (type: string): React.ReactElement => {
+    switch (type) {
+      case 'dispute_rate':
+        return <FiAlertTriangle className="h-4 w-4" />;
+      case 'resolution_rate':
+        return <FiThumbsDown className="h-4 w-4" />;
+      case 'delivery_time':
+      case 'response_time':
+        return <FiClock className="h-4 w-4" />;
+      default:
+        return <FiAlertTriangle className="h-4 w-4" />;
+    }
+  };
+  
+  // Fonction pour obtenir la couleur d'un badge selon sa sévérité
+  const getBadgeSeverityColor = (severity: string): string => {
+    switch (severity) {
+      case 'high':
+        return 'bg-red-100 text-red-800 border-red-300';
+      case 'medium':
+        return 'bg-amber-100 text-amber-800 border-amber-300';
+      case 'low':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+  
   if (loading) {
     return (
       <div className={`p-4 bg-white rounded-lg shadow-md flex justify-center items-center ${className}`}>
@@ -124,6 +154,29 @@ const FreelancerRankingCard: React.FC<FreelancerRankingCardProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Section des badges d'avertissement */}
+      {ranking.warningBadges && ranking.warningBadges.length > 0 && (
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <h4 className="text-md font-semibold text-gray-700 mb-3">Points d'attention</h4>
+          <div className="space-y-2">
+            {ranking.warningBadges.map((badge, index) => (
+              <div 
+                key={index} 
+                className={`flex items-center p-2 rounded border ${getBadgeSeverityColor(badge.severity)}`}
+              >
+                <div className="flex-shrink-0 mr-2">
+                  {getBadgeIcon(badge.type)}
+                </div>
+                <div>
+                  <div className="text-sm font-medium">{badge.label}</div>
+                  <div className="text-xs">{badge.description}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Statistiques de litiges */}
       <div className="p-4 border-b border-gray-200">

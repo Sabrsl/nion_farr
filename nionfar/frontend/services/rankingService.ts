@@ -60,6 +60,9 @@ class RankingService {
       const position = Math.ceil(Math.random() * 100);
       const categoryPosition = Math.ceil(Math.random() * 25);
       
+      // Calculer les badges d'avertissement
+      const warningBadges = this.calculateWarningBadges(disputeHistory, orderStats);
+      
       return {
         userId,
         overallScore,
@@ -77,6 +80,7 @@ class RankingService {
           resolvedAgainst: disputeHistory.resolvedAgainst,
           disputeRatio: orderStats.totalOrders > 0 ? disputeHistory.totalDisputes / orderStats.totalOrders : 0
         },
+        warningBadges,
         updatedAt: new Date().toISOString()
       };
     } catch (error) {
@@ -98,6 +102,7 @@ class RankingService {
           resolvedAgainst: 0,
           disputeRatio: 0
         },
+        warningBadges: [],
         updatedAt: new Date().toISOString()
       };
     }
@@ -328,6 +333,67 @@ class RankingService {
     }
     
     return mockFreelancers;
+  }
+  
+  /**
+   * Calcule les badges d'avertissement pour un freelancer
+   * @private
+   */
+  private calculateWarningBadges(
+    disputeHistory: DisputeHistory,
+    orderStats: FreelancerOrderStats
+  ): Array<{
+    type: 'dispute_rate' | 'resolution_rate' | 'delivery_time' | 'response_time';
+    severity: 'low' | 'medium' | 'high';
+    label: string;
+    description: string;
+  }> {
+    const badges = [];
+    
+    // 1. Badge pour un taux élevé de litiges
+    const disputeRatio = orderStats.totalOrders > 0 
+      ? disputeHistory.totalDisputes / orderStats.totalOrders 
+      : 0;
+      
+    if (disputeRatio > 0.15) {
+      badges.push({
+        type: 'dispute_rate',
+        severity: disputeRatio > 0.25 ? 'high' : 'medium',
+        label: 'Taux de litiges élevé',
+        description: `Ce freelancer a des litiges sur ${Math.round(disputeRatio * 100)}% de ses commandes.`
+      });
+    }
+    
+    // 2. Badge pour un mauvais taux de résolution des litiges
+    if (disputeHistory.totalDisputes > 0) {
+      const lostRatio = disputeHistory.resolvedAgainst / disputeHistory.totalDisputes;
+      
+      if (lostRatio > 0.5) {
+        badges.push({
+          type: 'resolution_rate',
+          severity: lostRatio > 0.75 ? 'high' : 'medium',
+          label: 'Litiges souvent perdus',
+          description: `Ce freelancer a perdu ${Math.round(lostRatio * 100)}% de ses litiges.`
+        });
+      }
+    }
+    
+    // 3. Badge pour des litiges répétés récents
+    const recentDisputesLost = disputeHistory.disputeSummary.filter(d => 
+      d.isResolvedInFavor === false && 
+      new Date(d.resolvedAt || '').getTime() > Date.now() - 90 * 24 * 60 * 60 * 1000
+    ).length;
+    
+    if (recentDisputesLost >= 3) {
+      badges.push({
+        type: 'resolution_rate',
+        severity: recentDisputesLost >= 5 ? 'high' : 'medium',
+        label: 'Litiges récents perdus',
+        description: `Ce freelancer a perdu ${recentDisputesLost} litiges au cours des 3 derniers mois.`
+      });
+    }
+    
+    return badges;
   }
 }
 

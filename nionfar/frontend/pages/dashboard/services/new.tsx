@@ -1,5 +1,5 @@
 import { NextPage } from 'next';
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useForm, Controller } from 'react-hook-form';
 import { motion } from 'framer-motion';
@@ -18,7 +18,8 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiEye,
-  FiArrowLeft
+  FiArrowLeft,
+  FiAlertTriangle
 } from 'react-icons/fi';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { Dropzone } from '../../../components/ui/Dropzone';
@@ -29,6 +30,10 @@ import { Stepper } from '../../../components/ui/Stepper';
 import { categories } from '../../../data/mockData';
 import { Category } from '../../../types';
 import { ServicePreview } from '../../../components/dashboard/services/ServicePreview';
+import serviceValidationService from '../../../services/serviceValidationService';
+import { toast } from 'react-toastify';
+import { useAuth } from '../../../contexts/AuthContext';
+import useSWR from 'swr';
 
 // Types
 type FormValues = {
@@ -81,6 +86,18 @@ const CreateServicePage: NextPage = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const { user } = useAuth();
+  const [validationErrors, setValidationErrors] = useState<{field: string, message: string}[]>([]);
+  const [requiresModeration, setRequiresModeration] = useState(false);
+  const [moderationReasons, setModerationReasons] = useState<string[]>([]);
+  
+  // Récupérer la liste des services existants pour la validation
+  const { data: existingServices } = useSWR('/api/services', async () => {
+    // Simulation de données pour la démonstration
+    // En production, remplacer par un appel API réel
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return []; // Remplacer par les données réelles en production
+  });
 
   const { register, handleSubmit, control, watch, setValue, formState: { errors, isDirty, isValid } } = useForm<FormValues>({
     defaultValues: {
@@ -178,26 +195,70 @@ const CreateServicePage: NextPage = () => {
     setValue('images', newImageFiles);
   };
 
+  // Gestionnaire de soumission du formulaire
   const onSubmit = async (data: FormValues) => {
-    setSaveStatus('saving');
-    
     try {
-      // Simuler l'envoi des données au serveur
-      console.log('Service data:', data);
+      setSaveStatus('saving');
+      setValidationErrors([]);
       
-      // Simuler un délai de création
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Vérifier si l'utilisateur est connecté
+      if (!user) {
+        toast.error('Vous devez être connecté pour créer un service');
+        setSaveStatus('error');
+        return;
+      }
+      
+      // Valider le service
+      const validationResult = await serviceValidationService.validateService(
+        {
+          id: '',
+          title: data.title,
+          summary: data.summary,
+          description: data.description,
+          price: data.price,
+          isActive: data.isActive,
+          provider: user,
+          createdAt: new Date().toISOString(),
+        },
+        existingServices || [],
+        user,
+        false // Nouvelle création
+      );
+      
+      // Gérer les erreurs de validation
+      if (!validationResult.isValid) {
+        setValidationErrors(validationResult.errors);
+        validationResult.errors.forEach(error => {
+          toast.error(error.message);
+        });
+        setSaveStatus('error');
+        return;
+      }
+      
+      // Vérifier si le service nécessite une modération
+      if (validationResult.requiresModeration) {
+        setRequiresModeration(true);
+        setModerationReasons(validationResult.moderationReasons);
+        toast.warning('Votre service nécessite une modération manuelle et sera examiné par notre équipe avant publication.');
+      }
+      
+      // Simuler l'envoi des données au serveur
+      console.log('Envoi des données:', data);
+      
+      // Créer le service - simulation
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       setSaveStatus('success');
       
-      // Rediriger vers la liste des services après un court délai
+      // Rediriger vers la liste des services après 1 seconde
       setTimeout(() => {
         router.push('/dashboard/services');
       }, 1000);
       
     } catch (error) {
-      console.error('Error creating service:', error);
+      console.error('Erreur lors de la création du service:', error);
       setSaveStatus('error');
+      toast.error('Une erreur est survenue lors de la création du service');
     }
   };
 
@@ -248,6 +309,65 @@ const CreateServicePage: NextPage = () => {
             }}
           />
         </label>
+      </div>
+    );
+  };
+
+  // Vérifier si le titre contient des informations de contact
+  const checkDirectContact = async (description: string) => {
+    if (!description) return;
+    
+    const result = await serviceValidationService.validateNoDirectContact(description);
+    if (!result.isValid) {
+      toast.error(result.message);
+    }
+  };
+  
+  // Fonction pour afficher une erreur de validation spécifique
+  const getValidationError = (field: string) => {
+    return validationErrors.find(error => error.field === field)?.message;
+  };
+
+  // Ajouter une vérification en temps réel de la description
+  useEffect(() => {
+    const description = watch('description');
+    const subscription = watch((value, { name }) => {
+      if (name === 'description' && value.description) {
+        checkDirectContact(value.description);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [watch]);
+
+  // Dans le composant - ajouter un composant d'affichage pour la modération
+  const renderModerationWarning = () => {
+    if (!requiresModeration) return null;
+    
+    return (
+      <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <FiAlertTriangle className="h-5 w-5 text-amber-400" />
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-amber-800">
+              Ce service nécessite une modération manuelle
+            </h3>
+            <div className="mt-2 text-sm text-amber-700">
+              <p>
+                Votre service sera examiné par notre équipe avant d'être publié. Cela peut prendre jusqu'à 24 heures.
+              </p>
+              {moderationReasons.length > 0 && (
+                <ul className="list-disc pl-5 mt-2">
+                  {moderationReasons.map((reason, index) => (
+                    <li key={index}>{reason}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -1214,6 +1334,120 @@ const CreateServicePage: NextPage = () => {
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+          </motion.div>
+        );
+      case 4:
+        return (
+          <motion.div
+            key="finalize"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Finaliser et publier</h2>
+              
+              {renderModerationWarning()}
+              
+              {validationErrors.length > 0 && (
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <FiAlertTriangle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">
+                        Veuillez corriger les erreurs suivantes
+                      </h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <ul className="list-disc pl-5">
+                          {validationErrors.map((error, index) => (
+                            <li key={index}>{error.message}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Prévisualisation du service */}
+              <div className="mb-6">
+                <ServicePreview
+                  formData={watch()}
+                  imageUrls={imageUrls}
+                  selectedCategory={selectedCategory}
+                />
+              </div>
+              
+              {/* Publication */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-base font-medium text-gray-900">Activer le service</h3>
+                    <p className="text-sm text-gray-500">
+                      Les services actifs sont visibles par tous les utilisateurs
+                    </p>
+                  </div>
+                  <Controller
+                    name="isActive"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className={`${
+                          field.value ? 'bg-indigo-600' : 'bg-gray-200'
+                        } relative inline-flex h-6 w-11 items-center rounded-full`}
+                      >
+                        <span className="sr-only">Activer le service</span>
+                        <span
+                          className={`${
+                            field.value ? 'translate-x-6' : 'translate-x-1'
+                          } inline-block h-4 w-4 transform rounded-full bg-white transition`}
+                        />
+                      </Switch>
+                    )}
+                  />
+                </div>
+                
+                {/* Bouton de soumission */}
+                <div className="pt-4 flex justify-end">
+                  <button
+                    type="submit"
+                    className={`
+                      inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm
+                      ${isValid
+                        ? 'text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+                        : 'text-gray-300 bg-gray-100 cursor-not-allowed'
+                      }
+                    `}
+                    disabled={!isValid || saveStatus === 'saving'}
+                  >
+                    {saveStatus === 'saving' ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Création en cours...
+                      </>
+                    ) : saveStatus === 'success' ? (
+                      <>
+                        <FiCheckCircle className="mr-2 h-5 w-5" />
+                        Service créé avec succès
+                      </>
+                    ) : (
+                      <>
+                        <FiSave className="mr-2 h-5 w-5" />
+                        Créer le service
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

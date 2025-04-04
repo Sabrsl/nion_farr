@@ -17,9 +17,10 @@ class OrderService {
   /**
    * Vérifie si un service peut être commandé
    * @param serviceId ID du service à vérifier
+   * @param clientId ID du client
    * @returns Promesse avec le résultat de la vérification
    */
-  async checkServiceAvailability(serviceId: string): Promise<{
+  async checkServiceAvailability(serviceId: string, clientId: string): Promise<{
     available: boolean;
     message?: string;
     service?: Service;
@@ -51,6 +52,22 @@ class OrderService {
         };
       }
       
+      // Vérifier que le client n'a pas déjà une commande en cours pour ce service
+      const activeOrdersResponse = await fetch(`${this.apiUrl}/client/${clientId}/active`);
+      const activeOrders = await activeOrdersResponse.json();
+      
+      const hasActiveOrderForService = activeOrders.some((order: Order) => 
+        order.service.id === serviceId && 
+        ['en_attente', 'en_attente_acceptation', 'en_cours', 'en_modification', 'livré', 'livraison_en_retard'].includes(order.status)
+      );
+      
+      if (hasActiveOrderForService) {
+        return {
+          available: false,
+          message: 'Vous avez déjà une commande en cours pour ce service. Veuillez terminer votre commande existante avant d\'en passer une nouvelle.'
+        };
+      }
+      
       return {
         available: true,
         service
@@ -69,6 +86,7 @@ class OrderService {
    * @param serviceId ID du service à commander
    * @param clientId ID du client
    * @param requirements Brief du client
+   * @param paymentInfo Informations de paiement
    * @returns Promesse avec la commande créée
    */
   async placeOrder(
@@ -87,7 +105,7 @@ class OrderService {
   }> {
     try {
       // 1. Vérifier la disponibilité du service
-      const serviceCheck = await this.checkServiceAvailability(serviceId);
+      const serviceCheck = await this.checkServiceAvailability(serviceId, clientId);
       
       if (!serviceCheck.available) {
         return {
@@ -96,7 +114,7 @@ class OrderService {
         };
       }
       
-      // 2. Initialiser le paiement
+      // 2. Initialiser le paiement - obligatoire avant de créer la commande
       const paymentResponse = await this.initializePayment(
         serviceCheck.service!.price,
         clientId,
@@ -107,22 +125,27 @@ class OrderService {
       if (!paymentResponse.success) {
         return {
           success: false,
-          message: 'Échec de l\'initialisation du paiement.',
+          message: 'Le paiement est obligatoire pour créer une commande. ' + (paymentResponse.message || 'Échec de l\'initialisation du paiement.'),
           paymentUrl: paymentResponse.paymentUrl
         };
       }
       
-      // 3. Créer la commande avec statut "en_attente_paiement"
+      // 3. Créer la commande avec statut "en_attente"
       const order: Partial<Order> = {
         title: serviceCheck.service!.title,
         service: serviceCheck.service!,
         client: { id: clientId } as any, // Sera complété par l'API
-        status: 'en_attente' as OrderStatus,
+        status: 'en_attente' as OrderStatus, // La commande est d'abord en attente de paiement
         price: serviceCheck.service!.price,
         requirements,
         isPaid: false,
-        // Estimez la date de livraison en fonction du délai de livraison du service
-        deadline: this.calculateDeadline(serviceCheck.service!.deliveryTime)
+        // Calculer la date d'échéance en fonction du délai de livraison du service
+        // Le délai ne commence qu'une fois la commande acceptée par le vendeur
+        deadline: this.calculateDeadline(serviceCheck.service!.deliveryTime),
+        createdAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        // Pas de délai de validation tant que la commande n'est pas livrée
+        deliveryValidationDeadline: null
       };
       
       // Simuler une requête API
@@ -141,7 +164,8 @@ class OrderService {
       return {
         success: true,
         order: createdOrder,
-        paymentUrl: paymentResponse.paymentUrl
+        paymentUrl: paymentResponse.paymentUrl,
+        message: 'Commande créée avec succès. Veuillez compléter le paiement pour finaliser votre commande.'
       };
     } catch (error) {
       console.error('Erreur lors de la création de la commande:', error);
@@ -358,12 +382,17 @@ class OrderService {
         };
       }
       
+      // Vérifier le statut de la commande
       if (order.status !== 'en_cours' && order.status !== 'en_modification' && order.status !== 'livraison_en_retard') {
         return {
           success: false,
-          message: `La commande ne peut pas être livrée (statut actuel: ${order.status})`
+          message: `La commande ne peut pas être livrée dans son état actuel (statut: ${order.status})`
         };
       }
+      
+      // Vérifier si c'est une première livraison ou une livraison après modification
+      const isFirstDelivery = !order.deliverables || order.deliverables.length === 0;
+      const isAfterRevision = order.status === 'en_modification';
       
       // Créer un nouveau livrable
       const newDeliverable: Deliverable = {
@@ -371,7 +400,8 @@ class OrderService {
         orderId,
         message: deliverable.message,
         fileUrls: deliverable.fileUrls,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        isRevision: isAfterRevision
       };
       
       // Mettre à jour la commande
@@ -380,7 +410,7 @@ class OrderService {
         status: 'livré' as OrderStatus,
         lastUpdatedAt: new Date().toISOString(),
         deliverables: [...(order.deliverables || []), newDeliverable],
-        // Ajouter un délai de 72h pour validation automatique
+        // Ajouter un délai de 3 jours pour validation automatique
         deliveryValidationDeadline: this.calculateDeadline(3, true)
       };
       
@@ -393,20 +423,25 @@ class OrderService {
       // Notification au client
       await this.createNotification({
         userId: order.client.id,
-        title: 'Commande livrée',
-        message: `Votre commande ${order.title} a été livrée. Vous avez 3 jours pour l'approuver ou demander une révision.`,
-        type: 'info',
+        title: isAfterRevision ? 'Révision livrée' : 'Commande livrée',
+        message: isAfterRevision 
+          ? `Le vendeur a livré la révision demandée pour la commande ${order.title}.` 
+          : `Votre commande ${order.title} a été livrée.`,
+        type: 'success',
         link: `/dashboard/orders/${order.id}`
       });
       
       return {
-        success: true
+        success: true,
+        message: isAfterRevision 
+          ? 'La révision a été livrée avec succès. Le client a 3 jours pour valider ou demander une autre révision.'
+          : 'La commande a été livrée avec succès. Le client a 3 jours pour valider ou demander une révision.'
       };
     } catch (error) {
       console.error('Erreur lors de la livraison:', error);
       return {
         success: false,
-        message: 'Une erreur est survenue'
+        message: 'Une erreur est survenue lors de la livraison.'
       };
     }
   }
@@ -616,7 +651,7 @@ class OrderService {
    */
   async checkDeliveryDeadlines(): Promise<void> {
     try {
-      // Récupérer toutes les commandes en cours
+      // Récupérer toutes les commandes actives
       const ordersResponse = await fetch(`${this.apiUrl}/active`);
       const activeOrders = await ordersResponse.json();
       
@@ -624,59 +659,98 @@ class OrderService {
       
       // Parcourir les commandes pour vérifier les deadlines
       for (const order of activeOrders) {
-        const deadline = new Date(order.deadline);
-        
-        // Si la date limite est dépassée et que la commande est toujours en cours
-        if (deadline < now && order.status === 'en_cours') {
-          // Mettre à jour le statut de la commande
-          const updatedOrder = {
-            ...order,
-            status: 'livraison_en_retard' as OrderStatus,
-            lastUpdatedAt: now.toISOString()
-          };
+        // 1. Vérifier les commandes en cours dont la date limite est dépassée
+        if (order.status === 'en_cours') {
+          const deadline = new Date(order.deadline);
           
-          // Appeler l'API pour mettre à jour la commande
-          await fetch(`${this.apiUrl}/${order.id}`, {
-            method: 'PUT',
-            body: JSON.stringify(updatedOrder)
-          });
-          
-          // Notification au vendeur
-          await this.createNotification({
-            userId: order.service.provider.id,
-            title: 'Livraison en retard',
-            message: `La date limite de livraison pour la commande ${order.title} est dépassée.`,
-            type: 'warning',
-            link: `/dashboard/orders/${order.id}`
-          });
-          
-          // Notification au client
-          await this.createNotification({
-            userId: order.client.id,
-            title: 'Livraison en retard',
-            message: `La date limite de livraison pour la commande ${order.title} est dépassée. Le vendeur a été notifié.`,
-            type: 'warning',
-            link: `/dashboard/orders/${order.id}`
-          });
+          // Si la date limite est dépassée
+          if (deadline < now) {
+            // Mettre à jour le statut de la commande
+            const updatedOrder = {
+              ...order,
+              status: 'livraison_en_retard' as OrderStatus,
+              lastUpdatedAt: now.toISOString()
+            };
+            
+            // Appeler l'API pour mettre à jour la commande
+            await fetch(`${this.apiUrl}/${order.id}`, {
+              method: 'PUT',
+              body: JSON.stringify(updatedOrder)
+            });
+            
+            // Notification au vendeur
+            await this.createNotification({
+              userId: order.service.provider.id,
+              title: 'Livraison en retard',
+              message: `La date limite de livraison pour la commande ${order.title} est dépassée.`,
+              type: 'warning',
+              link: `/dashboard/orders/${order.id}`
+            });
+            
+            // Notification au client
+            await this.createNotification({
+              userId: order.client.id,
+              title: 'Livraison en retard',
+              message: `La date limite de livraison pour la commande ${order.title} est dépassée. Le vendeur a été notifié.`,
+              type: 'warning',
+              link: `/dashboard/orders/${order.id}`
+            });
+          }
         }
         
-        // Vérifier les deadlines de validation automatique
+        // 2. Vérifier les commandes livrées pour validation automatique après 3 jours
         if (order.status === 'livré' && order.deliveryValidationDeadline) {
           const validationDeadline = new Date(order.deliveryValidationDeadline);
           
-          // Si la deadline de validation est dépassée
+          // Si la deadline de validation (3 jours) est dépassée
           if (validationDeadline < now) {
-            // Validation automatique
+            // Validation automatique de la commande
             await this.completeOrder(order.id, order.client.id);
             
             // Notification au client
             await this.createNotification({
               userId: order.client.id,
               title: 'Validation automatique',
-              message: `La commande ${order.title} a été automatiquement validée après 72h.`,
+              message: `La commande ${order.title} a été automatiquement validée après 3 jours sans action de votre part.`,
               type: 'info',
               link: `/dashboard/orders/${order.id}`
             });
+            
+            // Notification au vendeur
+            await this.createNotification({
+              userId: order.service.provider.id,
+              title: 'Commande validée automatiquement',
+              message: `La commande ${order.title} a été automatiquement validée car le client n'a pas pris d'action dans les 3 jours suivant la livraison.`,
+              type: 'success',
+              link: `/dashboard/orders/${order.id}`
+            });
+          } else {
+            // Si la deadline approche (moins de 24h), envoyer un rappel au client
+            const hoursRemaining = (validationDeadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+            
+            if (hoursRemaining <= 24 && !order.reminderSent) {
+              // Marquer le rappel comme envoyé
+              const updatedOrder = {
+                ...order,
+                reminderSent: true,
+                lastUpdatedAt: now.toISOString()
+              };
+              
+              // Mettre à jour la commande
+              await fetch(`${this.apiUrl}/${order.id}`, {
+                method: 'PUT',
+                body: JSON.stringify(updatedOrder)
+              });
+              
+              // Envoyer un rappel au client
+              await this.createNotification({
+                userId: order.client.id,
+                title: 'Action requise - Validation de livraison',
+                message: `Votre commande ${order.title} sera automatiquement validée dans moins de 24h si vous ne prenez aucune action. Veuillez valider la livraison ou demander une révision.`,
+                type: 'warning',
+                link: `/dashboard/orders/${order.id}`
+              });
+            }
           }
         }
       }
@@ -943,6 +1017,77 @@ class OrderService {
           lastWeek: 0
         }
       };
+    }
+  }
+
+  /**
+   * Vérifie les commandes dont le vendeur n'a pas répondu sous 24h
+   * Cette méthode serait idéalement exécutée par un cron job toutes les heures
+   */
+  async checkSellerResponseTime(): Promise<void> {
+    try {
+      // Récupérer les commandes en attente d'acceptation
+      const pendingOrdersResponse = await fetch(`${this.apiUrl}/pending-acceptance`);
+      const pendingOrders = await pendingOrdersResponse.json();
+      
+      const now = new Date();
+      
+      // Parcourir les commandes en attente d'acceptation
+      for (const order of pendingOrders) {
+        if (order.status !== 'en_attente_acceptation') continue;
+        
+        // Vérifier si la commande a été créée il y a plus de 24h
+        const orderCreatedAt = new Date(order.isPaid ? order.lastUpdatedAt : order.createdAt);
+        const timeDiffHours = (now.getTime() - orderCreatedAt.getTime()) / (1000 * 60 * 60);
+        
+        // Si cela fait plus de 24h sans réponse du vendeur
+        if (timeDiffHours >= 24) {
+          // Marquer que le vendeur a été averti (si ce n'est pas déjà fait)
+          if (!order.sellerAlerted) {
+            // Mettre à jour la commande pour indiquer que le vendeur a été averti
+            const updatedOrder = {
+              ...order,
+              sellerAlerted: true,
+              lastUpdatedAt: now.toISOString()
+            };
+            
+            // Appeler l'API pour mettre à jour la commande
+            await fetch(`${this.apiUrl}/${order.id}`, {
+              method: 'PUT',
+              body: JSON.stringify(updatedOrder)
+            });
+            
+            // Notification au vendeur
+            await this.createNotification({
+              userId: order.service.provider.id,
+              title: 'Action requise - Commande en attente',
+              message: `La commande ${order.title} est en attente de votre acceptation depuis plus de 24h. Veuillez accepter ou refuser rapidement.`,
+              type: 'warning',
+              link: `/dashboard/orders/${order.id}`
+            });
+            
+            // Notification au client
+            await this.createNotification({
+              userId: order.client.id,
+              title: 'Vendeur notifié',
+              message: `Le vendeur a été notifié de votre commande ${order.title} qui est en attente depuis plus de 24h.`,
+              type: 'info',
+              link: `/dashboard/orders/${order.id}`
+            });
+            
+            // Notification à l'administration (pour suivi)
+            await this.createNotification({
+              userId: 'admin', // ID de l'admin général ou système
+              title: 'Vendeur non-réactif',
+              message: `Le vendeur ${order.service.provider.name} n'a pas répondu à la commande ${order.id} (${order.title}) depuis plus de 24h.`,
+              type: 'warning',
+              link: `/admin/orders/${order.id}`
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification des temps de réponse des vendeurs:', error);
     }
   }
 }
