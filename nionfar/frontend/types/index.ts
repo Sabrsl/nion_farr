@@ -276,6 +276,19 @@ export interface RevisionRequest {
   createdAt: string;
 }
 
+export interface DisputeLogEntry {
+  id: string;
+  disputeId: string;
+  userId: string;
+  userType: 'client' | 'vendeur' | 'admin' | 'system';
+  action: 'création' | 'commentaire' | 'pièce_jointe' | 'changement_statut' | 'résolution' | 'vue' | 'clic' | 'notification_envoyée' | 'notification_lue' | 'autre';
+  details: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
 export interface Dispute {
   id: string;
   orderId: string;
@@ -283,11 +296,12 @@ export interface Dispute {
   reason: string;
   details: string;
   attachments: string[];
-  status: 'ouvert' | 'résolu' | 'fermé';
+  status: 'ouvert' | 'en_attente_de_reponse' | 'en_traitement' | 'résolu_en_faveur_client' | 
+    'résolu_en_faveur_vendeur' | 'clos_automatiquement' | 'refusé';
   createdAt: string;
   resolvedAt?: string;
   resolvedBy?: string;
-  resolution?: 'client' | 'vendeur';
+  resolution?: ResolutionType;
   resolutionReason?: string;
   updates: {
     userId: string;
@@ -295,8 +309,18 @@ export interface Dispute {
     createdAt: string;
     type: 'status_change' | 'comment' | 'resolution';
   }[];
+  logs?: DisputeLogEntry[];
+  summary?: string;
   followers?: string[];
 }
+
+export type ResolutionType = 
+  | 'remboursement_partiel' 
+  | 'remboursement_total' 
+  | 'livraison_corrigée' 
+  | 'refus_du_litige' 
+  | 'prolongation_délai' 
+  | 'arrangement_amiable';
 
 export interface Payment {
   id: string;
@@ -306,4 +330,67 @@ export interface Payment {
   method: 'carte' | 'mobile_money' | 'virement';
   transactionId: string;
   createdAt: string;
+}
+
+// Interface pour le classement des freelancers
+export interface FreelancerRanking {
+  userId: string;
+  overallScore: number;
+  reliabilityScore: number; // score basé sur les litiges et leur résolution
+  qualityScore: number; // score basé sur les évaluations
+  deliveryScore: number; // score basé sur les délais de livraison
+  responseScore: number; // score basé sur le temps de réponse
+  verificationBonus: number; // bonus pour la vérification KYC
+  tier: 'nouveau' | 'établi' | 'premium' | 'elite'; // niveau du freelancer
+  position: number; // position dans le classement global
+  categoryPosition?: number; // position dans la catégorie
+  disputeStats: {
+    totalDisputes: number;
+    resolvedInFavor: number;
+    resolvedAgainst: number;
+    disputeRatio: number; // ratio de litiges par commande
+  };
+  updatedAt: string;
+}
+
+// Interface pour un historique de litiges
+export interface DisputeHistory {
+  totalDisputes: number;
+  resolvedInFavor: number;
+  resolvedAgainst: number;
+  openDisputes: number;
+  disputeSummary: Array<{
+    disputeId: string;
+    orderId: string;
+    status: string;
+    createdAt: string;
+    resolvedAt?: string;
+    isResolvedInFavor: boolean;
+  }>;
+}
+
+// Interface pour les statistiques de commande du freelancer
+export interface FreelancerOrderStats {
+  totalOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  inProgressOrders: number;
+  disputedOrders: number;
+  orderCompletionRate: number;
+  averageCompletionTime: number; // en jours
+  revenueStats: {
+    total: number;
+    lastMonth: number;
+    lastWeek: number;
+  };
+}
+
+// Interface pour un facteur de ranking
+export interface RankingFactor {
+  name: string;
+  weight: number; // poids dans le calcul du score (0-1)
+  description: string;
+  score: number; // score actuel du freelancer pour ce facteur (0-100)
+  trend: 'up' | 'down' | 'stable'; // tendance
+  lastUpdated: string;
 } 

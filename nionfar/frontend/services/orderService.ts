@@ -688,108 +688,66 @@ class OrderService {
   /**
    * Ouvrir un litige
    * @param orderId ID de la commande
-   * @param userId ID de l'utilisateur (client ou vendeur)
    * @param reason Raison du litige
    * @param details Détails du litige
+   * @param attachments Pièces jointes
    */
   async openDispute(
     orderId: string,
-    userId: string,
     reason: string,
-    details: string
-  ): Promise<{
-    success: boolean;
-    message?: string;
-  }> {
+    details: string,
+    attachments?: File[]
+  ): Promise<{ success: boolean; message?: string }> {
     try {
+      // Vérifications
+      if (!this.isUserLoggedIn()) {
+        return { success: false, message: 'Vous devez être connecté pour ouvrir un litige' };
+      }
+
       // Vérifier que la commande existe
-      const orderResponse = await fetch(`${this.apiUrl}/${orderId}`);
-      const order = await orderResponse.json();
-      
+      const order = await this.getOrderById(orderId);
       if (!order) {
-        return {
-          success: false,
-          message: 'Commande non trouvée'
-        };
+        return { success: false, message: 'Commande introuvable' };
+      }
+
+      // Vérifier que l'utilisateur est le client de la commande
+      const user = this.getCurrentUser();
+      if (order.client.id !== user.id) {
+        return { success: false, message: 'Seul le client peut ouvrir un litige' };
       }
       
-      // Vérifier que l'utilisateur est impliqué dans la commande
-      if (order.client.id !== userId && order.service.provider.id !== userId) {
-        return {
-          success: false,
-          message: 'Vous n\'êtes pas autorisé à ouvrir un litige pour cette commande'
-        };
+      // Vérifier que la commande est en statut adéquat
+      if (!this.canOpenDispute(order.status)) {
+        return { success: false, message: 'Impossible d\'ouvrir un litige avec ce statut de commande' };
       }
       
-      // Créer un nouveau litige
-      const dispute: Dispute = {
-        id: `DSP-${Date.now()}`,
+      // Vérifier que le client fournit soit une description détaillée, soit des pièces jointes
+      if ((!details || details.trim().length < 20) && (!attachments || attachments.length === 0)) {
+        return { 
+          success: false, 
+          message: 'Veuillez fournir soit une description détaillée du problème, soit des pièces jointes justificatives'
+        };
+      }
+
+      // Appeler le service de litiges
+      const disputeService = await import('./disputeService').then(m => m.default);
+      const result = await disputeService.onDisputeOpened(
         orderId,
-        initiatedBy: userId,
+        user.id,
         reason,
         details,
-        attachments: [],
-        status: 'ouvert',
-        createdAt: new Date().toISOString(),
-        updates: [
-          {
-            userId,
-            message: 'Litige ouvert',
-            createdAt: new Date().toISOString(),
-            type: 'status_change'
-          }
-        ]
-      };
+        attachments
+      );
       
-      // Mettre à jour la commande
-      const updatedOrder = {
-        ...order,
-        status: 'litige' as OrderStatus,
-        lastUpdatedAt: new Date().toISOString(),
-        dispute
-      };
+      if (result.success) {
+        // Mettre à jour le statut de la commande localement
+        this.updateLocalOrderStatus(orderId, 'DISPUTED');
+      }
       
-      // Appeler l'API pour mettre à jour la commande
-      await fetch(`${this.apiUrl}/${order.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updatedOrder)
-      });
-      
-      // Déterminer l'autre partie pour la notification
-      const otherPartyId = userId === order.client.id 
-        ? order.service.provider.id 
-        : order.client.id;
-      
-      // Notification à l'autre partie
-      await this.createNotification({
-        userId: otherPartyId,
-        title: 'Litige ouvert',
-        message: `Un litige a été ouvert pour la commande ${order.title}.`,
-        type: 'warning',
-        link: `/dashboard/orders/${order.id}`
-      });
-      
-      // Notification à l'équipe support (exemple)
-      await fetch('/api/admin/disputes', {
-        method: 'POST',
-        body: JSON.stringify({
-          dispute,
-          order: {
-            id: order.id,
-            title: order.title
-          }
-        })
-      });
-      
-      return {
-        success: true
-      };
+      return result;
     } catch (error) {
       console.error('Erreur lors de l\'ouverture du litige:', error);
-      return {
-        success: false,
-        message: 'Une erreur est survenue'
-      };
+      return { success: false, message: 'Une erreur est survenue lors de l\'ouverture du litige' };
     }
   }
   
@@ -835,7 +793,160 @@ class OrderService {
       return deadline.toISOString();
     }
   }
+
+  /**
+   * Vérifie si l'utilisateur est connecté
+   * @private
+   */
+  private isUserLoggedIn(): boolean {
+    // Simuler une vérification d'authentification
+    const user = this.getCurrentUser();
+    return !!user;
+  }
+
+  /**
+   * Récupère l'utilisateur actuellement connecté
+   * @private
+   */
+  private getCurrentUser(): User {
+    // Simuler la récupération de l'utilisateur connecté depuis le localStorage ou un contexte
+    // Dans une vraie implémentation, cela viendrait d'un contexte d'authentification
+    const storedUser = localStorage.getItem('current_user');
+    if (storedUser) {
+      return JSON.parse(storedUser);
+    }
+    
+    // Utilisateur fictif pour les tests
+    return {
+      id: 'USR-1234',
+      name: 'Utilisateur de test',
+      email: 'test@example.com',
+      role: 'client'
+    } as User;
+  }
+
+  /**
+   * Récupère une commande par son ID
+   * @param orderId ID de la commande
+   */
+  async getOrderById(orderId: string): Promise<Order | null> {
+    try {
+      // Simuler une requête API
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const response = await fetch(`${this.apiUrl}/${orderId}`);
+      if (!response.ok) {
+        return null;
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la commande:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Vérifie si une commande peut recevoir un litige
+   * @private
+   */
+  private canOpenDispute(orderStatus: OrderStatus): boolean {
+    // Une commande peut recevoir un litige si elle est livrée, en cours, ou terminée
+    return ['livré', 'en_cours', 'terminé'].includes(orderStatus);
+  }
+
+  /**
+   * Met à jour le statut d'une commande localement (sans appel API)
+   * Utile pour des mises à jour UI immédiates
+   * @private
+   */
+  private updateLocalOrderStatus(orderId: string, newStatus: string): void {
+    // Dans une vraie implémentation, cela pourrait mettre à jour un store local
+    console.log(`Mise à jour locale du statut de la commande ${orderId} : ${newStatus}`);
+    
+    // Émettre un événement pour les composants qui écoutent les changements
+    const event = new CustomEvent('order_status_update', {
+      detail: { orderId, status: newStatus }
+    });
+    window.dispatchEvent(event);
+  }
+
+  /**
+   * Récupère les statistiques de commande d'un freelancer
+   * @param freelancerId ID du freelancer
+   * @returns Statistiques des commandes du freelancer
+   */
+  async getFreelancerOrderStats(freelancerId: string): Promise<{
+    totalOrders: number;
+    completedOrders: number;
+    cancelledOrders: number;
+    inProgressOrders: number;
+    disputedOrders: number;
+    orderCompletionRate: number;
+    averageCompletionTime: number; // en jours
+    revenueStats: {
+      total: number;
+      lastMonth: number;
+      lastWeek: number;
+    };
+  }> {
+    try {
+      // Simuler un délai d'appel à l'API
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      // Dans une implémentation réelle, nous ferions un appel API
+      // pour récupérer ces données depuis la base de données
+      
+      // Générer des données simulées pour la démonstration
+      const totalOrders = 10 + Math.floor(Math.random() * 40); // Entre 10 et 50 commandes
+      const completedOrders = Math.floor(totalOrders * (0.7 + Math.random() * 0.25)); // Entre 70% et 95%
+      const cancelledOrders = Math.floor(totalOrders * (0.02 + Math.random() * 0.08)); // Entre 2% et 10%
+      const disputedOrders = Math.floor(totalOrders * (0.01 + Math.random() * 0.07)); // Entre 1% et 8%
+      const inProgressOrders = totalOrders - completedOrders - cancelledOrders;
+      
+      const orderCompletionRate = completedOrders / totalOrders;
+      const averageCompletionTime = 1 + Math.random() * 4; // Entre 1 et 5 jours
+      
+      // Statistiques de revenus
+      const avgOrderValue = 15000 + Math.random() * 35000; // Entre 15000 et 50000 FCFA
+      const totalRevenue = Math.round(completedOrders * avgOrderValue);
+      const lastMonthOrders = Math.floor(completedOrders * (0.1 + Math.random() * 0.2)); // Entre 10% et 30% du total
+      const lastWeekOrders = Math.floor(lastMonthOrders * (0.1 + Math.random() * 0.3)); // Entre 10% et 40% du mois
+      
+      return {
+        totalOrders,
+        completedOrders,
+        cancelledOrders,
+        inProgressOrders,
+        disputedOrders,
+        orderCompletionRate,
+        averageCompletionTime,
+        revenueStats: {
+          total: totalRevenue,
+          lastMonth: Math.round(lastMonthOrders * avgOrderValue),
+          lastWeek: Math.round(lastWeekOrders * avgOrderValue)
+        }
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques de commandes:', error);
+      return {
+        totalOrders: 0,
+        completedOrders: 0,
+        cancelledOrders: 0,
+        inProgressOrders: 0,
+        disputedOrders: 0,
+        orderCompletionRate: 0,
+        averageCompletionTime: 0,
+        revenueStats: {
+          total: 0,
+          lastMonth: 0,
+          lastWeek: 0
+        }
+      };
+    }
+  }
 }
 
-export const orderService = new OrderService();
+// Création d'une instance singleton du service
+const orderService = new OrderService();
 export default orderService; 

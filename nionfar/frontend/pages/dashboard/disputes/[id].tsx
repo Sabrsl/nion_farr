@@ -3,7 +3,7 @@ import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
-import { Dispute, Order, User } from '../../../types';
+import { Dispute, Order, User, ResolutionType } from '../../../types';
 import { 
   FiAlertTriangle, 
   FiCheckCircle, 
@@ -220,10 +220,10 @@ const DisputeDetailPage: NextPage = () => {
     
     setDispute({
       ...dispute,
-      status: 'résolu',
+      status: resolution === 'client' ? 'résolu_en_faveur_client' : 'résolu_en_faveur_vendeur',
       resolvedAt: new Date().toISOString(),
       resolvedBy: user.id,
-      resolution,
+      resolution: resolution === 'client' ? 'remboursement_total' : 'refus_du_litige' as ResolutionType,
       updates: [
         ...dispute.updates,
         {
@@ -393,7 +393,7 @@ const DisputeDetailPage: NextPage = () => {
                     </div>
                   </div>
 
-                  {dispute.status === 'résolu' && (
+                  {(dispute.status === 'résolu_en_faveur_client' || dispute.status === 'résolu_en_faveur_vendeur') && (
                     <div className="mb-6">
                       <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                         <h2 className="text-lg font-medium text-green-800 mb-2 flex items-center">
@@ -517,7 +517,7 @@ const DisputeDetailPage: NextPage = () => {
                         </form>
                       </div>
                     ) : (
-                      dispute.status === 'résolu' && (
+                      (dispute.status === 'résolu_en_faveur_client' || dispute.status === 'résolu_en_faveur_vendeur') && (
                         <div className="mt-6">
                           <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                             <p className="text-sm text-yellow-700">

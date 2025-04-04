@@ -93,11 +93,11 @@ const DisputesPage: NextPage = () => {
             reason: 'Retard excessif',
             details: 'La date limite de livraison est dépassée de 15 jours.',
             attachments: [],
-            status: 'résolu',
+            status: 'résolu_en_faveur_client',
             createdAt: '2023-09-05T09:45:00Z',
             resolvedAt: '2023-09-08T14:20:00Z',
             resolvedBy: 'admin-1',
-            resolution: 'client',
+            resolution: 'remboursement_total',
             updates: [
               {
                 userId: 'client-3',
@@ -153,19 +153,19 @@ const DisputesPage: NextPage = () => {
   const filteredDisputes = disputes.filter(dispute => {
     if (statusFilter === 'all') return true;
     if (statusFilter === 'open') return dispute.status === 'ouvert';
-    if (statusFilter === 'resolved') return dispute.status === 'résolu';
+    if (statusFilter === 'resolved') return dispute.status.startsWith('résolu_');
     return true;
   });
 
   const openDisputesCount = disputes.filter(d => d.status === 'ouvert').length;
   const recentlyResolvedCount = disputes.filter(d => 
-    d.status === 'résolu' && 
+    d.status.startsWith('résolu_') && 
     new Date(d.resolvedAt!).getTime() > new Date().getTime() - 7 * 24 * 60 * 60 * 1000
   ).length;
 
   // Calculate average resolution time in days
   const calculateAvgResolutionTime = () => {
-    const resolvedDisputes = disputes.filter(d => d.status === 'résolu');
+    const resolvedDisputes = disputes.filter(d => d.status.startsWith('résolu_'));
     if (resolvedDisputes.length === 0) return 'N/A';
     
     const totalDays = resolvedDisputes.reduce((acc, dispute) => {
@@ -193,9 +193,9 @@ const DisputesPage: NextPage = () => {
   const stats = {
     total: disputes.length,
     open: disputes.filter(d => d.status === 'ouvert').length,
-    resolved: disputes.filter(d => d.status === 'résolu').length,
+    resolved: disputes.filter(d => d.status.startsWith('résolu_')).length,
     recentlyResolved: disputes.filter(d => 
-      d.status === 'résolu' && 
+      d.status.startsWith('résolu_') && 
       new Date(d.resolvedAt as string) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     ).length,
     avgResolutionTime: "48 heures" // Calculé normalement à partir des données réelles

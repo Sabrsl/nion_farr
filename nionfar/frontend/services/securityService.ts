@@ -236,18 +236,141 @@ const securityService = {
   },
   
   /**
-   * Envoyer une alerte à l'administrateur
-   * @param alert - L'alerte à envoyer
-   * @returns Un objet indiquant si l'alerte a été envoyée avec succès
+   * Envoie une alerte administrative
+   * @param alert Détails de l'alerte à envoyer
    */
   async sendAdminAlert(alert: Omit<SecurityAlert, 'timestamp'>): Promise<{ success: boolean }> {
     // Simuler un appel API
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // En production, cette fonction enverrait une notification aux administrateurs
-    console.log('ALERTE SÉCURITÉ:', alert);
-    
+    console.log('Alerte de sécurité envoyée:', {
+      ...alert,
+      timestamp: new Date().toISOString()
+    });
+      
     return { success: true };
+  },
+
+  /**
+   * Récupère le statut de vérification d'un utilisateur
+   * @param userId ID de l'utilisateur
+   * @returns Statut de vérification et informations KYC
+   */
+  async getUserVerificationStatus(userId: string): Promise<{
+    isVerified: boolean;
+    verificationLevel: 'none' | 'basic' | 'full';
+    kycInfo: KycInfo;
+    lastVerificationDate?: string;
+    pendingDocuments: string[];
+    verificationHistory: Array<{
+      date: string;
+      action: string;
+      status: 'approved' | 'rejected' | 'pending';
+      notes?: string;
+    }>;
+  }> {
+    try {
+      // Simuler un appel au backend
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Récupérer les informations KYC existantes
+      const kycResponse = await this.verifyIdentity(userId);
+      const kycInfo = kycResponse.kycInfo;
+      
+      // Déterminer le niveau de vérification basé sur les informations KYC
+      let verificationLevel: 'none' | 'basic' | 'full' = 'none';
+      if (kycInfo.idVerified && kycInfo.addressVerified) {
+        verificationLevel = 'full';
+      } else if (kycInfo.emailVerified && kycInfo.phoneVerified) {
+        verificationLevel = 'basic';
+      }
+      
+      // Générer un historique de vérification simulé
+      const verificationHistory = [];
+      
+      if (kycInfo.emailVerified) {
+        const emailVerifDate = new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000);
+        verificationHistory.push({
+          date: emailVerifDate.toISOString(),
+          action: 'Vérification d\'email',
+          status: 'approved'
+        });
+      }
+      
+      if (kycInfo.phoneVerified) {
+        const phoneVerifDate = new Date(Date.now() - Math.random() * 150 * 24 * 60 * 60 * 1000);
+        verificationHistory.push({
+          date: phoneVerifDate.toISOString(),
+          action: 'Vérification de téléphone',
+          status: 'approved'
+        });
+      }
+      
+      if (kycInfo.idVerified) {
+        const idVerifDate = new Date(Date.now() - Math.random() * 120 * 24 * 60 * 60 * 1000);
+        verificationHistory.push({
+          date: idVerifDate.toISOString(),
+          action: 'Vérification d\'identité',
+          status: 'approved',
+          notes: 'Carte d\'identité valide'
+        });
+      }
+      
+      if (kycInfo.addressVerified) {
+        const addressVerifDate = new Date(Date.now() - Math.random() * 100 * 24 * 60 * 60 * 1000);
+        verificationHistory.push({
+          date: addressVerifDate.toISOString(),
+          action: 'Vérification d\'adresse',
+          status: 'approved',
+          notes: 'Facture d\'électricité acceptée'
+        });
+      }
+      
+      // Trier l'historique par date (du plus récent au plus ancien)
+      verificationHistory.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      
+      // Déterminer la date de dernière vérification
+      let lastVerificationDate = undefined;
+      if (verificationHistory.length > 0) {
+        lastVerificationDate = verificationHistory[0].date;
+      }
+      
+      // Documents en attente
+      const pendingDocuments = [];
+      if (!kycInfo.idVerified) {
+        pendingDocuments.push('Pièce d\'identité');
+      }
+      if (!kycInfo.addressVerified) {
+        pendingDocuments.push('Justificatif de domicile');
+      }
+      
+      return {
+        isVerified: verificationLevel === 'full',
+        verificationLevel,
+        kycInfo,
+        lastVerificationDate,
+        pendingDocuments,
+        verificationHistory
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération du statut de vérification:', error);
+      return {
+        isVerified: false,
+        verificationLevel: 'none',
+        kycInfo: {
+          userId: userId,
+          status: 'incomplete',
+          emailVerified: false,
+          phoneVerified: false,
+          idVerified: false,
+          addressVerified: false
+        },
+        pendingDocuments: ['Tous les documents requis'],
+        verificationHistory: []
+      };
+    }
   }
 };
 

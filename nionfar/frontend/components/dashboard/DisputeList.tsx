@@ -169,7 +169,7 @@ const DisputeList: React.FC<DisputeListProps> = ({ disputes, isAdmin = false }) 
                       <div className="mb-4 p-3 bg-green-50 rounded border border-green-200">
                         <h4 className="font-medium text-green-700 mb-1">Résolution:</h4>
                         <p className="text-green-600">
-                          Résolu en faveur du {dispute.resolution === 'vendeur' ? 'vendeur' : 'client'}
+                          Résolu en faveur du {dispute.resolution === 'refus_du_litige' ? 'vendeur' : 'client'}
                         </p>
                         <p className="text-green-600 text-xs mt-1">
                           {formatDate(dispute.resolvedAt)}

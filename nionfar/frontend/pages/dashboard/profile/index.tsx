@@ -23,9 +23,14 @@ import {
   FiFileText,
   FiImage,
   FiMapPin,
-  FiPhone
+  FiPhone,
+  FiAlertCircle,
+  FiInfo,
+  FiShield,
+  FiArrowRight
 } from 'react-icons/fi';
 import { freelancerStats, freelancerServices } from '../../../data/mockData';
+import securityService, { KycInfo } from '../../../services/securityService';
 
 const ProfilePage: NextPage = () => {
   const { user } = useAuth();
@@ -33,6 +38,7 @@ const ProfilePage: NextPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<FreelancerStats | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [kycInfo, setKycInfo] = useState<KycInfo | null>(null);
   const [profileForm, setProfileForm] = useState({
     username: '',
     email: '',
@@ -56,6 +62,16 @@ const ProfilePage: NextPage = () => {
             email: user.email || '',
             bio: user.bio || '',
           });
+          
+          // Charger les informations KYC
+          if (user.role === 'freelancer') {
+            try {
+              const kycResponse = await securityService.verifyIdentity(user.id);
+              setKycInfo(kycResponse.kycInfo);
+            } catch (error) {
+              console.error('Erreur lors du chargement des informations KYC:', error);
+            }
+          }
         }
         
         setIsLoading(false);
@@ -118,6 +134,39 @@ const ProfilePage: NextPage = () => {
     setIsLoading(false);
   };
 
+  // Rendre le badge de statut de vérification
+  const renderVerificationBadge = () => {
+    if (!kycInfo) return null;
+    
+    switch (kycInfo.status) {
+      case 'verified':
+        return (
+          <div className="flex items-center mt-2 text-green-700 bg-green-50 px-3 py-1 rounded-full text-sm border border-green-200">
+            <FiCheck className="mr-2" /> Compte vérifié
+          </div>
+        );
+      case 'pending':
+        return (
+          <div className="flex items-center mt-2 text-yellow-700 bg-yellow-50 px-3 py-1 rounded-full text-sm border border-yellow-200">
+            <FiInfo className="mr-2" /> Vérification en cours
+          </div>
+        );
+      case 'rejected':
+        return (
+          <div className="flex items-center mt-2 text-red-700 bg-red-50 px-3 py-1 rounded-full text-sm border border-red-200">
+            <FiAlertCircle className="mr-2" /> Vérification refusée
+          </div>
+        );
+      case 'incomplete':
+      default:
+        return (
+          <div className="flex items-center mt-2 text-gray-700 bg-gray-50 px-3 py-1 rounded-full text-sm border border-gray-200">
+            <FiShield className="mr-2" /> Compte non vérifié
+          </div>
+        );
+    }
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout title="Mon Profil | NionFar.sn">
@@ -161,6 +210,7 @@ const ProfilePage: NextPage = () => {
                     <p className="text-gray-500 mt-1 flex items-center">
                       <FiAward className="mr-2" /> {user?.level}
                     </p>
+                    {user?.role === 'freelancer' && renderVerificationBadge()}
                   </div>
                   <button
                     onClick={() => setEditMode(!editMode)}
@@ -244,6 +294,42 @@ const ProfilePage: NextPage = () => {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Informations de vérification pour freelancer */}
+                    {user?.role === 'freelancer' && kycInfo && (
+                      <div className="flex items-start">
+                        <FiShield className="mt-1 mr-3 text-gray-400" />
+                        <div>
+                          <div className="font-medium">Statut de vérification</div>
+                          <div className="mt-2 space-y-2">
+                            <div className={`flex items-center text-sm ${kycInfo.emailVerified ? 'text-green-600' : 'text-gray-500'}`}>
+                              {kycInfo.emailVerified ? <FiCheck className="mr-2" /> : <FiInfo className="mr-2" />}
+                              Email {kycInfo.emailVerified ? 'vérifié' : 'non vérifié'}
+                            </div>
+                            <div className={`flex items-center text-sm ${kycInfo.phoneVerified ? 'text-green-600' : 'text-gray-500'}`}>
+                              {kycInfo.phoneVerified ? <FiCheck className="mr-2" /> : <FiInfo className="mr-2" />}
+                              Téléphone {kycInfo.phoneVerified ? 'vérifié' : 'non vérifié'}
+                            </div>
+                            <div className={`flex items-center text-sm ${kycInfo.idVerified ? 'text-green-600' : 'text-gray-500'}`}>
+                              {kycInfo.idVerified ? <FiCheck className="mr-2" /> : <FiInfo className="mr-2" />}
+                              Identité {kycInfo.idVerified ? 'vérifiée' : 'non vérifiée'}
+                            </div>
+                            <div className={`flex items-center text-sm ${kycInfo.addressVerified ? 'text-green-600' : 'text-gray-500'}`}>
+                              {kycInfo.addressVerified ? <FiCheck className="mr-2" /> : <FiInfo className="mr-2" />}
+                              Adresse {kycInfo.addressVerified ? 'vérifiée' : 'non vérifiée'}
+                            </div>
+                            <div className="mt-2">
+                              <button
+                                onClick={() => router.push('/dashboard/settings/verification')}
+                                className="inline-flex items-center px-3 py-1 text-sm text-indigo-600 hover:text-indigo-800"
+                              >
+                                Gérer ma vérification <FiArrowRight className="ml-1" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">

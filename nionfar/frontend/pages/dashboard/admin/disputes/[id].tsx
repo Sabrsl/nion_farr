@@ -3,7 +3,7 @@ import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DashboardLayout from '../../../../components/layouts/DashboardLayout';
-import { Dispute, Order } from '../../../../types';
+import { Dispute, Order, ResolutionType } from '../../../../types';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { formatDate, timeAgo } from '../../../../utils/helpers';
 import { FiAlertTriangle, FiLoader, FiCheckCircle, FiXCircle, FiArrowLeft, FiInfo, FiUser, FiMessageSquare } from 'react-icons/fi';
@@ -19,7 +19,7 @@ const DisputeDetailPage: NextPage = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [resolution, setResolution] = useState<'vendeur' | 'client'>('client');
+  const [resolution, setResolution] = useState<ResolutionType>('remboursement_total');
   const [resolutionReason, setResolutionReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -143,13 +143,21 @@ const DisputeDetailPage: NextPage = () => {
       );
       
       if (result.success) {
+        // Déterminer le statut final selon le type de résolution
+        let statusFinal: 'résolu_en_faveur_client' | 'résolu_en_faveur_vendeur';
+        if (resolution === 'remboursement_total' || resolution === 'remboursement_partiel' || resolution === 'livraison_corrigée' || resolution === 'prolongation_délai' || resolution === 'arrangement_amiable') {
+          statusFinal = 'résolu_en_faveur_client';
+        } else {
+          statusFinal = 'résolu_en_faveur_vendeur';
+        }
+
         // Mettre à jour le litige localement pour simuler la mise à jour
         setDispute(prev => {
           if (!prev) return null;
           
           return {
             ...prev,
-            status: 'résolu',
+            status: statusFinal,
             resolvedAt: new Date().toISOString(),
             resolvedBy: user.id,
             resolution,
@@ -158,7 +166,7 @@ const DisputeDetailPage: NextPage = () => {
               ...(prev.updates || []),
               {
                 userId: user.id,
-                message: `Litige résolu en faveur du ${resolution === 'vendeur' ? 'vendeur' : 'client'}: ${resolutionReason}`,
+                message: `Litige résolu avec la décision: ${getResolutionLabel(resolution)}. Commentaire: ${resolutionReason}`,
                 createdAt: new Date().toISOString(),
                 type: 'resolution'
               }
@@ -192,6 +200,20 @@ const DisputeDetailPage: NextPage = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Fonction utilitaire pour obtenir le libellé d'une résolution
+  const getResolutionLabel = (resType: ResolutionType): string => {
+    const labels = {
+      'remboursement_partiel': 'Remboursement partiel',
+      'remboursement_total': 'Remboursement total',
+      'livraison_corrigée': 'Livraison corrigée',
+      'refus_du_litige': 'Refus du litige (paiement libéré au vendeur)',
+      'prolongation_délai': 'Prolongation de délai',
+      'arrangement_amiable': 'Arrangement amiable'
+    };
+    
+    return labels[resType] || resType;
   };
 
   const handleAddComment = async (e: React.FormEvent) => {
@@ -300,20 +322,25 @@ const DisputeDetailPage: NextPage = () => {
                           <h3 className="text-lg font-medium leading-6 text-gray-900">Détails du litige</h3>
                           <span 
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              dispute.status === 'ouvert' 
+                              dispute.status === 'ouvert' || dispute.status === 'en_attente_de_reponse' || dispute.status === 'en_traitement'
                                 ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' 
                                 : 'bg-green-100 text-green-800 border border-green-300'
                             }`}
                           >
-                            {dispute.status === 'ouvert' ? (
+                            {dispute.status === 'ouvert' || dispute.status === 'en_attente_de_reponse' || dispute.status === 'en_traitement' ? (
                               <>
                                 <FiAlertTriangle className="mr-1 h-4 w-4" />
-                                Ouvert
+                                {dispute.status === 'ouvert' ? 'Ouvert' : 
+                                 dispute.status === 'en_attente_de_reponse' ? 'En attente de réponse' : 
+                                 'En traitement'}
                               </>
                             ) : (
                               <>
                                 <FiCheckCircle className="mr-1 h-4 w-4" />
-                                Résolu
+                                {dispute.status === 'résolu_en_faveur_client' ? 'Résolu (client)' :
+                                 dispute.status === 'résolu_en_faveur_vendeur' ? 'Résolu (vendeur)' :
+                                 dispute.status === 'clos_automatiquement' ? 'Clos automatiquement' : 
+                                 'Refusé'}
                               </>
                             )}
                           </span>
@@ -344,12 +371,12 @@ const DisputeDetailPage: NextPage = () => {
                             </dd>
                           </div>
                           
-                          {dispute.status === 'résolu' && (
+                          {dispute.status.startsWith('résolu') && (
                             <>
                               <div className="sm:col-span-1">
                                 <dt className="text-sm font-medium text-gray-500">Résolu en faveur de</dt>
                                 <dd className="mt-1 text-sm text-gray-900">
-                                  {dispute.resolution === 'vendeur' ? 'Vendeur' : 'Client'}
+                                  {dispute.status === 'résolu_en_faveur_vendeur' ? 'Vendeur' : 'Client'}
                                 </dd>
                               </div>
                               <div className="sm:col-span-1">
@@ -512,30 +539,86 @@ const DisputeDetailPage: NextPage = () => {
                               <div className="mt-1 space-y-2">
                                 <div className="flex items-center">
                                   <input
-                                    id="resolution-client"
+                                    id="resolution-remboursement-total"
                                     name="resolution"
                                     type="radio"
                                     className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                                    checked={resolution === 'client'}
-                                    onChange={() => setResolution('client')}
+                                    checked={resolution === 'remboursement_total'}
+                                    onChange={() => setResolution('remboursement_total')}
                                     disabled={isSubmitting}
                                   />
-                                  <label htmlFor="resolution-client" className="ml-3 block text-sm font-medium text-gray-700">
-                                    En faveur du client (remboursement)
+                                  <label htmlFor="resolution-remboursement-total" className="ml-3 block text-sm font-medium text-gray-700">
+                                    En faveur du client (remboursement total)
                                   </label>
                                 </div>
                                 <div className="flex items-center">
                                   <input
-                                    id="resolution-vendeur"
+                                    id="resolution-remboursement-partiel"
                                     name="resolution"
                                     type="radio"
                                     className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                                    checked={resolution === 'vendeur'}
-                                    onChange={() => setResolution('vendeur')}
+                                    checked={resolution === 'remboursement_partiel'}
+                                    onChange={() => setResolution('remboursement_partiel')}
                                     disabled={isSubmitting}
                                   />
-                                  <label htmlFor="resolution-vendeur" className="ml-3 block text-sm font-medium text-gray-700">
-                                    En faveur du vendeur (paiement)
+                                  <label htmlFor="resolution-remboursement-partiel" className="ml-3 block text-sm font-medium text-gray-700">
+                                    En faveur du client (remboursement partiel)
+                                  </label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    id="resolution-refus"
+                                    name="resolution"
+                                    type="radio"
+                                    className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                                    checked={resolution === 'refus_du_litige'}
+                                    onChange={() => setResolution('refus_du_litige')}
+                                    disabled={isSubmitting}
+                                  />
+                                  <label htmlFor="resolution-refus" className="ml-3 block text-sm font-medium text-gray-700">
+                                    En faveur du vendeur (refus du litige)
+                                  </label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    id="resolution-livraison"
+                                    name="resolution"
+                                    type="radio"
+                                    className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                                    checked={resolution === 'livraison_corrigée'}
+                                    onChange={() => setResolution('livraison_corrigée')}
+                                    disabled={isSubmitting}
+                                  />
+                                  <label htmlFor="resolution-livraison" className="ml-3 block text-sm font-medium text-gray-700">
+                                    Livraison corrigée
+                                  </label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    id="resolution-delai"
+                                    name="resolution"
+                                    type="radio"
+                                    className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                                    checked={resolution === 'prolongation_délai'}
+                                    onChange={() => setResolution('prolongation_délai')}
+                                    disabled={isSubmitting}
+                                  />
+                                  <label htmlFor="resolution-delai" className="ml-3 block text-sm font-medium text-gray-700">
+                                    Prolongation de délai
+                                  </label>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    id="resolution-arrangement"
+                                    name="resolution"
+                                    type="radio"
+                                    className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                                    checked={resolution === 'arrangement_amiable'}
+                                    onChange={() => setResolution('arrangement_amiable')}
+                                    disabled={isSubmitting}
+                                  />
+                                  <label htmlFor="resolution-arrangement" className="ml-3 block text-sm font-medium text-gray-700">
+                                    Arrangement amiable
                                   </label>
                                 </div>
                               </div>

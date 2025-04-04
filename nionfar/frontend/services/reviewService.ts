@@ -248,6 +248,118 @@ const reviewService = {
       rating,
       completedOrders
     };
+  },
+
+  /**
+   * Calcule un score de fiabilité pour un freelancer en prenant en compte l'historique des litiges
+   * @param userId - ID du freelancer
+   * @returns Un score entre 0 et 100, et des détails sur le calcul
+   */
+  async calculateReliabilityScore(userId: string): Promise<{ 
+    score: number;
+    details: {
+      totalOrders: number;
+      disputeCount: number;
+      resolvedDisputesInFavor: number;
+      disputeRatio: number;
+      ratingScore: number;
+      completionScore: number;
+      responseTimeScore: number;
+      verificationBonus: number;
+    }
+  }> {
+    try {
+      // Simuler un appel API pour récupérer les statistiques du freelancer
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Obtenir les services depuis un service fictif (à remplacer par un appel API réel)
+      const orderService = await import('./orderService').then(m => m.default);
+      const disputeService = await import('./disputeService').then(m => m.default);
+      const securityService = await import('./securityService').then(m => m.default);
+      
+      // Récupérer le nombre total de commandes
+      const orderStats = await orderService.getFreelancerOrderStats(userId);
+      const totalOrders = orderStats.totalOrders || 0;
+      const completedOrders = orderStats.completedOrders || 0;
+      
+      // Récupérer l'historique des litiges
+      const disputeHistory = await disputeService.getFreelancerDisputeHistory(userId);
+      const disputeCount = disputeHistory.totalDisputes || 0;
+      const resolvedDisputesInFavor = disputeHistory.resolvedInFavor || 0;
+      const resolvedDisputesAgainst = disputeHistory.resolvedAgainst || 0;
+      
+      // Récupérer les évaluations
+      const reviews = await this.getUserReviews(userId, true, 100);
+      const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / (reviews.length || 1);
+      
+      // Récupérer le statut de vérification
+      const verificationStatus = await securityService.getUserVerificationStatus(userId);
+      
+      // Calculer les scores individuels
+      // 1. Ratio de litiges (moins de litiges = meilleur score)
+      const disputeRatio = totalOrders > 0 ? disputeCount / totalOrders : 0;
+      const disputeScore = Math.max(0, 25 - (disputeRatio * 100)); // Max 25 points
+      
+      // 2. Résolution des litiges (plus de résolutions en faveur = meilleur score)
+      const disputeResolutionRatio = disputeCount > 0 
+        ? resolvedDisputesInFavor / disputeCount 
+        : 1; // Si pas de litiges, ratio parfait
+      const disputeResolutionScore = 15 * disputeResolutionRatio; // Max 15 points
+      
+      // 3. Évaluations (sur 30 points)
+      const ratingScore = (averageRating / 5) * 30;
+      
+      // 4. Taux d'achèvement des commandes (sur 20 points)
+      const completionRatio = totalOrders > 0 ? completedOrders / totalOrders : 0;
+      const completionScore = completionRatio * 20;
+      
+      // 5. Temps de réponse (sur 5 points)
+      // Fictif pour le moment, à remplacer par une vraie logique
+      const responseTimeScore = Math.random() * 5;
+      
+      // 6. Bonus de vérification (sur 5 points)
+      const verificationBonus = verificationStatus.isVerified ? 5 : 0;
+      
+      // Calculer le score total (maximum 100 points)
+      const totalScore = Math.min(100, Math.round(
+        disputeScore + 
+        disputeResolutionScore + 
+        ratingScore + 
+        completionScore + 
+        responseTimeScore + 
+        verificationBonus
+      ));
+      
+      return {
+        score: totalScore,
+        details: {
+          totalOrders,
+          disputeCount,
+          resolvedDisputesInFavor,
+          disputeRatio,
+          ratingScore,
+          completionScore,
+          responseTimeScore,
+          verificationBonus
+        }
+      };
+    } catch (error) {
+      console.error('Erreur lors du calcul du score de fiabilité:', error);
+      // En cas d'erreur, retourner un score par défaut
+      return {
+        score: 50,
+        details: {
+          totalOrders: 0,
+          disputeCount: 0,
+          resolvedDisputesInFavor: 0,
+          disputeRatio: 0,
+          ratingScore: 0,
+          completionScore: 0,
+          responseTimeScore: 0,
+          verificationBonus: 0
+        }
+      };
+    }
   }
 };
 

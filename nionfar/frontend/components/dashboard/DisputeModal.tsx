@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { FiX, FiAlertTriangle, FiInfo } from 'react-icons/fi';
+import { FiX, FiAlertTriangle, FiInfo, FiUpload, FiFile, FiTrash } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import disputeService from '../../services/disputeService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,6 +21,7 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
   const { user } = useAuth();
   const [reason, setReason] = useState<string>('');
   const [details, setDetails] = useState<string>('');
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +38,9 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
       return;
     }
     
-    if (!details || details.length < 20) {
-      setError('Veuillez décrire le problème en détail (au moins 20 caractères)');
+    // Vérifier qu'il y a soit une description détaillée, soit des pièces jointes
+    if ((!details || details.length < 20) && attachments.length === 0) {
+      setError('Veuillez soit décrire le problème en détail (au moins 20 caractères), soit joindre une ou plusieurs pièces justificatives');
       return;
     }
     
@@ -50,13 +52,15 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
         orderId,
         user.id,
         reason,
-        details
+        details,
+        attachments
       );
       
       if (result.success) {
         toast.success('Votre litige a été ouvert avec succès');
         setReason('');
         setDetails('');
+        setAttachments([]);
         onDisputeSubmitted();
       } else {
         setError(result.message || 'Une erreur est survenue lors de l\'ouverture du litige');
@@ -67,6 +71,33 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      // Limiter à 5 fichiers
+      if (attachments.length + e.target.files.length > 5) {
+        setError('Vous ne pouvez pas joindre plus de 5 fichiers');
+        return;
+      }
+      
+      // Vérifier la taille de chaque fichier (max 5 MB)
+      const maxSize = 5 * 1024 * 1024; // 5 MB
+      const newFiles = Array.from(e.target.files);
+      
+      const oversizedFiles = newFiles.filter(file => file.size > maxSize);
+      if (oversizedFiles.length > 0) {
+        setError(`Le(s) fichier(s) ${oversizedFiles.map(f => f.name).join(', ')} dépasse(nt) la taille maximale de 5 Mo`);
+        return;
+      }
+      
+      setAttachments(prev => [...prev, ...newFiles]);
+      setError(null);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const disputeReasons = [
@@ -127,6 +158,7 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
                   <p className="text-sm text-yellow-700">
                     L'ouverture d'un litige est une action sérieuse qui peut entraîner la suspension
                     de la commande. Cela doit être fait uniquement en cas de problème grave.
+                    <strong className="block mt-1">Important</strong>: Vous devez fournir soit une description détaillée, soit des pièces jointes pour justifier votre litige.
                   </p>
                 </div>
               </div>
@@ -150,14 +182,14 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
                   >
                     <option value="">Sélectionnez un motif</option>
                     {disputeReasons.map(reason => (
-                      <option key={reason.id} value={reason.id}>{reason.label}</option>
+                      <option key={reason.id} value={reason.label}>{reason.label}</option>
                     ))}
                   </select>
                 </div>
                 
                 <div className="mb-4">
                   <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">
-                    Description détaillée du problème *
+                    Description détaillée du problème
                   </label>
                   <textarea
                     id="details"
@@ -169,8 +201,63 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
                     disabled={isSubmitting}
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Minimum 20 caractères. Soyez précis et fournissez tous les détails nécessaires.
+                    Minimum 20 caractères si vous ne fournissez pas de pièces jointes. Soyez précis.
                   </p>
+                </div>
+                
+                {/* Section d'upload de fichiers */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pièces justificatives
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <div className="space-y-1 text-center">
+                      <FiUpload className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex text-sm text-gray-600">
+                        <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                          <span>Uploader des fichiers</span>
+                          <input
+                            id="file-upload"
+                            name="file-upload"
+                            type="file"
+                            className="sr-only"
+                            multiple
+                            onChange={handleFileChange}
+                            disabled={isSubmitting || attachments.length >= 5}
+                          />
+                        </label>
+                        <p className="pl-1">ou glisser-déposer</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, PDF jusqu'à 5 Mo (max 5 fichiers)
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Liste des fichiers attachés */}
+                  {attachments.length > 0 && (
+                    <div className="mt-2">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Fichiers attachés:</h4>
+                      <ul className="space-y-2">
+                        {attachments.map((file, index) => (
+                          <li key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                            <div className="flex items-center">
+                              <FiFile className="h-4 w-4 mr-2 text-gray-500" />
+                              <span className="text-sm text-gray-700 truncate max-w-xs">{file.name}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(index)}
+                              className="text-red-500 hover:text-red-700"
+                              disabled={isSubmitting}
+                            >
+                              <FiTrash className="h-4 w-4" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex justify-end">
