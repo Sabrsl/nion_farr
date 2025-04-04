@@ -26,7 +26,7 @@ const Login: NextPage = () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       
       // Rediriger vers le tableau de bord (dans un vrai projet, cela se ferait après authentification réussie)
-      window.location.href = '/tableau-de-bord';
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Erreur de connexion:', error);
       setErrorMessage('Identifiants incorrects. Veuillez réessayer.');
