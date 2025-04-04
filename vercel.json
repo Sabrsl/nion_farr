@@ -1,5 +1,5 @@
 {
   "version": 2,
   "outputDirectory": "nionfar/frontend/.next",
-  "buildCommand": "cd nionfar/frontend && npm install && npm run build"
+  "buildCommand": "cd nionfar/frontend && npm install --legacy-peer-deps && npm run build"
 } 
