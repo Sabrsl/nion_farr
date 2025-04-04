@@ -87,6 +87,23 @@ class WithdrawalService {
   }
   
   /**
+   * Vérifie si le compte de l'utilisateur est vérifié
+   * @private
+   */
+  private async isAccountVerified(userId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/users/${userId}/verification-status`);
+      if (!response.ok) return false;
+      
+      const data = await response.json();
+      return data.status === 'verified';
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut du compte:', error);
+      return false;
+    }
+  }
+  
+  /**
    * Vérifie l'éligibilité au retrait
    * @param userId ID de l'utilisateur
    */
@@ -95,6 +112,15 @@ class WithdrawalService {
     reason?: string;
   }> {
     try {
+      // 0. Vérifier que le compte est vérifié
+      const isVerified = await this.isAccountVerified(userId);
+      if (!isVerified) {
+        return {
+          eligible: false,
+          reason: 'Votre compte doit être vérifié pour effectuer des retraits. Veuillez compléter le processus de vérification dans les paramètres de votre compte.'
+        };
+      }
+      
       // 1. Vérifier qu'il n'y a pas eu de retrait dans les dernières 24h
       const lastWithdrawal = await this.getLastWithdrawal(userId);
       if (lastWithdrawal) {
@@ -124,7 +150,7 @@ class WithdrawalService {
       if (hasActiveDispute) {
         return {
           eligible: false,
-          reason: 'Vous avez un litige actif. Les retraits sont temporairement bloques jusqu\'a resolution.'
+          reason: 'Vous avez un litige actif. Les retraits sont temporairement bloqués jusqu\'à résolution.'
         };
       }
       
@@ -425,4 +451,6 @@ class WithdrawalService {
   }
 }
 
-export default new WithdrawalService(); 
+// Exporter une instance unique du service
+const withdrawalService = new WithdrawalService();
+export default withdrawalService;

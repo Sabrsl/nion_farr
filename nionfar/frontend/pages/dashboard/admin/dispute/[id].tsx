@@ -7,7 +7,7 @@ import DisputeLogViewer from '../../../../components/dashboard/DisputeLogViewer'
 import disputeService from '../../../../services/disputeService';
 import orderService from '../../../../services/orderService';
 import disputeLogService from '../../../../services/disputeLogService';
-import DashboardLayout from '../../../../layouts/DashboardLayout';
+import DashboardLayout from '../../../../components/dashboard/DashboardLayout';
 import { toast } from 'react-toastify';
 import { FiMessageCircle, FiRefreshCw, FiDownload } from 'react-icons/fi';
 

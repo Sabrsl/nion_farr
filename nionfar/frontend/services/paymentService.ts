@@ -158,9 +158,8 @@ class PaymentService {
   
   /**
    * Crée une transaction pour la commission de la plateforme
-   * @private
    */
-  private async createPlatformTransaction(amount: number, orderId: string): Promise<void> {
+  async createPlatformTransaction(amount: number, orderId: string): Promise<void> {
     try {
       await fetch('/api/transactions/platform', {
         method: 'POST',
@@ -236,6 +235,60 @@ class PaymentService {
       });
     } catch (error) {
       console.error('Erreur lors de l\'envoi de la notification:', error);
+    }
+  }
+
+  /**
+   * Vérifie si un paiement est valide et complet
+   * @param paymentId ID du paiement à vérifier
+   * @returns Statut de la vérification du paiement
+   */
+  async verifyPaymentStatus(paymentId: string): Promise<{
+    isValid: boolean;
+    status: string;
+    message?: string;
+  }> {
+    try {
+      // Simuler un appel à l'API de paiement
+      const response = await fetch(`${this.apiUrl}/${paymentId}/status`);
+      
+      if (!response.ok) {
+        return {
+          isValid: false,
+          status: 'error',
+          message: 'Erreur lors de la vérification du paiement'
+        };
+      }
+      
+      const paymentData = await response.json();
+      
+      // Vérifier le statut du paiement
+      if (paymentData.status === 'validé' || paymentData.status === 'completed') {
+        return {
+          isValid: true,
+          status: 'success',
+          message: 'Paiement validé'
+        };
+      } else if (paymentData.status === 'en_attente' || paymentData.status === 'pending') {
+        return {
+          isValid: false,
+          status: 'pending',
+          message: 'Paiement en cours de traitement'
+        };
+      } else {
+        return {
+          isValid: false,
+          status: 'failed',
+          message: paymentData.failureReason || 'Échec du paiement'
+        };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut du paiement:', error);
+      return {
+        isValid: false,
+        status: 'error',
+        message: 'Erreur technique lors de la vérification du paiement'
+      };
     }
   }
 }

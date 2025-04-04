@@ -102,6 +102,7 @@ class OrderService {
     order?: Order;
     message?: string;
     paymentUrl?: string;
+    paymentId?: string;
   }> {
     try {
       // 1. Vérifier la disponibilité du service
@@ -130,7 +131,23 @@ class OrderService {
         };
       }
       
-      // 3. Créer la commande avec statut "en_attente"
+      // 3. Vérifier que le paiement est bien effectué (ou initié pour le cas de l'intégration simulée)
+      const paymentService = (await import('./paymentService')).default;
+      if (paymentResponse.paymentId) {
+        const paymentStatus = await paymentService.verifyPaymentStatus(paymentResponse.paymentId);
+        
+        // Si le paiement n'est pas validé, on retourne l'URL de paiement pour redirection
+        if (!paymentStatus.isValid && paymentStatus.status !== 'pending') {
+          return {
+            success: false,
+            message: 'Le paiement doit être complété avant de créer la commande. ' + (paymentStatus.message || ''),
+            paymentUrl: paymentResponse.paymentUrl,
+            paymentId: paymentResponse.paymentId
+          };
+        }
+      }
+      
+      // 4. Créer la commande avec statut "en_attente"
       const order: Partial<Order> = {
         title: serviceCheck.service!.title,
         service: serviceCheck.service!,
@@ -165,6 +182,7 @@ class OrderService {
         success: true,
         order: createdOrder,
         paymentUrl: paymentResponse.paymentUrl,
+        paymentId: paymentResponse.paymentId,
         message: 'Commande créée avec succès. Veuillez compléter le paiement pour finaliser votre commande.'
       };
     } catch (error) {
@@ -587,14 +605,21 @@ class OrderService {
         body: JSON.stringify(updatedOrder)
       });
       
-      // Transférer les fonds en attente au vendeur (avec période de grâce)
-      await this.transferFundsToSeller(order.id, order.service.provider.id, order.price, true);
+      // Transférer les fonds au vendeur après déduction de la commission
+      const paymentService = (await import('./paymentService')).default;
+      const { platformFee, sellerAmount } = paymentService.calculatePlatformFee(order.price);
+      
+      // Transférer le montant net (après commission) au vendeur avec période de grâce
+      await this.transferFundsToSeller(order.id, order.service.provider.id, sellerAmount, true);
+      
+      // Enregistrer la commission dans le wallet de la plateforme
+      await paymentService.createPlatformTransaction(platformFee, order.id);
       
       // Notification au vendeur
       await this.createNotification({
         userId: order.service.provider.id,
         title: 'Commande terminée',
-        message: `Le client a approuvé la commande ${order.title}. Les fonds seront disponibles après la période de grâce.`,
+        message: `Le client a approuvé la commande ${order.title}. Les fonds (${sellerAmount} FCFA, après déduction de la commission de ${platformFee} FCFA) seront disponibles après la période de grâce.`,
         type: 'success',
         link: `/dashboard/orders/${order.id}`
       });
@@ -705,7 +730,28 @@ class OrderService {
           // Si la deadline de validation (3 jours) est dépassée
           if (validationDeadline < now) {
             // Validation automatique de la commande
-            await this.completeOrder(order.id, order.client.id);
+            const updatedOrder = {
+              ...order,
+              status: 'terminée' as OrderStatus,
+              lastUpdatedAt: now.toISOString(),
+              deliveryValidationDeadline: null
+            };
+            
+            // Appeler l'API pour mettre à jour la commande
+            await fetch(`${this.apiUrl}/${order.id}`, {
+              method: 'PUT',
+              body: JSON.stringify(updatedOrder)
+            });
+            
+            // Calculer et traiter la commission
+            const paymentService = (await import('./paymentService')).default;
+            const { platformFee, sellerAmount } = paymentService.calculatePlatformFee(order.price);
+            
+            // Transférer le montant net au vendeur
+            await this.transferFundsToSeller(order.id, order.service.provider.id, sellerAmount, true);
+            
+            // Enregistrer la commission dans le wallet de la plateforme
+            await paymentService.createPlatformTransaction(platformFee, order.id);
             
             // Notification au client
             await this.createNotification({
@@ -720,7 +766,7 @@ class OrderService {
             await this.createNotification({
               userId: order.service.provider.id,
               title: 'Commande validée automatiquement',
-              message: `La commande ${order.title} a été automatiquement validée car le client n'a pas pris d'action dans les 3 jours suivant la livraison.`,
+              message: `La commande ${order.title} a été automatiquement validée car le client n'a pas pris d'action dans les 3 jours suivant la livraison. Les fonds (${sellerAmount} FCFA, après déduction de la commission de ${platformFee} FCFA) seront disponibles après la période de grâce.`,
               type: 'success',
               link: `/dashboard/orders/${order.id}`
             });

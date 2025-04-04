@@ -253,16 +253,29 @@ export interface Transaction {
 
 export interface Withdrawal {
   id: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
   amount: number;
-  status: 'pending' | 'completed' | 'failed';
   method: 'bank_transfer' | 'mobile_money';
   accountDetails: {
     type: string;
     number: string;
     name: string;
   };
+  status: 'en_attente' | 'validé' | 'rejeté';
   createdAt: string;
-  completedAt?: string;
+  processedAt?: string;
+  processedBy?: string;
+  rejectionReason?: string;
+  transactionDetails?: {
+    reference: string;
+    processedAt: string;
+    notes?: string;
+  };
 }
 
 export interface Deliverable {
