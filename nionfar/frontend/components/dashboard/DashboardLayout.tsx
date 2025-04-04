@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -15,12 +15,31 @@ import {
   FiPlusCircle,
   FiBell,
   FiUser,
-  FiChevronDown
+  FiChevronDown,
+  FiArrowUp,
+  FiPackage,
+  FiCreditCard,
+  FiHeart,
+  FiFileText,
+  FiActivity,
+  FiAlertTriangle,
+  FiBriefcase,
+  FiAlertCircle,
+  FiHelpCircle
 } from 'react-icons/fi';
+import { IconType } from 'react-icons';
 
 interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
+}
+
+// Définir l'interface pour les éléments de navigation
+interface NavItem {
+  name: string;
+  href: string;
+  icon: IconType;
+  badge?: number;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
@@ -30,19 +49,41 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    // Check initial
+    checkMobile();
+    
+    // Add event listener
+    window.addEventListener('resize', checkMobile);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   const isActive = (path: string) => {
     return router.pathname === path || router.pathname.startsWith(path);
   };
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { name: 'Tableau de bord', href: '/dashboard', icon: FiHome },
-    { name: 'Commandes', href: '/dashboard/orders', icon: FiShoppingBag },
-    { name: 'Messages', href: '/dashboard/messages', icon: FiMessageSquare },
-    { name: 'Avis', href: '/dashboard/reviews', icon: FiStar },
-    { name: 'Revenus', href: '/dashboard/earnings', icon: FiDollarSign },
+    { name: 'Mes commandes', href: '/dashboard/orders', icon: FiShoppingBag },
+    { name: 'Mes services', href: '/dashboard/services', icon: FiBriefcase },
+    { name: 'Messagerie', href: '/dashboard/messages', icon: FiMessageSquare, badge: 3 },
+    { name: 'Évaluations', href: '/dashboard/reviews', icon: FiStar },
+    { name: 'Litiges', href: '/dashboard/disputes', icon: FiAlertCircle, badge: 1 },
+    { name: 'Mes gains', href: '/dashboard/earnings', icon: FiDollarSign },
+    { name: 'Retrait', href: '/dashboard/earnings/withdraw', icon: FiCreditCard },
     { name: 'Paramètres', href: '/dashboard/settings', icon: FiSettings },
+    { name: 'Support', href: '/dashboard/support', icon: FiHelpCircle },
   ];
 
   return (
@@ -51,110 +92,173 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <title>{title}</title>
         <meta name="description" content="Tableau de bord freelance NionFar" />
         <link rel="icon" href="/favicon.ico" />
+        <style jsx global>{`
+          .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          
+          .sidebar-transition {
+            transition: width 0.4s ease-in-out, transform 0.4s ease-in-out;
+          }
+          
+          .icon-transition {
+            transition: all 0.3s ease-in-out;
+          }
+          
+          .opacity-transition {
+            transition: opacity 0.35s ease-in-out;
+          }
+        `}</style>
       </Head>
 
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 md:w-72 lg:w-80 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen lg:z-auto`}>
-        <div className="flex items-center justify-between h-16 px-4 lg:px-6 border-b border-gray-200">
-          <Link href="/" className="flex items-center">
-            <span className="text-xl font-bold text-indigo-600">
-              NionFar<span className="text-violet-500">.sn</span>
-            </span>
-          </Link>
-          <button 
-            className="p-1 text-gray-500 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <FiX className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="p-4 lg:p-6">
-          <div className="mb-6">
-            <div className="flex items-center mb-3">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 mr-3 bg-indigo-100 rounded-full flex items-center justify-center">
-                <FiUser className="w-5 h-5 lg:w-6 lg:h-6 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-sm lg:text-base font-medium text-gray-900">Amadou Diop</p>
-                <p className="text-xs lg:text-sm text-gray-500">Freelance - Niveau 2</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between bg-indigo-50 p-2 lg:p-3 rounded-lg">
-              <div className="text-sm">
-                <p className="text-gray-500 text-xs lg:text-sm">Solde disponible</p>
-                <p className="font-semibold text-gray-900 lg:text-base">120 000 FCFA</p>
-              </div>
-              <Link 
-                href="/dashboard/earnings/withdraw" 
-                className="text-xs lg:text-sm text-indigo-600 font-medium hover:text-indigo-800"
-              >
-                Retirer →
-              </Link>
-            </div>
+      {/* Sidebar container with improved transitions */}
+      <div 
+        className={`fixed inset-y-0 left-0 z-50 lg:static 
+          sidebar-transition
+          ${isMobile ? 'w-72' : 'w-16 group hover:w-72'} 
+          lg:h-screen overflow-hidden
+          ${sidebarOpen ? 'translate-x-0' : isMobile ? '-translate-x-full' : 'translate-x-0'}`}
+      >
+        {/* Actual sidebar content with fixed width - this slides inside the container */}
+        <div className="h-full bg-white shadow-lg overflow-hidden w-full">
+          <div className="flex items-center justify-between h-16 px-3 lg:px-4 border-b border-gray-200">
+            <Link href="/" className="flex items-center">
+              <span className="text-xl font-bold text-indigo-600">
+                <span className="lg:group-hover:hidden">N<span className="text-violet-500">F</span></span>
+                <span className="hidden lg:group-hover:inline opacity-transition">NionFar<span className="text-violet-500">.sn</span></span>
+              </span>
+            </Link>
+            <button 
+              className="p-1 text-gray-500 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <FiX className="w-6 h-6" />
+            </button>
           </div>
 
-          <nav className="space-y-1.5">
-            {navItems.map((item) => (
+          <div className="p-3 lg:p-4">
+            {/* User info - simplified */}
+            <div className="mb-6 mt-2">
+              <div className="flex items-center">
+                <div className="w-8 h-8 lg:w-10 lg:h-10 flex-shrink-0 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <FiUser className="w-4 h-4 lg:w-5 lg:h-5 text-indigo-600" />
+                </div>
+                <div className="ml-3 lg:opacity-0 lg:group-hover:opacity-100 opacity-transition whitespace-nowrap overflow-hidden">
+                  <p className="text-sm font-medium text-gray-900">Amadou Diop</p>
+                  <p className="text-xs text-gray-500">Freelance - Niveau 2</p>
+                </div>
+              </div>
+
+              {/* Balance card - only show on hover */}
+              <div className="hidden lg:block lg:opacity-0 lg:group-hover:opacity-100 opacity-transition mt-4">
+                <div className="flex items-center justify-between bg-indigo-50 p-2 rounded-lg">
+                  <div className="text-sm">
+                    <p className="text-gray-500 text-xs">Solde disponible</p>
+                    <p className="font-semibold text-gray-900">120 000 FCFA</p>
+                  </div>
+                  <Link 
+                    href="/dashboard/earnings/withdraw" 
+                    className="text-xs text-indigo-600 font-medium hover:text-indigo-800"
+                  >
+                    Retirer →
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation links - with improved spacing and transitions */}
+            <nav className="space-y-0.5">
+              {navItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center rounded-lg py-2 text-sm font-medium icon-transition
+                    ${isActive(item.href) 
+                      ? 'bg-indigo-50 text-indigo-600' 
+                      : 'text-gray-700 hover:bg-gray-100'}`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <div className="min-w-[40px] flex justify-center items-center">
+                    <item.icon
+                      className={`h-5 w-5 icon-transition
+                        ${isActive(item.href) ? 'text-indigo-500' : 'text-gray-500 group-hover:text-indigo-500'}`}
+                    />
+                  </div>
+                  <span className="lg:opacity-0 lg:group-hover:opacity-100 opacity-transition whitespace-nowrap truncate">
+                    {item.name}
+                  </span>
+                  {item.badge && (
+                    <span className="ml-auto bg-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full text-xs">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Create service button - more compact */}
+            <div className="pt-4 mt-4 border-t border-gray-200">
               <Link
-                key={item.name}
-                href={item.href}
-                className={`group flex items-center px-3 py-2.5 lg:py-3 text-sm lg:text-base font-medium rounded-lg ${
-                  isActive(item.href)
-                    ? 'bg-indigo-50 text-indigo-600'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                href="/dashboard/services/new"
+                className="flex items-center rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-all"
               >
-                <item.icon
-                  className={`mr-3 h-5 w-5 lg:h-6 lg:w-6 ${
-                    isActive(item.href) ? 'text-indigo-500' : 'text-gray-500 group-hover:text-gray-600'
-                  }`}
-                />
-                {item.name}
+                <div className="min-w-[40px] flex justify-center items-center py-2">
+                  <FiPlusCircle className="w-5 h-5" />
+                </div>
+                <span className="lg:opacity-0 lg:group-hover:opacity-100 opacity-transition whitespace-nowrap truncate pr-3 py-2">
+                  Nouveau service
+                </span>
               </Link>
-            ))}
-          </nav>
-
-          <div className="pt-6 mt-6 border-t border-gray-200">
-            <Link
-              href="/dashboard/services/new"
-              className="flex items-center justify-center px-4 py-2.5 lg:py-3 text-sm lg:text-base font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm"
-            >
-              <FiPlusCircle className="w-5 h-5 lg:w-6 lg:h-6 mr-2" />
-              Créer un service
-            </Link>
-          </div>
-          
-          <div className="pt-6 mt-6 border-t border-gray-200">
-            <Link 
-              href="/logout" 
-              className="flex items-center px-3 py-2.5 lg:py-3 text-sm lg:text-base font-medium text-gray-700 rounded-lg hover:bg-gray-100"
-            >
-              <FiLogOut className="w-5 h-5 lg:w-6 lg:h-6 mr-3 text-gray-500" />
-              Déconnexion
-            </Link>
+            </div>
+            
+            {/* Logout button - at the bottom */}
+            <div className="pt-4 mt-4 border-t border-gray-200">
+              <Link 
+                href="/logout" 
+                className="flex items-center rounded-lg py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 icon-transition"
+              >
+                <div className="min-w-[40px] flex justify-center items-center">
+                  <FiLogOut className="w-5 h-5 text-gray-500" />
+                </div>
+                <span className="lg:opacity-0 lg:group-hover:opacity-100 opacity-transition whitespace-nowrap truncate">
+                  Déconnexion
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen lg:pl-0">
+      <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
         <header className="sticky top-0 z-10 flex items-center justify-between h-12 sm:h-14 px-3 sm:px-4 bg-white border-b border-gray-200 shadow-sm md:px-6">
           <button
-            className="p-1 text-gray-500 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 lg:hidden"
+            className="p-1.5 text-gray-500 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 lg:hidden"
             onClick={() => setSidebarOpen(true)}
+            aria-label="Ouvrir le menu"
           >
             <FiMenu className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
+
+          {/* Logo au centre sur mobile */}
+          <div className="lg:hidden flex items-center mx-auto absolute left-1/2 transform -translate-x-1/2">
+            <span className="text-lg font-bold text-indigo-600">
+              NionFar<span className="text-violet-500">.sn</span>
+            </span>
+          </div>
 
           <div className="flex items-center ml-auto space-x-3 sm:space-x-4">
             {/* Notifications */}
@@ -226,6 +330,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Bouton flottant de retour en haut (mobile uniquement) */}
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="fixed bottom-20 right-6 p-3 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors lg:hidden z-10"
+              aria-label="Retour en haut"
+            >
+              <FiArrowUp className="h-5 w-5" />
+            </button>
           </div>
         </header>
 

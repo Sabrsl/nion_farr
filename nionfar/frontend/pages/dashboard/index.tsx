@@ -22,10 +22,13 @@ import {
   FiFilter,
   FiActivity,
   FiXCircle,
-  FiTrendingDown
+  FiTrendingDown,
+  FiAlertTriangle,
+  FiChevronRight
 } from 'react-icons/fi';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { FreelancerStats, Order, Notification } from '../../types';
+import { useRouter } from 'next/router';
 
 const Dashboard: NextPage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +37,7 @@ const Dashboard: NextPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeChartView, setActiveChartView] = useState('views');
   const [timeFilter, setTimeFilter] = useState('30days');
+  const router = useRouter();
   
   // Formater les montants en FCFA
   const formatCurrency = (amount: number): string => {
@@ -114,7 +118,8 @@ const Dashboard: NextPage = () => {
             createdAt: '2023-08-15',
             deadline: '2023-08-18',
             isPaid: true,
-            messages: 8
+            messages: 8,
+            requirements: 'Création d\'un logo moderne pour restaurant'
           },
           {
             id: 'ORD-1235',
@@ -142,7 +147,8 @@ const Dashboard: NextPage = () => {
             createdAt: '2023-08-14',
             deadline: '2023-08-19',
             isPaid: true,
-            messages: 3
+            messages: 3,
+            requirements: 'Création d\'une landing page responsive avec formulaire de contact'
           },
           {
             id: 'ORD-1232',
@@ -170,15 +176,18 @@ const Dashboard: NextPage = () => {
             createdAt: '2023-08-13',
             deadline: '2023-08-17',
             isPaid: true,
-            messages: 5
+            messages: 5,
+            requirements: 'Rédaction de 5 articles SEO optimisés avec recherche de mots-clés'
           }
         ]);
         
         setNotifications([
           {
             id: 'NOTIF-001',
+            userId: 'USR-001',
             type: 'order',
             title: 'Nouvelle commande reçue',
+            message: 'Nouvelle commande reçue',
             content: 'Vous avez reçu une nouvelle commande pour "Conception de logo"',
             createdAt: '2023-08-15T10:30:00',
             isRead: false,
@@ -186,8 +195,10 @@ const Dashboard: NextPage = () => {
           },
           {
             id: 'NOTIF-002',
+            userId: 'USR-001',
             type: 'message',
             title: 'Nouveau message de Fatou Diallo',
+            message: 'Nouveau message reçu',
             content: 'Bonjour, je voudrais savoir si vous pouvez ajouter une révision supplémentaire...',
             createdAt: '2023-08-15T08:45:00',
             isRead: true,
@@ -195,8 +206,10 @@ const Dashboard: NextPage = () => {
           },
           {
             id: 'NOTIF-003',
+            userId: 'USR-001',
             type: 'payment',
             title: 'Paiement reçu',
+            message: 'Paiement reçu pour commande',
             content: '25 000 FCFA ont été ajoutés à votre solde pour la commande #ORD-1230',
             createdAt: '2023-08-14T15:20:00',
             isRead: true,
@@ -333,6 +346,26 @@ const Dashboard: NextPage = () => {
                 <FiTrendingUp className="h-4 w-4 mr-1" />
                 <span>33%</span>
               </div>
+            </div>
+          </div>
+
+          {/* Carte Litiges */}
+          <div className="bg-white rounded-xl shadow-md p-5 border border-gray-100 hover:shadow-lg transition-shadow" onClick={() => router.push('/dashboard/disputes')}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-gray-600 text-sm font-medium">Litiges</span>
+              <div className="bg-amber-100 p-2 rounded-full">
+                <FiAlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <h3 className="text-3xl font-bold text-gray-900">2</h3>
+                <p className="text-sm text-gray-500 mt-1">Litiges en cours</p>
+              </div>
+              <Link href="/dashboard/disputes" className="flex items-center text-indigo-600 text-sm font-medium px-2 py-1 bg-indigo-50 rounded-lg hover:bg-indigo-100">
+                <span>Voir</span>
+                <FiChevronRight className="h-4 w-4 ml-1" />
+              </Link>
             </div>
           </div>
 
@@ -578,10 +611,13 @@ const Dashboard: NextPage = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {renderStatusBadge(order.status)}
-                          {order.messages && order.messages > 0 && (
+                          {order.messages && (typeof order.messages === 'number' ? order.messages > 0 : order.messages.length > 0) && (
                             <div className="mt-1 flex items-center text-xs text-indigo-600">
                               <FiMessageSquare className="h-3 w-3 mr-1" />
-                              {order.messages} {order.messages > 1 ? 'messages' : 'message'}
+                              {typeof order.messages === 'number' 
+                                ? `${order.messages} ${order.messages > 1 ? 'messages' : 'message'}`
+                                : `${order.messages.length} ${order.messages.length > 1 ? 'messages' : 'message'}`
+                              }
                             </div>
                           )}
                         </td>

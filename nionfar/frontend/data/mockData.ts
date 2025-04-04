@@ -4,8 +4,11 @@ import {
   Category, 
   User, 
   FreelancerStats, 
-  Notification 
+  Notification,
+  Transaction,
+  Withdrawal
 } from '../types';
+import { categories } from './categories';
 
 // Utilisateur connecté (freelance)
 export const currentUser: User = {
@@ -105,7 +108,7 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-18',
     isPaid: true,
     requirements: 'Nous voulons un logo moderne et élégant pour notre nouveau restaurant de cuisine fusion. Les couleurs principales sont le vert et le doré.',
-    messages: 8
+    messages: []
   },
   {
     id: 'ORD-1235',
@@ -123,7 +126,7 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-21',
     isPaid: true,
     requirements: 'Notre cabinet recherche une identité visuelle professionnelle et sérieuse, qui inspire confiance. Nous préférons des tons bleu marine et or.',
-    messages: 3
+    messages: []
   },
   {
     id: 'ORD-1232',
@@ -141,7 +144,7 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-23',
     isPaid: true,
     requirements: 'Nous lançons une application de paiement mobile et avons besoin d\'une interface intuitive et sécurisante. L\'application doit être facile à utiliser même pour les personnes peu habituées à la technologie.',
-    messages: 5
+    messages: []
   },
   {
     id: 'ORD-1230',
@@ -159,7 +162,7 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-13',
     isPaid: true,
     requirements: 'Nous vendons des produits artisanaux sénégalais et avons besoin d\'un logo qui reflète l\'artisanat local tout en restant moderne.',
-    messages: 10
+    messages: []
   },
   {
     id: 'ORD-1228',
@@ -177,7 +180,7 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-18',
     isPaid: true,
     requirements: 'Nous créons une plateforme de formation en ligne et avons besoin d\'une interface claire et engageante pour les apprenants.',
-    messages: 15
+    messages: []
   }
 ];
 
@@ -210,47 +213,123 @@ export const freelancerStats: FreelancerStats = {
 export const freelancerNotifications: Notification[] = [
   {
     id: 'NOTIF-001',
+    userId: 'USR-001',
     type: 'order',
     title: 'Nouvelle commande reçue',
-    content: 'Vous avez reçu une nouvelle commande pour "Conception de logo"',
+    message: 'Vous avez reçu une nouvelle commande pour "Conception de logo"',
     createdAt: '2023-08-15T10:30:00',
     isRead: false,
     link: '/dashboard/orders/ORD-1234'
   },
   {
     id: 'NOTIF-002',
+    userId: 'USR-001',
     type: 'message',
     title: 'Nouveau message de Fatou Diallo',
-    content: 'Bonjour, je voudrais savoir si vous pouvez ajouter une révision supplémentaire...',
+    message: 'Bonjour, je voudrais savoir si vous pouvez ajouter une révision supplémentaire...',
     createdAt: '2023-08-15T08:45:00',
     isRead: true,
     link: '/dashboard/messages/MSG-567'
   },
   {
     id: 'NOTIF-003',
-    type: 'payment',
+    userId: 'USR-001',
+    type: 'system',
     title: 'Paiement reçu',
-    content: '25 000 FCFA ont été ajoutés à votre solde pour la commande #ORD-1230',
+    message: '25 000 FCFA ont été ajoutés à votre solde pour la commande #ORD-1230',
     createdAt: '2023-08-14T15:20:00',
     isRead: true,
     link: '/dashboard/earnings'
   },
   {
     id: 'NOTIF-004',
+    userId: 'USR-001',
     type: 'system',
     title: 'Mise à jour des conditions de service',
-    content: 'Veuillez prendre connaissance des nouvelles conditions de service qui entreront en vigueur le 1er septembre.',
+    message: 'Veuillez prendre connaissance des nouvelles conditions de service qui entreront en vigueur le 1er septembre.',
     createdAt: '2023-08-14T09:10:00',
     isRead: false,
     link: '/dashboard/settings/legal'
   },
   {
     id: 'NOTIF-005',
+    userId: 'USR-001',
     type: 'order',
     title: 'Commande marquée comme terminée',
-    content: 'La commande #ORD-1230 a été marquée comme terminée par le client.',
+    message: 'La commande #ORD-1230 a été marquée comme terminée par le client.',
     createdAt: '2023-08-13T16:45:00',
     isRead: true,
     link: '/dashboard/orders/ORD-1230'
   }
-]; 
+];
+
+export const mockTransactions: Transaction[] = [
+  {
+    id: '1',
+    type: 'order',
+    amount: 15000,
+    status: 'completed',
+    description: 'Paiement pour le service "Création de logo"',
+    createdAt: '2024-04-01T10:00:00Z',
+    orderId: 'order-1'
+  },
+  {
+    id: '2',
+    type: 'withdrawal',
+    amount: 50000,
+    status: 'completed',
+    description: 'Retrait vers Orange Money',
+    createdAt: '2024-03-28T15:30:00Z',
+    withdrawalId: 'withdrawal-1'
+  },
+  {
+    id: '3',
+    type: 'order',
+    amount: 25000,
+    status: 'pending',
+    description: 'Paiement pour le service "Design de site web"',
+    createdAt: '2024-04-03T09:15:00Z',
+    orderId: 'order-2'
+  },
+  {
+    id: '4',
+    type: 'refund',
+    amount: 10000,
+    status: 'completed',
+    description: 'Remboursement pour le service "Rédaction d\'article"',
+    createdAt: '2024-03-25T14:20:00Z',
+    orderId: 'order-3'
+  }
+];
+
+export const mockWithdrawals: Withdrawal[] = [
+  {
+    id: 'withdrawal-1',
+    amount: 50000,
+    status: 'completed',
+    method: 'mobile_money',
+    accountDetails: {
+      type: 'Orange Money',
+      number: '777777777',
+      name: 'John Doe'
+    },
+    createdAt: '2024-03-28T15:30:00Z',
+    completedAt: '2024-03-28T15:35:00Z'
+  },
+  {
+    id: 'withdrawal-2',
+    amount: 75000,
+    status: 'pending',
+    method: 'bank_transfer',
+    accountDetails: {
+      type: 'CBAO',
+      number: 'SN123456789',
+      name: 'John Doe'
+    },
+    createdAt: '2024-04-03T11:00:00Z'
+  }
+];
+
+export { categories };
+
+// Other mock data can be defined here... 

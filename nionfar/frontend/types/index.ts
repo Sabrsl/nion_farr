@@ -1,39 +1,57 @@
-export interface Category {
+import { ReactNode } from 'react';
+import { IconType } from 'react-icons';
+
+export type Category = {
   id: string;
   name: string;
+  description: string;
+  icon: string;
   slug: string;
   count: number;
-  icon: string;
-  image?: string;
-  description?: string;
-  isActive?: boolean;
-}
+};
+
+export type NavItem = {
+  name: string;
+  href: string;
+  icon: IconType;
+  badge?: number;
+};
 
 export interface User {
   id: string;
-  username: string;
   email?: string;
-  avatar?: string;
-  bio?: string;
-  rating?: number;
+  name?: string;
+  username?: string;
   level?: string;
+  rating?: number;
   memberSince?: Date;
   isVerified?: boolean;
-  isOnline?: boolean;
+  role?: 'client' | 'freelancer' | 'admin';
+  avatar?: string;
+  bio?: string;
+  phone?: string;
+  address?: string;
+  website?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  completedOrders?: number;
 }
 
 export interface Service {
   id: string;
   title: string;
   description?: string;
+  summary?: string;
   price: number;
-  rating: number;
-  totalReviews: number;
-  deliveryTime: number;
-  images: string[];
+  rating?: number;
+  totalReviews?: number;
+  deliveryTime?: number;
+  revisions?: number;
+  images?: string[];
+  image?: string;
   provider?: User;
-  slug: string;
-  createdAt: string;
+  slug?: string;
+  createdAt?: string;
   updatedAt?: string;
   category?: {
     id: string;
@@ -41,7 +59,7 @@ export interface Service {
   };
   tags?: string[];
   isActive?: boolean;
-  orderCount: number;
+  orderCount?: number;
 }
 
 export interface FilterOptions {
@@ -65,18 +83,57 @@ export interface Testimonial {
   createdAt: string;
 }
 
+export type OrderStatus = 
+  | 'en_attente'
+  | 'en_attente_acceptation'
+  | 'en_attente_paiement'
+  | 'en_cours'
+  | 'in_progress'
+  | 'pending'
+  | 'completed'
+  | 'revision'
+  | 'livré'
+  | 'révision_demandée'
+  | 'en_modification'
+  | 'terminé'
+  | 'terminée'
+  | 'annulé'
+  | 'annulée'
+  | 'litige'
+  | 'livraison_en_retard'
+  | 'terminée_manuellement';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  content?: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'message' | 'order' | 'system' | 'payment';
+  isRead: boolean;
+  createdAt: string;
+  link?: string;
+}
+
 export interface Order {
   id: string;
   title: string;
   client: User;
+  seller?: User;
   service: Service;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'revision';
+  status: OrderStatus;
   price: number;
   createdAt: string;
   deadline: string;
   isPaid: boolean;
-  requirements?: string;
-  messages?: number;
+  requirements: string;
+  messages: any[] | number;
+  deliverables?: Deliverable[];
+  revisionRequests?: RevisionRequest[];
+  dispute?: Dispute;
+  payment?: Payment;
+  lastUpdatedAt?: string;
+  deliveryValidationDeadline?: string;
 }
 
 export interface Earnings {
@@ -98,7 +155,7 @@ export interface Analytics {
   totalReviews: number;
 }
 
-export interface Notification {
+export interface NotificationLegacy {
   id: string;
   type: 'order' | 'message' | 'system' | 'payment';
   title: string;
@@ -115,6 +172,7 @@ export interface FreelancerStats {
   pendingReviews: number;
   responseRate: number;
   responseTime: string;
+  availableBalance?: number;
 }
 
 export interface Attachment {
@@ -155,4 +213,97 @@ export interface Conversation {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+}
+
+export interface Review {
+  id: string;
+  order: Order;
+  service: Service;
+  reviewer: User;
+  recipient: User;
+  rating: number;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt?: string;
+  isPublic: boolean;
+  reply?: {
+    content: string;
+    createdAt: string;
+  };
+  likes: number;
+  isHelpful?: boolean;
+  tags?: string[];
+}
+
+export interface Transaction {
+  id: string;
+  type: 'order' | 'withdrawal' | 'refund';
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  description: string;
+  createdAt: string;
+  orderId?: string;
+  withdrawalId?: string;
+}
+
+export interface Withdrawal {
+  id: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  method: 'bank_transfer' | 'mobile_money';
+  accountDetails: {
+    type: string;
+    number: string;
+    name: string;
+  };
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface Deliverable {
+  id: string;
+  orderId: string;
+  message: string;
+  fileUrls: string[];
+  createdAt: string;
+}
+
+export interface RevisionRequest {
+  id: string;
+  orderId: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface Dispute {
+  id: string;
+  orderId: string;
+  initiatedBy: string;
+  reason: string;
+  details: string;
+  attachments: string[];
+  status: 'ouvert' | 'résolu' | 'fermé';
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  resolution?: 'client' | 'vendeur';
+  resolutionReason?: string;
+  updates: {
+    userId: string;
+    message: string;
+    createdAt: string;
+    type: 'status_change' | 'comment' | 'resolution';
+  }[];
+  followers?: string[];
+}
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  amount: number;
+  status: 'attente' | 'validé' | 'remboursé' | 'échoué';
+  method: 'carte' | 'mobile_money' | 'virement';
+  transactionId: string;
+  createdAt: string;
 } 

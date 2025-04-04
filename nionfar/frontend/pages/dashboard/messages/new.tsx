@@ -7,7 +7,8 @@ import {
   FiShoppingBag,
   FiCheck,
   FiMessageSquare,
-  FiPaperclip
+  FiPaperclip,
+  FiPlus
 } from 'react-icons/fi';
 
 import { NextPage } from 'next';
@@ -138,38 +139,62 @@ const NewConversationPage: NextPage = () => {
     <DashboardLayout title="Nouvelle conversation | NionFar.sn">
       <div className="p-4 pt-0 sm:p-6 sm:pt-0 lg:p-8 lg:pt-0 max-w-[1200px] mx-auto">
         {/* En-tête avec lien de retour */}
-        <div className="flex items-center mb-6 mt-4 sm:mt-6 lg:mt-8">
+        <div className="flex items-center justify-between mb-6 mt-4 sm:mt-6 lg:mt-8">
           <Link href="/dashboard/messages" className="flex items-center text-gray-600 hover:text-gray-900">
             <FiArrowLeft className="h-5 w-5 mr-2" />
             <span className="font-medium">Retour aux messages</span>
           </Link>
+          
+          {step !== 'select-user' && (
+            <button 
+              onClick={() => setStep(step === 'write-message' ? 'select-order' : 'select-user')}
+              className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+              Étape précédente
+            </button>
+          )}
         </div>
         
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* En-tête avec étapes */}
           <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
             <h1 className="text-xl font-semibold text-gray-900">Nouvelle conversation</h1>
-            <div className="flex items-center text-sm mt-2">
+            <div className="flex flex-wrap items-center text-sm mt-2 gap-y-2">
               <div className={`flex items-center ${step === 'select-user' ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${step === 'select-user' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
                   <span>1</span>
                 </div>
                 <span>Sélectionner un contact</span>
               </div>
-              <div className={`w-8 h-0.5 mx-2 ${step === 'select-user' ? 'bg-gray-200' : 'bg-indigo-200'}`}></div>
+              <div className={`w-8 h-0.5 mx-2 hidden sm:block ${step === 'select-user' ? 'bg-gray-200' : 'bg-indigo-200'}`}></div>
               <div className={`flex items-center ${step === 'select-order' ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${step === 'select-order' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
                   <span>2</span>
                 </div>
                 <span>Lier à une commande</span>
               </div>
-              <div className={`w-8 h-0.5 mx-2 ${step === 'write-message' ? 'bg-indigo-200' : 'bg-gray-200'}`}></div>
+              <div className={`w-8 h-0.5 mx-2 hidden sm:block ${step === 'write-message' ? 'bg-indigo-200' : 'bg-gray-200'}`}></div>
               <div className={`flex items-center ${step === 'write-message' ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${step === 'write-message' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
                   <span>3</span>
                 </div>
                 <span>Écrire un message</span>
               </div>
+            </div>
+          </div>
+          
+          {/* Stepper compact pour mobile */}
+          <div className="sm:hidden bg-white border-b border-gray-200 px-4 py-3">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" 
+                style={{ width: step === 'select-user' ? '33%' : step === 'select-order' ? '66%' : '100%' }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs mt-1 px-1">
+              <span className={step === 'select-user' ? 'text-indigo-600 font-medium' : 'text-gray-500'}>Étape 1</span>
+              <span className={step === 'select-order' ? 'text-indigo-600 font-medium' : 'text-gray-500'}>Étape 2</span>
+              <span className={step === 'write-message' ? 'text-indigo-600 font-medium' : 'text-gray-500'}>Étape 3</span>
             </div>
           </div>
           
@@ -183,7 +208,7 @@ const NewConversationPage: NextPage = () => {
                   <input
                     type="text"
                     placeholder="Rechercher un contact..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -199,7 +224,7 @@ const NewConversationPage: NextPage = () => {
                 </div>
                 
                 {filteredUsers.length > 0 ? (
-                  <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+                  <div className="divide-y divide-gray-100 max-h-[calc(100vh-280px)] overflow-y-auto border border-gray-200 rounded-lg">
                     {filteredUsers.map((user) => (
                       <button
                         key={user.id}
@@ -292,7 +317,7 @@ const NewConversationPage: NextPage = () => {
                 <h3 className="text-base font-medium text-gray-900 mb-4">Commandes associées</h3>
                 
                 {filteredOrders.length > 0 ? (
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-3 mb-6 max-h-[calc(100vh-320px)] overflow-y-auto">
                     {filteredOrders.map((order) => (
                       <button
                         key={order.id}
@@ -487,6 +512,97 @@ const NewConversationPage: NextPage = () => {
               </div>
             )}
           </div>
+          
+          {/* Footer avec actions */}
+          <div className="border-t border-gray-200 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-3 bg-gray-50">
+            <div className="text-sm text-gray-500 w-full sm:w-auto">
+              <span className="hidden sm:inline">Étape </span>
+              {step === 'select-user' && 'Sélectionnez un contact pour continuer'}
+              {step === 'select-order' && 'Liez à une commande ou passez à l\'étape suivante'}
+              {step === 'write-message' && (
+                <span>
+                  Discussion avec{' '}
+                  <span className="font-medium text-gray-700">{selectedUser?.username}</span>
+                  {selectedOrder && (
+                    <>
+                      {' '}à propos de la commande{' '}
+                      <span className="font-medium text-gray-700">#{selectedOrder.id}</span>
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
+            
+            {step === 'select-order' && (
+              <button
+                onClick={() => setStep('write-message')}
+                className="px-4 py-2 w-full sm:w-auto bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Continuer sans commande
+              </button>
+            )}
+            
+            {step === 'write-message' && (
+              <button
+                onClick={handleSendMessage}
+                disabled={(!message.trim() && attachments.length === 0) || isSending}
+                className={`px-4 py-2 w-full sm:w-auto text-white text-sm font-medium rounded-lg flex items-center justify-center transition-all ${
+                  (!message.trim() && attachments.length === 0) || isSending
+                    ? 'bg-gray-400 cursor-not-allowed opacity-70'
+                    : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                {isSending ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Envoi en cours...
+                  </>
+                ) : (
+                  <>
+                    Envoyer <FiSend className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {/* Bouton flottant sur mobile pour faciliter la navigation entre les étapes */}
+        <div className="fixed bottom-20 right-4 sm:hidden z-50">
+          {step === 'select-user' && filteredUsers.length > 0 && (
+            <button
+              onClick={() => handleSelectUser(filteredUsers[0])}
+              className="bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-all"
+            >
+              <FiArrowLeft className="h-5 w-5 transform rotate-180" />
+            </button>
+          )}
+          
+          {step === 'select-order' && (
+            <button
+              onClick={() => setStep('write-message')}
+              className="bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-all"
+            >
+              <FiArrowLeft className="h-5 w-5 transform rotate-180" />
+            </button>
+          )}
+          
+          {step === 'write-message' && (
+            <button
+              onClick={handleSendMessage}
+              disabled={(!message.trim() && attachments.length === 0) || isSending}
+              className={`p-4 rounded-full shadow-lg transition-all ${
+                (!message.trim() && attachments.length === 0) || isSending
+                  ? 'bg-gray-400 opacity-70'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
+            >
+              <FiSend className="h-5 w-5 text-white" />
+            </button>
+          )}
         </div>
       </div>
     </DashboardLayout>

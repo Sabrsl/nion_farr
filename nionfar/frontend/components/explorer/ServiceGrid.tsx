@@ -7,9 +7,10 @@ import { Service } from '../../types';
 interface ServiceGridProps {
   services: Service[];
   isLoading: boolean;
+  viewMode?: 'grid' | 'list';
 }
 
-export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading }) => {
+export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading, viewMode }) => {
   // Utiliser localStorage pour persister le type de vue entre les sessions
   const [viewType, setViewType] = useState<'grid' | 'list'>(() => {
     // Vérifier si on est côté client
@@ -20,6 +21,9 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading })
     return 'grid';
   });
   
+  // Utiliser viewMode (prop externe) s'il est défini, sinon utiliser viewType (state interne)
+  const currentViewType = viewMode || viewType;
+
   const [sortOption, setSortOption] = useState<string>('popular');
   const [showSortOptions, setShowSortOptions] = useState<boolean>(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -91,7 +95,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading })
             <button
               onClick={() => handleViewTypeChange('grid')}
               className={`p-3 px-4 rounded-l-lg ${
-                viewType === 'grid' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-200'
+                currentViewType === 'grid' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-200'
               }`}
               aria-label="Vue en grille"
               title="Vue en grille"
@@ -104,7 +108,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading })
             <button
               onClick={() => handleViewTypeChange('list')}
               className={`p-3 px-4 rounded-r-lg ${
-                viewType === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-200'
+                currentViewType === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-200'
               }`}
               aria-label="Vue en liste"
               title="Vue en liste"
@@ -224,7 +228,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading })
       {!isLoading && sortedServices.length > 0 && (
         <div
           className={
-            viewType === 'grid'
+            currentViewType === 'grid'
               ? 'grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
               : 'flex flex-col space-y-4 sm:space-y-6'
           }
@@ -233,7 +237,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading })
             <ServiceCard
               key={service.id}
               service={service}
-              viewType={viewType}
+              viewType={currentViewType}
               isFavorite={favorites.has(service.id)}
               onToggleFavorite={() => toggleFavorite(service.id)}
             />

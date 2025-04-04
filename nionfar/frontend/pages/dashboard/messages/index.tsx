@@ -23,7 +23,8 @@ import {
   FiMail,
   FiChevronDown,
   FiBox,
-  FiUser
+  FiUser,
+  FiArrowLeft
 } from 'react-icons/fi';
 import { Conversation, Message } from '../../../types';
 import { mockConversations } from '../../../data/mockMessages';
@@ -37,6 +38,7 @@ const MessagesPage: NextPage = () => {
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const [contextMenuOpen, setContextMenuOpen] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedMessageFilter, setSelectedMessageFilter] = useState<'all' | 'unread' | 'attachments'>('all');
   
   const contextMenuRef = useRef<HTMLDivElement>(null);
   
@@ -520,21 +522,19 @@ const MessagesPage: NextPage = () => {
             </div>
           </div>
           
-          {/* Détail de la conversation - Vue mobile */}
-          <div className={`md:w-2/3 lg:w-3/4 ${mobileView === 'list' ? 'hidden md:block' : ''}`}>
+          {/* Détail de la conversation - Version mobile */}
+          <div className={`flex-1 ${mobileView === 'list' ? 'hidden md:block' : ''}`}>
             {selectedConversation ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[calc(100vh-200px)] flex flex-col">
                 {/* En-tête de la conversation */}
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                   <div className="flex items-center">
-                    {/* Bouton retour (mobile seulement) */}
-                    <button 
-                      className="mr-3 md:hidden p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+                    {/* Bouton retour mobile */}
+                    <button
+                      className="md:hidden inline-flex items-center p-2 mr-2 rounded-lg text-gray-700 hover:bg-gray-100"
                       onClick={() => setMobileView('list')}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
+                      <FiArrowLeft className="h-5 w-5" />
                     </button>
                     
                     {/* Info du client */}

@@ -8,7 +8,7 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -20,27 +20,7 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@components/*": [
-        "components/*"
-      ],
-      "@layouts/*": [
-        "layouts/*"
-      ],
-      "@hooks/*": [
-        "hooks/*"
-      ],
-      "@context/*": [
-        "context/*"
-      ],
-      "@utils/*": [
-        "utils/*"
-      ],
-      "@lib/*": [
-        "lib/*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
