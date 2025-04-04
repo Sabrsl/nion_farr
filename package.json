@@ -1,4 +1,13 @@
 {
+  "name": "nionfar",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd nionfar/frontend && npm run dev",
+    "build": "cd nionfar/frontend && npm run build",
+    "start": "cd nionfar/frontend && npm run start",
+    "lint": "cd nionfar/frontend && npm run lint"
+  },
   "dependencies": {
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",

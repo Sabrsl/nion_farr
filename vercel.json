@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "outputDirectory": "nionfar/frontend/.next",
+  "buildCommand": "cd nionfar/frontend && npm install && npm run build",
+  "installCommand": "cd nionfar/frontend && npm install",
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/nionfar/frontend/$1"
+    }
+  ]
+} 
