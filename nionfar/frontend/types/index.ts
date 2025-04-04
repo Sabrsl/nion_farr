@@ -417,4 +417,109 @@ export interface RankingFactor {
   score: number; // score actuel du freelancer pour ce facteur (0-100)
   trend: 'up' | 'down' | 'stable'; // tendance
   lastUpdated: string;
+}
+
+// Interfaces pour la détection de comportements anormaux
+
+export interface Account {
+  id: string;
+  userId: string;
+  email: string;
+  phone?: string;
+  lastIpAddress?: string;
+  lastDeviceId?: string;
+  lastLoginAt?: string;
+  createdAt: string;
+  creationIpAddress?: string;
+  verificationLevel: 'none' | 'email' | 'phone' | 'id' | 'full';
+  status: 'active' | 'pending' | 'suspended' | 'restricted' | 'banned';
+  statusReason?: string;
+  suspendedUntil?: string;
+  restrictions?: AccountRestriction[];
+  securityFlags?: SecurityFlag[];
+  loginHistory?: LoginRecord[];
+  geolocations?: GeoLocation[];
+  relatedAccounts?: string[];
+}
+
+export interface AccountRestriction {
+  id: string;
+  accountId: string;
+  type: 'warning' | 'limited_access' | 'payment_hold' | 'suspension' | 'ban';
+  reason: string;
+  appliedAt: string;
+  appliedBy?: string;
+  expiresAt?: string;
+  isActive: boolean;
+}
+
+export interface SecurityFlag {
+  id: string;
+  accountId: string;
+  type: 'multi_accounts' | 'shared_phone' | 'shared_ip' | 'location_mismatch' | 'unusual_activity';
+  severity: 'low' | 'medium' | 'high';
+  details: string;
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  resolutionNotes?: string;
+  status: 'active' | 'investigating' | 'resolved' | 'false_positive';
+}
+
+export interface LoginRecord {
+  id: string;
+  accountId: string;
+  timestamp: string;
+  ipAddress: string;
+  deviceId?: string;
+  deviceInfo?: string;
+  browser?: string;
+  operatingSystem?: string;
+  geolocation?: GeoLocation;
+  status: 'success' | 'failed' | 'blocked';
+  failureReason?: string;
+}
+
+export interface GeoLocation {
+  ip: string;
+  country: string;
+  countryCode: string;
+  region?: string;
+  city?: string;
+  latitude?: number;
+  longitude?: number;
+  isp?: string;
+  timezone?: string;
+  timestamp: string;
+}
+
+export interface SecurityAlert {
+  id: string;
+  accountId: string;
+  type: 'multi_accounts' | 'shared_phone' | 'shared_ip' | 'location_mismatch' | 'unusual_activity';
+  severity: 'low' | 'medium' | 'high';
+  details: string;
+  createdAt: string;
+  status: 'new' | 'investigating' | 'resolved';
+  assignedTo?: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  resolution?: string;
+  relatedAlerts?: string[];
+  relatedAccounts?: string[];
+}
+
+export interface AccountLink {
+  id: string;
+  primaryAccountId: string;
+  linkedAccountId: string;
+  linkType: 'same_person' | 'same_household' | 'business_relationship' | 'suspicious';
+  confidence: number; // 0 à 1
+  matchReason: 'ip' | 'phone' | 'device' | 'email_pattern' | 'payment_info' | 'manual';
+  createdAt: string;
+  createdBy?: string;
+  isVerified: boolean;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  notes?: string;
 } 

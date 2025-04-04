@@ -1,4 +1,5 @@
 import { User } from '../types';
+import { toast } from 'react-toastify';
 
 // Types pour les alertes de sécurité
 export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
@@ -369,6 +370,293 @@ const securityService = {
         },
         pendingDocuments: ['Tous les documents requis'],
         verificationHistory: []
+      };
+    }
+  },
+
+  /**
+   * Détecte les comportements anormaux liés aux comptes utilisateurs
+   * @param userId ID de l'utilisateur à vérifier
+   * @returns Résultat de l'analyse de sécurité
+   */
+  async detectAbnormalBehavior(userId: string): Promise<{
+    isAbnormal: boolean;
+    risks: Array<{
+      type: 'multi_accounts' | 'shared_phone' | 'shared_ip' | 'location_mismatch' | 'unusual_activity',
+      severity: 'low' | 'medium' | 'high',
+      details: string,
+      relatedAccounts?: string[]
+    }>,
+    score: number // Score de risque de 0 à 100
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/user/${userId}/behavior-check`);
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la vérification de sécurité');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans detectAbnormalBehavior:', error);
+      // Retourner des valeurs par défaut en cas d'erreur
+      return {
+        isAbnormal: false,
+        risks: [],
+        score: 0
+      };
+    }
+  },
+  
+  /**
+   * Vérifie si une adresse IP est partagée entre plusieurs comptes
+   * @param ip Adresse IP à vérifier
+   */
+  async checkSharedIP(ip: string): Promise<{
+    isShared: boolean,
+    accountCount: number,
+    accounts?: Array<{
+      id: string,
+      createdAt: string,
+      lastLogin: string
+    }>
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/ip/${ip}/check`);
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la vérification de l\'adresse IP');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans checkSharedIP:', error);
+      return {
+        isShared: false,
+        accountCount: 0
+      };
+    }
+  },
+  
+  /**
+   * Vérifie si un numéro de téléphone est partagé entre plusieurs comptes
+   * @param phone Numéro de téléphone à vérifier (format E.164)
+   */
+  async checkSharedPhone(phone: string): Promise<{
+    isShared: boolean,
+    accountCount: number,
+    accounts?: Array<{
+      id: string,
+      createdAt: string,
+      lastLogin: string
+    }>
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/phone/${encodeURIComponent(phone)}/check`);
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la vérification du numéro de téléphone');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans checkSharedPhone:', error);
+      return {
+        isShared: false,
+        accountCount: 0
+      };
+    }
+  },
+  
+  /**
+   * Détecte les potentiels multi-comptes d'un utilisateur
+   * @param userId ID de l'utilisateur à vérifier
+   */
+  async detectMultiAccounts(userId: string): Promise<{
+    hasMultiAccounts: boolean,
+    relatedAccounts: Array<{
+      id: string,
+      createdAt: string,
+      lastLogin: string,
+      matchReason: 'ip' | 'phone' | 'device' | 'email_pattern' | 'payment_info',
+      confidenceScore: number // de 0 à 1
+    }>,
+    totalRelatedAccounts: number
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/user/${userId}/multi-account-check`);
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la détection de multi-comptes');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans detectMultiAccounts:', error);
+      return {
+        hasMultiAccounts: false,
+        relatedAccounts: [],
+        totalRelatedAccounts: 0
+      };
+    }
+  },
+  
+  /**
+   * Signale un compte suspect pour analyse manuelle
+   * @param accountId ID du compte à signaler
+   * @param reason Raison du signalement
+   * @param evidenceDetails Détails justifiant le signalement
+   */
+  async reportSuspiciousAccount(
+    accountId: string, 
+    reason: 'multi_account' | 'identity_theft' | 'fraudulent_activity' | 'terms_violation' | 'other',
+    evidenceDetails: string
+  ): Promise<{
+    success: boolean,
+    reportId?: string,
+    message?: string
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/report`, {
+        method: 'POST',
+        body: JSON.stringify({
+          accountId,
+          reason,
+          evidenceDetails,
+          reportedAt: new Date().toISOString()
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors du signalement du compte');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans reportSuspiciousAccount:', error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors du signalement du compte'
+      };
+    }
+  },
+  
+  /**
+   * Marque des comptes comme liés après vérification
+   * @param primaryAccountId ID du compte principal
+   * @param linkedAccountIds IDs des comptes liés
+   * @param linkReason Raison de l'association
+   */
+  async linkAccounts(
+    primaryAccountId: string,
+    linkedAccountIds: string[],
+    linkReason: 'same_person' | 'same_household' | 'business_relationship' | 'suspicious_activity'
+  ): Promise<{
+    success: boolean,
+    message?: string
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/accounts/link`, {
+        method: 'POST',
+        body: JSON.stringify({
+          primaryAccountId,
+          linkedAccountIds,
+          linkReason,
+          linkedAt: new Date().toISOString()
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'association des comptes');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans linkAccounts:', error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors de l\'association des comptes'
+      };
+    }
+  },
+  
+  /**
+   * Applique une restriction à un compte
+   * @param accountId ID du compte à restreindre
+   * @param restrictionType Type de restriction
+   * @param reason Raison de la restriction
+   * @param duration Durée de la restriction en heures (0 = permanent)
+   */
+  async applyAccountRestriction(
+    accountId: string,
+    restrictionType: 'warning' | 'limited_access' | 'payment_hold' | 'suspension' | 'ban',
+    reason: string,
+    duration: number = 0
+  ): Promise<{
+    success: boolean,
+    message?: string,
+    restrictionId?: string
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/account/${accountId}/restrict`, {
+        method: 'POST',
+        body: JSON.stringify({
+          restrictionType,
+          reason,
+          appliedAt: new Date().toISOString(),
+          duration, // en heures
+          expiresAt: duration > 0 ? new Date(Date.now() + duration * 60 * 60 * 1000).toISOString() : null
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'application de la restriction');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans applyAccountRestriction:', error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors de l\'application de la restriction'
+      };
+    }
+  },
+  
+  /**
+   * Analyse le risque d'un nouvel utilisateur lors de l'inscription
+   * @param userData Données de l'utilisateur
+   */
+  async analyzeNewUserRisk(userData: {
+    email: string,
+    phone: string,
+    ip: string,
+    deviceInfo: string,
+    geoLocation?: { country: string, city: string }
+  }): Promise<{
+    riskLevel: 'low' | 'medium' | 'high',
+    requiresExtraVerification: boolean,
+    recommendedActions: string[],
+    score: number // de 0 à 100
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/registration/risk-analysis`, {
+        method: 'POST',
+        body: JSON.stringify(userData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'analyse de risque');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans analyzeNewUserRisk:', error);
+      return {
+        riskLevel: 'low',
+        requiresExtraVerification: false,
+        recommendedActions: [],
+        score: 0
       };
     }
   }
