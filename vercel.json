@@ -1,4 +1,5 @@
 {
   "version": 2,
-  "rootDirectory": "nionfar/frontend"
+  "outputDirectory": "nionfar/frontend/.next",
+  "buildCommand": "cd nionfar/frontend && npm install && npm run build"
 } 
