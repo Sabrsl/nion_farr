@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiGrid, FiList, FiChevronDown } from 'react-icons/fi';
-import { ServiceCard } from './ServiceCard';
+import { UniversalServiceCard } from '../services/UniversalServiceCard';
 import { Service } from '../../types';
 
 interface ServiceGridProps {
@@ -59,12 +59,18 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading, v
         case 'price-high':
           return b.price - a.price;
         case 'rating':
-          return b.rating - a.rating;
+          return (b.rating || 0) - (a.rating || 0);
         case 'newest':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          // Traiter le cas où createdAt peut être undefined
+          const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          return bDate - aDate;
         case 'popular':
         default:
-          return b.orderCount - a.orderCount;
+          // Utiliser une propriété sûre si orderCount n'existe pas
+          const aCount = (a as any).orderCount || 0;
+          const bCount = (b as any).orderCount || 0;
+          return bCount - aCount;
       }
     });
 
@@ -234,12 +240,10 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading, v
           }
         >
           {sortedServices.map((service) => (
-            <ServiceCard
+            <UniversalServiceCard
               key={service.id}
               service={service}
-              viewType={currentViewType}
-              isFavorite={favorites.has(service.id)}
-              onToggleFavorite={() => toggleFavorite(service.id)}
+              className={currentViewType === 'list' ? 'flex flex-col sm:flex-row' : ''}
             />
           ))}
         </div>

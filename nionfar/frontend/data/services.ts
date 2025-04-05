@@ -10,13 +10,13 @@ export const mockServices: Service[] = [
     totalReviews: 127,
     deliveryTime: 3,
     images: [
-      "https://images.unsplash.com/photo-1558655146-9f40138edfeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1554185256-1f1c90e6aa09?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/logo-design.jpg",
+      "/img/services/logo-design.jpg"
     ],
     provider: {
       id: "u1",
-      username: "AminaDesigns",
-      avatar: "https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "AminaDesigns",
+      avatar: "/img/avatars/amadou.jpg",
       level: "Top Rated"
     },
     category: {
@@ -38,13 +38,13 @@ export const mockServices: Service[] = [
     totalReviews: 98,
     deliveryTime: 7,
     images: [
-      "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/content-writing.jpg",
+      "/img/services/content-writing.jpg"
     ],
     provider: {
       id: "u2",
-      username: "OusmaneDev",
-      avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "OusmaneDev",
+      avatar: "/img/avatars/ibrahim.jpg",
       level: "Niveau 2"
     },
     category: {
@@ -66,12 +66,12 @@ export const mockServices: Service[] = [
     totalReviews: 56,
     deliveryTime: 2,
     images: [
-      "https://images.unsplash.com/photo-1499750310107-5fef28a66643?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/content-writing.jpg"
     ],
     provider: {
       id: "u3",
-      username: "FatouWriter",
-      avatar: "https://images.unsplash.com/photo-1628890923662-2cb23c2e0cfe?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "FatouWriter",
+      avatar: "/img/avatars/fatou.jpg",
       level: "Niveau 1"
     },
     category: {
@@ -93,12 +93,13 @@ export const mockServices: Service[] = [
     totalReviews: 73,
     deliveryTime: 4,
     images: [
-      "https://images.unsplash.com/photo-1536240478700-b869070f9279?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/video-editing.jpg"
     ],
     provider: {
       id: "u4",
       username: "SidyMedia",
-      avatar: "https://images.unsplash.com/photo-1597346908500-28872a56a1f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80", 
+      name: "SidyMedia",
+      avatar: "/img/avatars/amadou.jpg", 
       level: "Top Rated"
     },
     category: {
@@ -120,12 +121,13 @@ export const mockServices: Service[] = [
     totalReviews: 42,
     deliveryTime: 2,
     images: [
-      "https://images.unsplash.com/photo-1546521343-4eb2c01aa44b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/translation.jpg"
     ],
     provider: {
       id: "u5",
       username: "AissaTrad",
-      avatar: "https://images.unsplash.com/photo-1640952131659-49a06dd90ad2?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "AissaTrad",
+      avatar: "/img/avatars/fatou.jpg",
       level: "Niveau 2"
     },
     category: {
@@ -147,12 +149,13 @@ export const mockServices: Service[] = [
     totalReviews: 31,
     deliveryTime: 5,
     images: [
-      "https://images.unsplash.com/photo-1504639725590-34d0984388bd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/marketing.jpg"
     ],
     provider: {
       id: "u6",
       username: "MariamDigital",
-      avatar: "https://images.unsplash.com/photo-1598550476439-6847785fcea6?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "MariamDigital",
+      avatar: "/img/avatars/mariam.jpg",
       level: "Top Rated"
     },
     category: {
@@ -174,13 +177,14 @@ export const mockServices: Service[] = [
     totalReviews: 64,
     deliveryTime: 6,
     images: [
-      "https://images.unsplash.com/photo-1574144113084-b6f450cc5e0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1581349437898-cebbe9831942?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/illustration.jpg",
+      "/img/services/illustration.jpg"
     ],
     provider: {
       id: "u7",
       username: "DiamArt",
-      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "DiamArt",
+      avatar: "/img/avatars/diamart.jpg",
       level: "Niveau 2"
     },
     category: {
@@ -202,12 +206,13 @@ export const mockServices: Service[] = [
     totalReviews: 27,
     deliveryTime: 30,
     images: [
-      "https://images.unsplash.com/photo-1551650975-87deedd944c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/mobile-development.jpg"
     ],
     provider: {
       id: "u8",
       username: "KhadimTech",
-      avatar: "https://images.unsplash.com/photo-1542178243-bc20204b769f?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "KhadimTech",
+      avatar: "/img/avatars/khadim.jpg",
       level: "Top Rated"
     },
     category: {
@@ -229,12 +234,13 @@ export const mockServices: Service[] = [
     totalReviews: 53,
     deliveryTime: 30,
     images: [
-      "https://images.unsplash.com/photo-1611926653458-09294b3142bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/social-media-management.jpg"
     ],
     provider: {
       id: "u9",
       username: "SocialSokhna",
-      avatar: "https://images.unsplash.com/photo-1544724015-eabd0b1c21a6?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "SocialSokhna",
+      avatar: "/img/avatars/socialsokhna.jpg",
       level: "Niveau 2"
     },
     category: {
@@ -256,12 +262,13 @@ export const mockServices: Service[] = [
     totalReviews: 37,
     deliveryTime: 2,
     images: [
-      "https://images.unsplash.com/photo-1516981842399-23f4763b4c6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/transcription.jpg"
     ],
     provider: {
       id: "u10",
       username: "MbackeServices",
-      avatar: "https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "MbackeServices",
+      avatar: "/img/avatars/mbacke.jpg",
       level: "Niveau 1"
     },
     category: {
@@ -283,12 +290,13 @@ export const mockServices: Service[] = [
     totalReviews: 89,
     deliveryTime: 1,
     images: [
-      "https://images.unsplash.com/photo-1596079890744-c1a0462d0975?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/photo-retouching.jpg"
     ],
     provider: {
       id: "u11",
       username: "PhotoMagicSN",
-      avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "PhotoMagicSN",
+      avatar: "/img/avatars/photomagic.jpg",
       level: "Top Rated"
     },
     category: {
@@ -310,12 +318,13 @@ export const mockServices: Service[] = [
     totalReviews: 19,
     deliveryTime: 14,
     images: [
-      "https://images.unsplash.com/photo-1598550476439-6847785fcea6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "/img/services/e-learning.jpg"
     ],
     provider: {
       id: "u12",
       username: "EduTechSenegal",
-      avatar: "https://images.unsplash.com/photo-1578489758854-f134a358f08b?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80",
+      name: "EduTechSenegal",
+      avatar: "/img/avatars/edutech.jpg",
       level: "Niveau 2"
     },
     category: {

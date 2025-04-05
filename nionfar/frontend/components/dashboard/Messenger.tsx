@@ -1,13 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSend, FiPaperclip, FiAlertCircle } from 'react-icons/fi';
-import { Message, Conversation, User } from '../../types';
+import { Message as MessageType, User, Attachment } from '../../types';
 import messagingService from '../../services/messagingService';
 import { toast } from 'react-toastify';
 
+// Interface locale pour la conversation adaptée à l'implémentation actuelle
+interface ConversationExtended {
+  id: string;
+  participants: Array<{id: string, name: string}>;
+  lastMessage?: string;
+  lastMessageDate?: string;
+  unreadCount: number;
+  orderId?: string;
+  order?: {
+    id: string;
+    title: string;
+  };
+}
+
+// Interface locale pour le message adaptée à l'implémentation actuelle
+interface MessageExtended extends MessageType {
+  sender: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+}
+
 interface MessengerProps {
   currentUser: User;
-  conversation: Conversation;
-  onConversationUpdated?: (conversation: Conversation) => void;
+  conversation: ConversationExtended;
+  onConversationUpdated?: (conversation: ConversationExtended) => void;
 }
 
 const Messenger: React.FC<MessengerProps> = ({ 
@@ -15,7 +38,7 @@ const Messenger: React.FC<MessengerProps> = ({
   conversation,
   onConversationUpdated
 }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageExtended[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -50,10 +73,10 @@ const Messenger: React.FC<MessengerProps> = ({
       
       if (result.success && result.messages) {
         if (reset) {
-          setMessages(result.messages);
+          setMessages(result.messages as MessageExtended[]);
           setPage(2);
         } else {
-          setMessages(prev => [...result.messages, ...prev]);
+          setMessages(prev => [...(result.messages as MessageExtended[] || []), ...prev]);
           setPage(prev => prev + 1);
         }
         
@@ -105,7 +128,7 @@ const Messenger: React.FC<MessengerProps> = ({
       
       if (result.success && result.message) {
         // Ajouter le message à la liste
-        setMessages(prev => [...prev, result.message]);
+        setMessages(prev => [...prev, ...(result.message ? [result.message as MessageExtended] : [])]);
         setNewMessage('');
         setAttachments([]);
         
@@ -113,7 +136,8 @@ const Messenger: React.FC<MessengerProps> = ({
         if (onConversationUpdated) {
           onConversationUpdated({
             ...conversation,
-            lastMessage: result.message
+            lastMessage: result.message.content,
+            lastMessageDate: result.message.createdAt
           });
         }
       } else {
@@ -190,7 +214,7 @@ const Messenger: React.FC<MessengerProps> = ({
   // Trouve le destinataire (pas l'utilisateur courant) dans une conversation
   const getRecipient = () => {
     return conversation.participants.find(p => p.id !== currentUser.id) || 
-      { name: 'Destinataire inconnu' };
+      { id: '', name: 'Destinataire inconnu' };
   };
 
   return (

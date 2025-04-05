@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Order, OrderStatus } from '../../types';
+import { Order, OrderStatus, User } from '../../types';
 import { motion } from 'framer-motion';
 import { 
   FiClock, 
@@ -17,8 +17,35 @@ import { toast } from 'react-toastify';
 import { disputeService } from '../../services/disputeService';
 import { useAuth } from '../../contexts/AuthContext';
 
+// Définir une interface étendue pour Order avec les propriétés supplémentaires
+interface OrderExtended {
+  id: string;
+  serviceId: string;
+  title: string;
+  deadline: string;
+  status: OrderStatus | 'en_attente_acceptation' | 'en_cours' | 'livré' | 'en_modification' | 'terminée' | 'annulée' | 'litige' | 'livraison_en_retard';
+  price: number;
+  service: {
+    id: string;
+    title: string;
+  };
+  client: {
+    id: string;
+    name?: string;
+    username?: string;
+  };
+  seller?: {
+    id: string;
+    name?: string;
+    username?: string;
+  };
+  dispute?: {
+    id: string;
+  };
+}
+
 interface OrderCardProps {
-  order: Order;
+  order: OrderExtended;
   isSeller?: boolean;
 }
 
@@ -51,7 +78,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   const isOrderLate = (deadline: string) => {
     const now = new Date();
     const deadlineDate = new Date(deadline);
-    return now > deadlineDate && ['en_cours', 'en_attente_acceptation'].includes(order.status);
+    return now > deadlineDate && ['en_cours', 'en_attente_acceptation'].includes(order.status as string);
   };
 
   // Fonction pour suivre un litige
@@ -81,7 +108,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   };
 
   // Fonction pour déterminer la couleur et l'icône du statut
-  const getStatusInfo = (status: OrderStatus) => {
+  const getStatusInfo = (status: OrderExtended['status']) => {
     switch (status) {
       case 'en_attente_acceptation':
         return {
@@ -135,7 +162,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
         return {
           color: 'bg-gray-100 text-gray-800',
           icon: <FiClock className="h-5 w-5" />,
-          text: status
+          text: status as string
         };
     }
   };
@@ -205,11 +232,13 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   
                   {order.dispute && (
                     <Link 
-                      href={`/dashboard/disputes/${order.dispute.id}`}
+                      href={`/dashboard/disputes/${order.dispute?.id}`}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        window.location.href = `/dashboard/disputes/${order.dispute.id}`;
+                        if (order.dispute?.id) {
+                          window.location.href = `/dashboard/disputes/${order.dispute.id}`;
+                        }
                       }}
                       className="px-3 py-1 inline-flex items-center text-xs font-medium rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200"
                     >

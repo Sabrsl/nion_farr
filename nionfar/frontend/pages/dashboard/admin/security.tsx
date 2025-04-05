@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiAlertTriangle, FiSearch, FiUsers, FiGlobe, FiPhone, FiUserX } from 'react-icons/fi';
+import { FiAlertTriangle, FiSearch, FiUsers, FiGlobe, FiPhone, FiUserX, FiCheckCircle } from 'react-icons/fi';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
-import securityService from '../../../services/securityService';
+import { securityService } from '../../../services/securityService';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
 import UserSecurityPanel from '../../../components/dashboard/admin/UserSecurityPanel';

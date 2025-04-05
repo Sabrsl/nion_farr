@@ -2,7 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['images.unsplash.com', 'placehold.co'],
+    unoptimized: true, // Allow unoptimized images temporarily
+    domains: ['images.unsplash.com', 'placehold.co', 'placeimg.com', 'randomuser.me', 'localhost'],
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
@@ -13,6 +14,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'placehold.co',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'randomuser.me',
         pathname: '/**',
       },
     ],

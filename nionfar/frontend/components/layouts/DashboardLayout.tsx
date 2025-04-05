@@ -38,8 +38,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   ];
 
   const handleLogout = async () => {
-    await logout();
-    router.push('/');
+    console.log('Tentative de déconnexion depuis layouts/DashboardLayout');
+    try {
+      await router.push('/logout');
+      console.log('Redirection vers logout réussie');
+    } catch (error) {
+      console.error('Erreur lors de la redirection vers logout:', error);
+    }
   };
 
   const isActive = (path: string): boolean => {
@@ -75,8 +80,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
-              <Link href="/">
-                <span className="text-white text-2xl font-bold cursor-pointer">Nionfar</span>
+              <Link href="/" className="text-white text-2xl font-bold cursor-pointer">
+                Nionfar
               </Link>
             </div>
             <nav className="mt-5 px-2 space-y-1">
@@ -84,25 +89,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <Link 
                   key={item.name} 
                   href={item.href}
-                >
-                  <span className={classNames(
+                  className={classNames(
                     isActive(item.href)
                       ? 'bg-indigo-800 text-white'
                       : 'text-white hover:bg-indigo-600',
                     'group flex items-center px-2 py-2 text-base font-medium rounded-md cursor-pointer'
-                  )}>
-                    <item.icon className="mr-4 h-6 w-6 text-indigo-300" />
-                    {item.name}
-                  </span>
+                  )}
+                >
+                  <item.icon className="mr-4 h-6 w-6 text-indigo-300" />
+                  {item.name}
                 </Link>
               ))}
-              <button
-                onClick={handleLogout}
+              <a 
+                href="/logout" 
                 className="text-white hover:bg-indigo-600 group flex items-center px-2 py-2 text-base font-medium rounded-md w-full"
               >
                 <FiLogOut className="mr-4 h-6 w-6 text-indigo-300" />
                 Déconnexion
-              </button>
+              </a>
             </nav>
           </div>
           
@@ -130,8 +134,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <div className="flex-1 flex flex-col min-h-0 bg-indigo-700">
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <div className="flex items-center flex-shrink-0 px-4">
-              <Link href="/">
-                <span className="text-white text-2xl font-bold cursor-pointer">Nionfar</span>
+              <Link href="/" className="text-white text-2xl font-bold cursor-pointer">
+                Nionfar
               </Link>
             </div>
             <nav className="mt-5 flex-1 px-2 space-y-1">
@@ -139,25 +143,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <Link 
                   key={item.name} 
                   href={item.href}
-                >
-                  <span className={classNames(
+                  className={classNames(
                     isActive(item.href)
                       ? 'bg-indigo-800 text-white'
                       : 'text-white hover:bg-indigo-600',
                     'group flex items-center px-2 py-2 text-sm font-medium rounded-md cursor-pointer'
-                  )}>
-                    <item.icon className="mr-3 h-5 w-5 text-indigo-300" />
-                    {item.name}
-                  </span>
+                  )}
+                >
+                  <item.icon className="mr-3 h-5 w-5 text-indigo-300" />
+                  {item.name}
                 </Link>
               ))}
-              <button
-                onClick={handleLogout}
-                className="text-white hover:bg-indigo-600 group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full"
+              <a 
+                href="/logout" 
+                className="text-white hover:bg-indigo-600 group flex items-center px-2 py-2 text-base font-medium rounded-md w-full"
               >
                 <FiLogOut className="mr-3 h-5 w-5 text-indigo-300" />
                 Déconnexion
-              </button>
+              </a>
             </nav>
           </div>
           

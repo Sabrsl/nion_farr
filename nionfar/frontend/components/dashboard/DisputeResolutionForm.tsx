@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Dispute, ResolutionType } from '../../types';
-import disputeService from '../../services/disputeService';
+import { disputeService } from '../../services/disputeService';
 import { useAuth } from '../../contexts/AuthContext';
 import ResolutionTypeSelector from './ResolutionTypeSelector';
 

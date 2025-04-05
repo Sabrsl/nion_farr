@@ -7,12 +7,378 @@ import {
   RevisionRequest,
   Dispute,
   Payment,
-  Notification
+  Notification,
+  FreelancerOrderStats
 } from '../types';
+import { serviceExplorerService } from './serviceExplorerService';
 
-// Simulate API service for orders
+interface OrderData {
+  serviceId: string;
+  clientId?: string;
+  freelancerId?: string;
+  requirements?: string;
+  options?: string[];
+  totalPrice: number;
+}
+
+interface OrderResponse {
+  success: boolean;
+  orderId?: string;
+  message?: string;
+}
+
 class OrderService {
-  private apiUrl = '/api/orders'; // Fictif pour le moment
+  private apiUrl = '/api/orders';
+
+  /**
+   * Vérifie si un utilisateur peut commander un service
+   * @param serviceId ID du service à commander
+   * @param userId ID de l'utilisateur qui veut commander
+   * @returns Promesse avec un booléen indiquant si la commande est possible
+   */
+  async checkOrderEligibility(serviceId: string, userId: string): Promise<boolean> {
+    try {
+      // Récupérer les détails du service
+      const service = await serviceExplorerService.getServiceById(serviceId);
+      
+      if (!service) {
+        console.error('Service non trouvé');
+        return false;
+      }
+      
+      // Vérifier que l'utilisateur n'est pas le créateur du service
+      if (service.provider && service.provider.id === userId) {
+        console.warn('Un utilisateur a tenté de commander son propre service');
+        return false;
+      }
+      
+      // Vérifier que le service est actif
+      if (!service.isActive) {
+        console.error('Tentative de commander un service inactif');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de la validation de la commande:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Crée une nouvelle commande
+   * @param orderData Données de la commande
+   * @returns Promesse avec la réponse de l'API
+   */
+  async createOrder(orderData: OrderData): Promise<OrderResponse> {
+    try {
+      // Vérifier si l'utilisateur peut commander ce service
+      if (orderData.clientId && orderData.serviceId) {
+        const canOrder = await this.checkOrderEligibility(orderData.serviceId, orderData.clientId);
+        
+        if (!canOrder) {
+          return {
+            success: false,
+            message: 'Vous ne pouvez pas commander ce service'
+          };
+        }
+      }
+      
+      // Dans une implémentation réelle, ceci serait un appel API
+      // const response = await fetch(this.apiUrl, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      //   },
+      //   body: JSON.stringify(orderData)
+      // });
+      // const data = await response.json();
+      // return data;
+      
+      // Simulation d'un appel API réussi
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Génération d'un ID de commande aléatoire
+      const orderId = `ORD-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      
+      return {
+        success: true,
+        orderId,
+        message: 'Commande créée avec succès'
+      };
+    } catch (error) {
+      console.error('Erreur lors de la création de la commande:', error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors de la création de la commande'
+      };
+    }
+  }
+
+  /**
+   * Récupère toutes les commandes d'un client
+   * @param clientId ID du client
+   * @returns Promesse avec les commandes du client
+   */
+  async getClientOrders(clientId: string) {
+    try {
+      // Dans une implémentation réelle, ceci serait un appel API
+      // const response = await fetch(`${this.apiUrl}/client/${clientId}`, {
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      //   }
+      // });
+      // const data = await response.json();
+      // return data;
+      
+      // Simulation d'un appel API réussi
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Retourner des commandes simulées
+      return {
+        success: true,
+        orders: [
+          {
+            id: 'ORD-123456',
+            serviceId: 'service1',
+            clientId,
+            freelancerId: 'freelancer1',
+            serviceName: 'Création de logo professionnel',
+            status: 'completed',
+            price: 15000,
+            createdAt: '2023-04-15T14:30:00Z',
+            completedAt: '2023-04-20T09:45:00Z'
+          },
+          {
+            id: 'ORD-789012',
+            serviceId: 'service2',
+            clientId,
+            freelancerId: 'freelancer2',
+            serviceName: 'Développement de site web vitrine',
+            status: 'in_progress',
+            price: 75000,
+            createdAt: '2023-05-10T11:20:00Z'
+          }
+        ]
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des commandes:', error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors de la récupération des commandes',
+        orders: []
+      };
+    }
+  }
+
+  /**
+   * Récupère toutes les commandes d'un freelancer
+   * @param freelancerId ID du freelancer
+   * @returns Promesse avec les commandes du freelancer
+   */
+  async getFreelancerOrders(freelancerId: string) {
+    try {
+      // Dans une implémentation réelle, ceci serait un appel API
+      // const response = await fetch(`${this.apiUrl}/freelancer/${freelancerId}`, {
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      //   }
+      // });
+      // const data = await response.json();
+      // return data;
+      
+      // Simulation d'un appel API réussi
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Retourner des commandes simulées
+      return {
+        success: true,
+        orders: [
+          {
+            id: 'ORD-345678',
+            serviceId: 'service3',
+            clientId: 'client1',
+            freelancerId,
+            serviceName: 'Traduction de document',
+            status: 'pending',
+            price: 12000,
+            createdAt: '2023-05-20T15:10:00Z'
+          },
+          {
+            id: 'ORD-901234',
+            serviceId: 'service4',
+            clientId: 'client2',
+            freelancerId,
+            serviceName: 'Montage vidéo',
+            status: 'completed',
+            price: 25000,
+            createdAt: '2023-04-05T09:30:00Z',
+            completedAt: '2023-04-10T16:20:00Z'
+          }
+        ]
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des commandes:', error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors de la récupération des commandes',
+        orders: []
+      };
+    }
+  }
+
+  /**
+   * Récupère les détails d'une commande
+   * @param orderId ID de la commande
+   * @returns Promesse avec les détails de la commande
+   */
+  async getOrderDetails(orderId: string) {
+    try {
+      // Dans une implémentation réelle, ceci serait un appel API
+      // const response = await fetch(`${this.apiUrl}/${orderId}`, {
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      //   }
+      // });
+      // const data = await response.json();
+      // return data;
+      
+      // Simulation d'un appel API réussi
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Retourner une commande simulée
+      return {
+        success: true,
+        order: {
+          id: orderId,
+          serviceId: 'service1',
+          clientId: 'client1',
+          freelancerId: 'freelancer1',
+          serviceName: 'Création de logo professionnel',
+          status: 'in_progress',
+          price: 15000,
+          createdAt: '2023-05-15T14:30:00Z',
+          requirements: 'Je souhaite un logo moderne et minimaliste pour mon entreprise de consultation.',
+          options: ['Fichiers sources inclus', 'Livraison express (24h)'],
+          messages: [
+            {
+              id: 'msg1',
+              senderId: 'client1',
+              content: 'Bonjour, je voulais préciser que j\'aimerais une version en couleur et une en noir et blanc.',
+              createdAt: '2023-05-15T15:45:00Z'
+            },
+            {
+              id: 'msg2',
+              senderId: 'freelancer1',
+              content: 'Bonjour, pas de problème. Je vais travailler sur ces deux versions. Avez-vous une palette de couleurs en tête?',
+              createdAt: '2023-05-15T16:20:00Z'
+            }
+          ]
+        }
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des détails de la commande:', error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors de la récupération des détails de la commande'
+      };
+    }
+  }
+
+  /**
+   * Valide une commande avant traitement
+   * @param serviceId ID du service à commander
+   * @param clientId ID du client
+   * @param requirements Brief du client
+   * @returns Promesse avec le résultat de la validation
+   */
+  async validateOrder(
+    serviceId: string, 
+    clientId: string, 
+    requirements: string
+  ): Promise<{
+    isValid: boolean;
+    errors: string[];
+    service?: Service;
+  }> {
+    try {
+      const errors: string[] = [];
+      
+      // Vérifier que les IDs sont fournis
+      if (!serviceId) errors.push('L\'ID du service est requis');
+      if (!clientId) errors.push('L\'ID du client est requis');
+      
+      // Si des erreurs bloquantes, on arrête là
+      if (errors.length > 0) {
+        return {
+          isValid: false,
+          errors
+        };
+      }
+      
+      // Vérifier le service
+      const serviceResponse = await fetch(`/api/services/${serviceId}`);
+      if (!serviceResponse.ok) {
+        errors.push('Service introuvable ou inaccessible');
+        return {
+          isValid: false,
+          errors
+        };
+      }
+      
+      const service = await serviceResponse.json();
+      
+      // Vérifier que le service est actif
+      if (!service.isActive) {
+        errors.push('Ce service n\'est pas disponible actuellement');
+      }
+      
+      // Vérifier que le vendeur est actif
+      const sellerResponse = await fetch(`/api/users/${service.provider.id}`);
+      const seller = await sellerResponse.json();
+      
+      if (!seller.isActive) {
+        errors.push('Le vendeur n\'est pas disponible actuellement');
+      }
+      
+      // Vérifier que le client et le vendeur ne sont pas la même personne
+      if (clientId === service.provider.id) {
+        errors.push('Vous ne pouvez pas commander votre propre service');
+      }
+      
+      // Vérifier que le client n'a pas déjà une commande en cours pour ce service
+      const activeOrdersResponse = await fetch(`${this.apiUrl}/client/${clientId}/active`);
+      const activeOrders = await activeOrdersResponse.json();
+      
+      const hasActiveOrderForService = activeOrders.some((order: Order) => 
+        order.service.id === serviceId && 
+        ['en_attente', 'en_attente_acceptation', 'en_cours', 'en_modification', 'livré', 'livraison_en_retard'].includes(order.status)
+      );
+      
+      if (hasActiveOrderForService) {
+        errors.push('Vous avez déjà une commande en cours pour ce service. Veuillez terminer votre commande existante avant d\'en passer une nouvelle.');
+      }
+      
+      // Vérifier le brief
+      if (!requirements || requirements.trim().length < 10) {
+        errors.push('Veuillez fournir un brief détaillé d\'au moins 10 caractères');
+      }
+      
+      return {
+        isValid: errors.length === 0,
+        errors,
+        service: errors.length === 0 ? service : undefined
+      };
+      
+    } catch (error) {
+      console.error('Erreur lors de la validation de la commande:', error);
+      return {
+        isValid: false,
+        errors: ['Une erreur est survenue lors de la validation de la commande']
+      };
+    }
+  }
   
   /**
    * Vérifie si un service peut être commandé
@@ -103,21 +469,23 @@ class OrderService {
     message?: string;
     paymentUrl?: string;
     paymentId?: string;
+    validationErrors?: string[];
   }> {
     try {
-      // 1. Vérifier la disponibilité du service
-      const serviceCheck = await this.checkServiceAvailability(serviceId, clientId);
+      // 1. Valider la commande
+      const validation = await this.validateOrder(serviceId, clientId, requirements);
       
-      if (!serviceCheck.available) {
+      if (!validation.isValid) {
         return {
           success: false,
-          message: serviceCheck.message
+          message: 'La commande ne peut pas être traitée. Veuillez corriger les erreurs.',
+          validationErrors: validation.errors
         };
       }
       
       // 2. Initialiser le paiement - obligatoire avant de créer la commande
       const paymentResponse = await this.initializePayment(
-        serviceCheck.service!.price,
+        validation.service!.price,
         clientId,
         serviceId,
         paymentInfo
@@ -132,7 +500,7 @@ class OrderService {
       }
       
       // 3. Vérifier que le paiement est bien effectué (ou initié pour le cas de l'intégration simulée)
-      const paymentService = (await import('./paymentService')).default;
+      const { paymentService } = await import('./paymentService');
       if (paymentResponse.paymentId) {
         const paymentStatus = await paymentService.verifyPaymentStatus(paymentResponse.paymentId);
         
@@ -149,20 +517,17 @@ class OrderService {
       
       // 4. Créer la commande avec statut "en_attente"
       const order: Partial<Order> = {
-        title: serviceCheck.service!.title,
-        service: serviceCheck.service!,
+        title: validation.service!.title,
+        service: validation.service!,
         client: { id: clientId } as any, // Sera complété par l'API
-        status: 'en_attente' as OrderStatus, // La commande est d'abord en attente de paiement
-        price: serviceCheck.service!.price,
+        status: 'en_attente', // La commande est d'abord en attente de paiement
+        price: validation.service!.price,
         requirements,
         isPaid: false,
         // Calculer la date d'échéance en fonction du délai de livraison du service
         // Le délai ne commence qu'une fois la commande acceptée par le vendeur
-        deadline: this.calculateDeadline(serviceCheck.service!.deliveryTime),
-        createdAt: new Date().toISOString(),
-        lastUpdatedAt: new Date().toISOString(),
-        // Pas de délai de validation tant que la commande n'est pas livrée
-        deliveryValidationDeadline: null
+        deadline: this.calculateDeadline(validation.service!.deliveryTime ?? 3),
+        createdAt: new Date().toISOString()
       };
       
       // Simuler une requête API
@@ -246,7 +611,7 @@ class OrderService {
       // 2. Si le paiement a réussi
       if (status === 'success') {
         // Utiliser le service de paiement pour valider le paiement
-        const paymentService = (await import('./paymentService')).default;
+        const { paymentService } = await import('./paymentService');
         const paymentResult = await paymentService.onPaymentValidated(
           paymentId,
           order.price,
@@ -281,12 +646,13 @@ class OrderService {
           userId: order.service.provider.id,
           title: 'Nouvelle commande',
           message: `Vous avez reçu une nouvelle commande : ${order.title}`,
-          type: 'success',
+          content: `Vous avez reçu une nouvelle commande : ${order.title}`,
+          type: 'order',
           link: `/dashboard/orders/${order.id}`
         });
       } else {
         // Utiliser le service de paiement pour gérer l'échec du paiement
-        const paymentService = (await import('./paymentService')).default;
+        const { paymentService } = await import('./paymentService');
         await paymentService.onPaymentFailed(
           paymentId,
           order.id,
@@ -350,8 +716,9 @@ class OrderService {
       await this.createNotification({
         userId: order.client.id,
         title: 'Commande acceptée',
-        message: `Votre commande ${order.title} a été acceptée par le vendeur.`,
-        type: 'success',
+        message: `Votre commande "${order.title}" a été acceptée`,
+        content: `Votre commande "${order.title}" a été acceptée`,
+        type: 'order',
         link: `/dashboard/orders/${order.id}`
       });
       
@@ -416,6 +783,8 @@ class OrderService {
       const newDeliverable: Deliverable = {
         id: `DEL-${Date.now()}`,
         orderId,
+        name: `Livraison ${isAfterRevision ? 'révision' : 'initiale'}`,
+        url: deliverable.fileUrls[0] || '',
         message: deliverable.message,
         fileUrls: deliverable.fileUrls,
         createdAt: new Date().toISOString(),
@@ -445,7 +814,10 @@ class OrderService {
         message: isAfterRevision 
           ? `Le vendeur a livré la révision demandée pour la commande ${order.title}.` 
           : `Votre commande ${order.title} a été livrée.`,
-        type: 'success',
+        content: isAfterRevision 
+          ? `Le vendeur a livré la révision demandée pour la commande ${order.title}.` 
+          : `Votre commande ${order.title} a été livrée.`,
+        type: 'order',
         link: `/dashboard/orders/${order.id}`
       });
       
@@ -537,7 +909,8 @@ class OrderService {
         userId: order.service.provider.id,
         title: 'Demande de révision',
         message: `Le client a demandé une révision pour la commande ${order.title}.`,
-        type: 'warning',
+        content: `Le client a demandé une révision pour la commande ${order.title}.`,
+        type: 'order',
         link: `/dashboard/orders/${order.id}`
       });
       
@@ -606,7 +979,7 @@ class OrderService {
       });
       
       // Transférer les fonds au vendeur après déduction de la commission
-      const paymentService = (await import('./paymentService')).default;
+      const { paymentService } = await import('./paymentService');
       const { platformFee, sellerAmount } = paymentService.calculatePlatformFee(order.price);
       
       // Transférer le montant net (après commission) au vendeur avec période de grâce
@@ -619,8 +992,9 @@ class OrderService {
       await this.createNotification({
         userId: order.service.provider.id,
         title: 'Commande terminée',
-        message: `Le client a approuvé la commande ${order.title}. Les fonds (${sellerAmount} FCFA, après déduction de la commission de ${platformFee} FCFA) seront disponibles après la période de grâce.`,
-        type: 'success',
+        message: `La commande "${order.title}" a été terminée`,
+        content: `La commande "${order.title}" a été terminée`,
+        type: 'order',
         link: `/dashboard/orders/${order.id}`
       });
       
@@ -708,7 +1082,8 @@ class OrderService {
               userId: order.service.provider.id,
               title: 'Livraison en retard',
               message: `La date limite de livraison pour la commande ${order.title} est dépassée.`,
-              type: 'warning',
+              content: `La date limite de livraison pour la commande ${order.title} est dépassée.`,
+              type: 'order',
               link: `/dashboard/orders/${order.id}`
             });
             
@@ -717,7 +1092,8 @@ class OrderService {
               userId: order.client.id,
               title: 'Livraison en retard',
               message: `La date limite de livraison pour la commande ${order.title} est dépassée. Le vendeur a été notifié.`,
-              type: 'warning',
+              content: `La date limite de livraison pour la commande ${order.title} est dépassée. Le vendeur a été notifié.`,
+              type: 'order',
               link: `/dashboard/orders/${order.id}`
             });
           }
@@ -744,7 +1120,7 @@ class OrderService {
             });
             
             // Calculer et traiter la commission
-            const paymentService = (await import('./paymentService')).default;
+            const { paymentService } = await import('./paymentService');
             const { platformFee, sellerAmount } = paymentService.calculatePlatformFee(order.price);
             
             // Transférer le montant net au vendeur
@@ -758,7 +1134,8 @@ class OrderService {
               userId: order.client.id,
               title: 'Validation automatique',
               message: `La commande ${order.title} a été automatiquement validée après 3 jours sans action de votre part.`,
-              type: 'info',
+              content: `La commande ${order.title} a été automatiquement validée après 3 jours sans action de votre part.`,
+              type: 'order',
               link: `/dashboard/orders/${order.id}`
             });
             
@@ -767,7 +1144,8 @@ class OrderService {
               userId: order.service.provider.id,
               title: 'Commande validée automatiquement',
               message: `La commande ${order.title} a été automatiquement validée car le client n'a pas pris d'action dans les 3 jours suivant la livraison. Les fonds (${sellerAmount} FCFA, après déduction de la commission de ${platformFee} FCFA) seront disponibles après la période de grâce.`,
-              type: 'success',
+              content: `La commande ${order.title} a été automatiquement validée car le client n'a pas pris d'action dans les 3 jours suivant la livraison. Les fonds (${sellerAmount} FCFA, après déduction de la commission de ${platformFee} FCFA) seront disponibles après la période de grâce.`,
+              type: 'system',
               link: `/dashboard/orders/${order.id}`
             });
           } else {
@@ -793,7 +1171,8 @@ class OrderService {
                 userId: order.client.id,
                 title: 'Action requise - Validation de livraison',
                 message: `Votre commande ${order.title} sera automatiquement validée dans moins de 24h si vous ne prenez aucune action. Veuillez valider la livraison ou demander une révision.`,
-                type: 'warning',
+                content: `Votre commande ${order.title} sera automatiquement validée dans moins de 24h si vous ne prenez aucune action. Veuillez valider la livraison ou demander une révision.`,
+                type: 'order',
                 link: `/dashboard/orders/${order.id}`
               });
             }
@@ -850,7 +1229,7 @@ class OrderService {
       }
 
       // Appeler le service de litiges
-      const disputeService = await import('./disputeService').then(m => m.default);
+      const { disputeService } = await import('./disputeService');
       const result = await disputeService.onDisputeOpened(
         orderId,
         user.id,
@@ -880,6 +1259,7 @@ class OrderService {
       const newNotification: Notification = {
         id: `NOTIF-${Date.now()}`,
         ...notification,
+        content: notification.message || notification.title, // Use message or title as content if not provided
         isRead: false,
         createdAt: new Date().toISOString()
       };
@@ -992,78 +1372,28 @@ class OrderService {
   }
 
   /**
-   * Récupère les statistiques de commande d'un freelancer
-   * @param freelancerId ID du freelancer
-   * @returns Statistiques des commandes du freelancer
+   * Récupérer les statistiques des commandes d'un freelancer
+   * @param userId - ID du freelancer
    */
-  async getFreelancerOrderStats(freelancerId: string): Promise<{
-    totalOrders: number;
-    completedOrders: number;
-    cancelledOrders: number;
-    inProgressOrders: number;
-    disputedOrders: number;
-    orderCompletionRate: number;
-    averageCompletionTime: number; // en jours
-    revenueStats: {
-      total: number;
-      lastMonth: number;
-      lastWeek: number;
+  async getFreelancerOrderStats(userId: string): Promise<FreelancerOrderStats> {
+    // Simuler un appel API
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Retourner des données fictives
+    return {
+      totalOrders: 25 + Math.floor(Math.random() * 30),
+      completedOrders: 20 + Math.floor(Math.random() * 25),
+      inProgressOrders: 2 + Math.floor(Math.random() * 3),
+      cancelledOrders: Math.floor(Math.random() * 3),
+      averageCompletionTime: 3 + Math.random() * 4, // en jours
+      orderCompletionRate: 0.85 + Math.random() * 0.15,
+      disputedOrders: Math.floor(Math.random() * 3),
+      revenueStats: {
+        total: 100000 + Math.floor(Math.random() * 50000),
+        lastMonth: 20000 + Math.floor(Math.random() * 10000),
+        lastWeek: 5000 + Math.floor(Math.random() * 3000)
+      }
     };
-  }> {
-    try {
-      // Simuler un délai d'appel à l'API
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      // Dans une implémentation réelle, nous ferions un appel API
-      // pour récupérer ces données depuis la base de données
-      
-      // Générer des données simulées pour la démonstration
-      const totalOrders = 10 + Math.floor(Math.random() * 40); // Entre 10 et 50 commandes
-      const completedOrders = Math.floor(totalOrders * (0.7 + Math.random() * 0.25)); // Entre 70% et 95%
-      const cancelledOrders = Math.floor(totalOrders * (0.02 + Math.random() * 0.08)); // Entre 2% et 10%
-      const disputedOrders = Math.floor(totalOrders * (0.01 + Math.random() * 0.07)); // Entre 1% et 8%
-      const inProgressOrders = totalOrders - completedOrders - cancelledOrders;
-      
-      const orderCompletionRate = completedOrders / totalOrders;
-      const averageCompletionTime = 1 + Math.random() * 4; // Entre 1 et 5 jours
-      
-      // Statistiques de revenus
-      const avgOrderValue = 15000 + Math.random() * 35000; // Entre 15000 et 50000 FCFA
-      const totalRevenue = Math.round(completedOrders * avgOrderValue);
-      const lastMonthOrders = Math.floor(completedOrders * (0.1 + Math.random() * 0.2)); // Entre 10% et 30% du total
-      const lastWeekOrders = Math.floor(lastMonthOrders * (0.1 + Math.random() * 0.3)); // Entre 10% et 40% du mois
-      
-      return {
-        totalOrders,
-        completedOrders,
-        cancelledOrders,
-        inProgressOrders,
-        disputedOrders,
-        orderCompletionRate,
-        averageCompletionTime,
-        revenueStats: {
-          total: totalRevenue,
-          lastMonth: Math.round(lastMonthOrders * avgOrderValue),
-          lastWeek: Math.round(lastWeekOrders * avgOrderValue)
-        }
-      };
-    } catch (error) {
-      console.error('Erreur lors de la récupération des statistiques de commandes:', error);
-      return {
-        totalOrders: 0,
-        completedOrders: 0,
-        cancelledOrders: 0,
-        inProgressOrders: 0,
-        disputedOrders: 0,
-        orderCompletionRate: 0,
-        averageCompletionTime: 0,
-        revenueStats: {
-          total: 0,
-          lastMonth: 0,
-          lastWeek: 0
-        }
-      };
-    }
   }
 
   /**
@@ -1108,7 +1438,8 @@ class OrderService {
               userId: order.service.provider.id,
               title: 'Action requise - Commande en attente',
               message: `La commande ${order.title} est en attente de votre acceptation depuis plus de 24h. Veuillez accepter ou refuser rapidement.`,
-              type: 'warning',
+              content: `La commande ${order.title} est en attente de votre acceptation depuis plus de 24h. Veuillez accepter ou refuser rapidement.`,
+              type: 'order',
               link: `/dashboard/orders/${order.id}`
             });
             
@@ -1117,7 +1448,8 @@ class OrderService {
               userId: order.client.id,
               title: 'Vendeur notifié',
               message: `Le vendeur a été notifié de votre commande ${order.title} qui est en attente depuis plus de 24h.`,
-              type: 'info',
+              content: `Le vendeur a été notifié de votre commande ${order.title} qui est en attente depuis plus de 24h.`,
+              type: 'order',
               link: `/dashboard/orders/${order.id}`
             });
             
@@ -1126,7 +1458,8 @@ class OrderService {
               userId: 'admin', // ID de l'admin général ou système
               title: 'Vendeur non-réactif',
               message: `Le vendeur ${order.service.provider.name} n'a pas répondu à la commande ${order.id} (${order.title}) depuis plus de 24h.`,
-              type: 'warning',
+              content: `Le vendeur ${order.service.provider.name} n'a pas répondu à la commande ${order.id} (${order.title}) depuis plus de 24h.`,
+              type: 'system',
               link: `/admin/orders/${order.id}`
             });
           }
@@ -1138,6 +1471,6 @@ class OrderService {
   }
 }
 
-// Création d'une instance singleton du service
+// Export l'instance du service comme dans serviceExplorerService.ts
 const orderService = new OrderService();
 export default orderService; 

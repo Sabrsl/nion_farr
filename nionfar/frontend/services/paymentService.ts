@@ -293,4 +293,4 @@ class PaymentService {
   }
 }
 
-export default new PaymentService(); 
+export const paymentService = new PaymentService(); 

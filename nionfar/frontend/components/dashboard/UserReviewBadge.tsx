@@ -23,8 +23,8 @@ const UserReviewBadge: React.FC<UserReviewBadgeProps> = ({
   const { tooltipRef, showTooltipText, setShowTooltipText } = useTooltip();
   
   // Utiliser les valeurs fournies, ou celles de l'utilisateur si disponibles
-  const rating = averageRating || user.rating || 0;
-  const orders = completedOrders || user.completedOrders || 0;
+  const rating = averageRating || (user as any).rating || 0;
+  const orders = completedOrders || (user as any).completedOrders || 0;
   
   // Déterminer si l'utilisateur est un top vendeur
   const isTopSeller = rating >= 4.5 && orders >= 20;

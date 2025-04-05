@@ -16,13 +16,14 @@ import {
 } from 'react-icons/fi';
 import { Tooltip } from '../ui/Tooltip';
 import { Service } from '../../types';
+import { Rating } from '../ui/Rating';
 
 interface ServiceCardProps {
   service: Service;
   onToggleStatus: (id: string) => void;
   onDeleteClick: (service: Service) => void;
   formatDate: (date: string) => string;
-  getRatingColor: (rating: number) => string;
+  getRatingColor: (rating: number | undefined) => string;
   variants?: any;
 }
 
@@ -34,6 +35,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   getRatingColor,
   variants 
 }) => {
+  const getRatingColorHandler = (rating: number | undefined): string => {
+    if (!rating) return 'text-gray-500 bg-gray-100';
+    if (rating >= 4.5) return 'text-green-600 bg-green-100';
+    if (rating >= 4) return 'text-green-500 bg-green-50';
+    if (rating >= 3.5) return 'text-yellow-600 bg-yellow-100';
+    if (rating >= 3) return 'text-yellow-500 bg-yellow-50';
+    return 'text-red-500 bg-red-50';
+  };
+
   return (
     <motion.div 
       variants={variants}
@@ -43,18 +53,21 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     >
       {/* Image du service avec overlay hover */}
       <div className="aspect-w-16 aspect-h-9 bg-gray-100 relative overflow-hidden">
-        {service.images && service.images.length > 0 ? (
-          <img 
-            src={service.images[0]} 
+        {service.image ? (
+          <img
+            src={service.image}
             alt={service.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = `https://placehold.co/600x400/6366f1/ffffff?text=${encodeURIComponent(service.title.substring(0, 20))}`;
-            }}
+            className="w-full h-full object-cover"
+          />
+        ) : service.images && Array.isArray(service.images) && service.images.length > 0 ? (
+          <img
+            src={service.images[0]}
+            alt={service.title}
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 text-indigo-500">
-            <FiUser className="h-16 w-16" />
+          <div className="flex items-center justify-center h-full bg-gray-200">
+            <span className="text-gray-500 text-sm">Aucune image</span>
           </div>
         )}
         
@@ -76,9 +89,16 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         {/* Category - légèrement repositionné */}
         {service.category && (
           <div className="absolute top-3 left-3 z-10">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/90 border border-gray-100 text-gray-800 backdrop-blur-sm shadow-sm">
-              {service.category.name}
-            </span>
+            <div className="flex items-center text-sm mb-2">
+              <span className="font-semibold mr-2">
+                {typeof service.category === 'string' 
+                  ? service.category 
+                  : (service.category as any).name || 'Catégorie'}
+              </span>
+              {typeof service.category === 'object' && (service.category as any)?.name && (
+                <span className="text-gray-500">{(service.category as any).name}</span>
+              )}
+            </div>
           </div>
         )}
         
@@ -86,7 +106,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-4">
           <div className="flex w-full flex-col sm:flex-row gap-2 mb-2">
             <Link
-              href={`/services/${service.slug}`}
+              href={`/services/${service.slug || service.id}`}
               className="w-full text-center text-xs sm:text-sm font-medium text-white bg-black/50 hover:bg-black/70 px-3 py-2 rounded-md flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white/10"
               target="_blank"
               rel="noopener noreferrer"
@@ -110,12 +130,20 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div className={`flex items-center ${getRatingColor(service.rating)} px-2 py-0.5 rounded-md text-xs font-medium border`}>
             <FiStar className="h-3.5 w-3.5 mr-1 fill-current" />
-            <span>{service.rating.toFixed(1)}</span>
-            <span className="text-xs ml-1 opacity-80">({service.totalReviews})</span>
+            <div className="flex items-center text-sm">
+              <Rating
+                value={service.rating !== undefined ? service.rating : 0}
+                readOnly
+                size="sm"
+              />
+              <span className="ml-1 text-gray-500">
+                {service.rating ? service.rating.toFixed(1) : 'N/A'} ({service.totalReviews || 0})
+              </span>
+            </div>
           </div>
-          <div className="flex items-center text-gray-500 text-xs">
-            <FiShoppingBag className="h-3.5 w-3.5 mr-1" />
-            <span>{service.orderCount} commandes</span>
+          <div className="flex items-center text-sm text-gray-500">
+            <FiShoppingBag className="mr-1 h-4 w-4" />
+            <span>{service.orderCount || 0} commandes</span>
           </div>
         </div>
         
@@ -126,7 +154,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         <div className="flex items-center justify-between mb-3 text-xs text-gray-500">
           <div className="flex items-center">
             <FiCalendar className="h-3.5 w-3.5 mr-1" />
-            {formatDate(service.createdAt)}
+            {service.createdAt ? formatDate(service.createdAt) : 'Date inconnue'}
           </div>
           <div className="flex items-center">
             <FiClock className="h-3.5 w-3.5 mr-1" />

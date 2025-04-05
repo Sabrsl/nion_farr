@@ -117,7 +117,7 @@ class DisputeLogService {
 
       // Vérifier les délais
       const clientName = order.client.name || 'Client';
-      const vendeurName = order.service.provider.name || 'Vendeur';
+      const vendeurName = order.service?.provider?.name || 'Vendeur';
       let summary = `Litige ouvert par ${clientName} le ${this.formatDate(creationDate)}. `;
 
       // Activité des participants

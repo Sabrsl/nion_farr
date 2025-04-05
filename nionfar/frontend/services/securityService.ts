@@ -59,10 +59,19 @@ export interface KycStatusDetails {
   lastUpdate: Date;
 }
 
-/**
- * Service pour gérer la sécurité et la prévention de fraude
- */
-const securityService = {
+interface VerificationStatus {
+  isVerified: boolean;
+  verificationLevel: 'none' | 'basic' | 'full';
+  verifiedEmail: boolean;
+  verifiedPhone: boolean;
+  verifiedIdentity: boolean;
+  verifiedAddress: boolean;
+  lastVerificationDate?: string;
+}
+
+class SecurityService {
+  private readonly apiUrl: string = '/api/security';
+  
   /**
    * Vérifie l'activité de l'utilisateur pour détecter des comportements suspects
    * @param userId - ID de l'utilisateur à vérifier
@@ -126,7 +135,7 @@ const securityService = {
       reasons: mockReasons,
       alerts: mockAlerts
     };
-  },
+  }
   
   /**
    * Vérifie si l'utilisateur a complété sa procédure KYC (Know Your Customer)
@@ -201,7 +210,7 @@ const securityService = {
       canWithdraw,
       reasons
     };
-  },
+  }
   
   /**
    * Hook pour vérifier si un retrait peut être effectué
@@ -234,7 +243,7 @@ const securityService = {
       reasons,
       requiresAdditionalVerification
     };
-  },
+  }
   
   /**
    * Envoie une alerte administrative
@@ -250,129 +259,42 @@ const securityService = {
     });
       
     return { success: true };
-  },
+  }
 
   /**
-   * Récupère le statut de vérification d'un utilisateur
-   * @param userId ID de l'utilisateur
-   * @returns Statut de vérification et informations KYC
+   * Récupérer le statut de vérification d'un utilisateur
+   * @param userId - ID de l'utilisateur
    */
-  async getUserVerificationStatus(userId: string): Promise<{
-    isVerified: boolean;
-    verificationLevel: 'none' | 'basic' | 'full';
-    kycInfo: KycInfo;
-    lastVerificationDate?: string;
-    pendingDocuments: string[];
-    verificationHistory: Array<{
-      date: string;
-      action: string;
-      status: 'approved' | 'rejected' | 'pending';
-      notes?: string;
-    }>;
-  }> {
-    try {
-      // Simuler un appel au backend
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Récupérer les informations KYC existantes
-      const kycResponse = await this.verifyIdentity(userId);
-      const kycInfo = kycResponse.kycInfo;
-      
-      // Déterminer le niveau de vérification basé sur les informations KYC
-      let verificationLevel: 'none' | 'basic' | 'full' = 'none';
-      if (kycInfo.idVerified && kycInfo.addressVerified) {
-        verificationLevel = 'full';
-      } else if (kycInfo.emailVerified && kycInfo.phoneVerified) {
-        verificationLevel = 'basic';
-      }
-      
-      // Générer un historique de vérification simulé
-      const verificationHistory = [];
-      
-      if (kycInfo.emailVerified) {
-        const emailVerifDate = new Date(Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000);
-        verificationHistory.push({
-          date: emailVerifDate.toISOString(),
-          action: 'Vérification d\'email',
-          status: 'approved'
-        });
-      }
-      
-      if (kycInfo.phoneVerified) {
-        const phoneVerifDate = new Date(Date.now() - Math.random() * 150 * 24 * 60 * 60 * 1000);
-        verificationHistory.push({
-          date: phoneVerifDate.toISOString(),
-          action: 'Vérification de téléphone',
-          status: 'approved'
-        });
-      }
-      
-      if (kycInfo.idVerified) {
-        const idVerifDate = new Date(Date.now() - Math.random() * 120 * 24 * 60 * 60 * 1000);
-        verificationHistory.push({
-          date: idVerifDate.toISOString(),
-          action: 'Vérification d\'identité',
-          status: 'approved',
-          notes: 'Carte d\'identité valide'
-        });
-      }
-      
-      if (kycInfo.addressVerified) {
-        const addressVerifDate = new Date(Date.now() - Math.random() * 100 * 24 * 60 * 60 * 1000);
-        verificationHistory.push({
-          date: addressVerifDate.toISOString(),
-          action: 'Vérification d\'adresse',
-          status: 'approved',
-          notes: 'Facture d\'électricité acceptée'
-        });
-      }
-      
-      // Trier l'historique par date (du plus récent au plus ancien)
-      verificationHistory.sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      
-      // Déterminer la date de dernière vérification
-      let lastVerificationDate = undefined;
-      if (verificationHistory.length > 0) {
-        lastVerificationDate = verificationHistory[0].date;
-      }
-      
-      // Documents en attente
-      const pendingDocuments = [];
-      if (!kycInfo.idVerified) {
-        pendingDocuments.push('Pièce d\'identité');
-      }
-      if (!kycInfo.addressVerified) {
-        pendingDocuments.push('Justificatif de domicile');
-      }
-      
-      return {
-        isVerified: verificationLevel === 'full',
-        verificationLevel,
-        kycInfo,
-        lastVerificationDate,
-        pendingDocuments,
-        verificationHistory
-      };
-    } catch (error) {
-      console.error('Erreur lors de la récupération du statut de vérification:', error);
-      return {
-        isVerified: false,
-        verificationLevel: 'none',
-        kycInfo: {
-          userId: userId,
-          status: 'incomplete',
-          emailVerified: false,
-          phoneVerified: false,
-          idVerified: false,
-          addressVerified: false
-        },
-        pendingDocuments: ['Tous les documents requis'],
-        verificationHistory: []
-      };
+  async getUserVerificationStatus(userId: string): Promise<VerificationStatus> {
+    // Simuler un appel API
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Générer des données fictives
+    const verifiedEmail = Math.random() > 0.1; // 90% des utilisateurs ont leur email vérifié
+    const verifiedPhone = Math.random() > 0.3; // 70% ont leur téléphone vérifié
+    const verifiedIdentity = Math.random() > 0.6; // 40% ont leur identité vérifiée
+    const verifiedAddress = Math.random() > 0.7; // 30% ont leur adresse vérifiée
+    
+    // Déterminer le niveau de vérification
+    let verificationLevel: 'none' | 'basic' | 'full' = 'none';
+    if (verifiedEmail && verifiedPhone && verifiedIdentity && verifiedAddress) {
+      verificationLevel = 'full';
+    } else if (verifiedEmail && verifiedPhone) {
+      verificationLevel = 'basic';
     }
-  },
+    
+    return {
+      isVerified: verificationLevel !== 'none',
+      verificationLevel,
+      verifiedEmail,
+      verifiedPhone,
+      verifiedIdentity,
+      verifiedAddress,
+      lastVerificationDate: verificationLevel !== 'none' 
+        ? new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString()
+        : undefined
+    };
+  }
 
   /**
    * Détecte les comportements anormaux liés aux comptes utilisateurs
@@ -406,7 +328,7 @@ const securityService = {
         score: 0
       };
     }
-  },
+  }
   
   /**
    * Vérifie si une adresse IP est partagée entre plusieurs comptes
@@ -436,7 +358,7 @@ const securityService = {
         accountCount: 0
       };
     }
-  },
+  }
   
   /**
    * Vérifie si un numéro de téléphone est partagé entre plusieurs comptes
@@ -466,7 +388,7 @@ const securityService = {
         accountCount: 0
       };
     }
-  },
+  }
   
   /**
    * Détecte les potentiels multi-comptes d'un utilisateur
@@ -499,7 +421,7 @@ const securityService = {
         totalRelatedAccounts: 0
       };
     }
-  },
+  }
   
   /**
    * Signale un compte suspect pour analyse manuelle
@@ -539,7 +461,7 @@ const securityService = {
         message: 'Une erreur est survenue lors du signalement du compte'
       };
     }
-  },
+  }
   
   /**
    * Marque des comptes comme liés après vérification
@@ -578,7 +500,7 @@ const securityService = {
         message: 'Une erreur est survenue lors de l\'association des comptes'
       };
     }
-  },
+  }
   
   /**
    * Applique une restriction à un compte
@@ -621,7 +543,7 @@ const securityService = {
         message: 'Une erreur est survenue lors de l\'application de la restriction'
       };
     }
-  },
+  }
   
   /**
    * Analyse le risque d'un nouvel utilisateur lors de l'inscription
@@ -660,6 +582,7 @@ const securityService = {
       };
     }
   }
-};
+}
 
-export default securityService; 
+// Export l'instance du service
+export const securityService = new SecurityService(); 

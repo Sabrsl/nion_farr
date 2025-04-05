@@ -24,6 +24,7 @@ import Link from 'next/link';
 import Layout from '../components/layout/Layout';
 import { FilterSidebar } from '../components/explorer/FilterSidebar';
 import { ServiceGrid } from '../components/explorer/ServiceGrid';
+import { serviceExplorerService } from '../services/serviceExplorerService';
 
 // Types
 import { Category, Service, FilterOptions } from '../types';
@@ -31,6 +32,21 @@ import { Category, Service, FilterOptions } from '../types';
 // Mock data for development
 import { categories } from '../data/categories';
 import { mockServices } from '../data/services';
+
+// Vérifier si la catégorie d'un service est un objet ou une chaîne de caractères
+const getCategoryId = (category: any): string => {
+  if (typeof category === 'string') {
+    return category;
+  }
+  return category?.id || '';
+};
+
+// Obtenir le nom de la catégorie de manière sécurisée
+const getCategoryName = (category: any): string => {
+  if (!category) return '';
+  if (typeof category === 'string') return '';
+  return category.name || '';
+};
 
 const Explorer: NextPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -57,65 +73,102 @@ const Explorer: NextPage = () => {
   }, [filteredServices.length]);
 
   useEffect(() => {
-    // Simulate loading delay
-    const timer = setTimeout(() => {
-      setServices(mockServices);
-      setFilteredServices(mockServices);
-      setFeaturedCategories(categories.slice(0, 4));
-      setIsLoading(false);
-    }, 1000);
+    let isMounted = true;
+    const fetchServices = async () => {
+      setIsLoading(true);
+      try {
+        // En production, utiliser serviceExplorerService.getAllPublicServices()
+        // Pour la démo, filtrer les services mock
+        const publicServices = mockServices.filter(service => service.isActive);
+        
+        // Vérifiez si le composant est toujours monté avant de mettre à jour l'état
+        if (isMounted) {
+          setServices(publicServices);
+          setFilteredServices(publicServices);
+          setFeaturedCategories(categories.slice(0, 4));
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des services:', error);
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, []);
+    fetchServices();
+    
+    // Nettoyer pour éviter les mises à jour d'état sur un composant démonté
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Dépendance vide = s'exécute uniquement au montage
 
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
-    // In a real app, you would filter services based on these filters
-    // For now, we're just simulating this behavior
     setIsLoading(true);
-    setTimeout(() => {
-      // Apply filters to services (simplified example)
-      let filtered = [...services];
-      
-      // Filter by categories
-      if (newFilters.categories && newFilters.categories.length > 0) {
-        filtered = filtered.filter(service => 
-          service.category && newFilters.categories!.includes(service.category.id)
-        );
+    
+    const timer = setTimeout(() => {
+      try {
+        // Filtrer d'abord par statut actif
+        let filtered = services.filter(service => service.isActive);
+        
+        // Appliquer les filtres supplémentaires
+        // Filter by categories
+        if (newFilters.categories && newFilters.categories.length > 0) {
+          filtered = filtered.filter(service => {
+            const categoryId = getCategoryId(service.category);
+            return newFilters.categories!.includes(categoryId);
+          });
+        }
+        
+        // Filter by price range
+        if (newFilters.minPrice || newFilters.maxPrice) {
+          filtered = filtered.filter(service => 
+            (!newFilters.minPrice || service.price >= newFilters.minPrice) &&
+            (!newFilters.maxPrice || service.price <= newFilters.maxPrice)
+          );
+        }
+        
+        // Filter by rating
+        if (newFilters.minRating && newFilters.minRating > 0) {
+          filtered = filtered.filter(service => (service.rating || 0) >= (newFilters.minRating || 0));
+        }
+        
+        // Apply sorting
+        sortServices(filtered);
+        
+        setFilteredServices(filtered);
+      } catch (error) {
+        console.error('Erreur lors du filtrage des services:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Filter by price range
-      if (newFilters.minPrice || newFilters.maxPrice) {
-        filtered = filtered.filter(service => 
-          (!newFilters.minPrice || service.price >= newFilters.minPrice) &&
-          (!newFilters.maxPrice || service.price <= newFilters.maxPrice)
-        );
-      }
-      
-      // Filter by rating
-      if (newFilters.minRating && newFilters.minRating > 0) {
-        filtered = filtered.filter(service => service.rating >= newFilters.minRating!);
-      }
-      
-      // Apply sorting
-      sortServices(filtered);
-      
-      setFilteredServices(filtered);
-      setIsLoading(false);
     }, 500);
+    
+    // Nettoyer le timer en cas de démontage ou d'appel multiples rapides
+    return () => clearTimeout(timer);
   };
 
   const sortServices = (services: Service[]) => {
     switch(sortBy) {
       case 'newest':
-        return services.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return services.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
       case 'price-low':
         return services.sort((a, b) => a.price - b.price);
       case 'price-high':
         return services.sort((a, b) => b.price - a.price);
       case 'popular':
       default:
-        return services.sort((a, b) => b.orderCount - a.orderCount);
+        // Méthode sûre pour accéder à orderCount
+        const getOrderCount = (service: Service) => {
+          return typeof service === 'object' && 'orderCount' in service ? (service as any).orderCount : 0;
+        };
+        return services.sort((a, b) => getOrderCount(b) - getOrderCount(a));
     }
   };
 
@@ -145,11 +198,13 @@ const Explorer: NextPage = () => {
         setFilteredServices(services);
       } else {
         const query = searchQuery.toLowerCase();
-        const filtered = services.filter(service => 
-          service.title.toLowerCase().includes(query) || 
-          (service.description?.toLowerCase() || '').includes(query) ||
-          (service.category && service.category.name.toLowerCase().includes(query))
-        );
+        const filtered = services.filter(service => {
+          const categoryName = getCategoryName(service.category);
+            
+          return service.title.toLowerCase().includes(query) || 
+            (service.description?.toLowerCase() || '').includes(query) ||
+            categoryName.toLowerCase().includes(query);
+        });
         setFilteredServices(filtered);
       }
       setIsLoading(false);

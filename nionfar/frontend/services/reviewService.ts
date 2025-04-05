@@ -51,8 +51,6 @@ const reviewService = {
       
       return {
         id: `review-${Date.now()}-${index}`,
-        order: { id: `order-${index}` } as Order,
-        service: { id: `service-${index}`, title: 'Service simulé' } as Service,
         reviewer: {
           id: asRecipient ? `user-${index}` : userId,
           name: asRecipient ? `Utilisateur ${index}` : 'Vous',
@@ -60,21 +58,22 @@ const reviewService = {
           email: `user${index}@example.com`,
           createdAt: new Date().toISOString()
         } as User,
-        recipient: {
-          id: asRecipient ? userId : `user-${index}`,
-          name: asRecipient ? 'Vous' : `Utilisateur ${index}`,
-          role: asRecipient ? 'freelancer' : 'client',
-          email: asRecipient ? 'you@example.com' : `user${index}@example.com`,
+        service: { 
+          id: `service-${index}`, 
+          title: 'Service simulé',
+          slug: `service-${index}`,
+          price: 100,
+          deliveryTime: 3,
+          isActive: true,
           createdAt: new Date().toISOString()
-        } as User,
+        } as Service,
         rating: isPositive ? 4 + Math.random() : 2 + Math.random() * 2,
         title: isPositive ? 'Très satisfait du service' : 'Service passable',
         content: isPositive 
           ? 'Le prestataire a été professionnel et a livré un travail de qualité dans les délais impartis.'
           : 'Le travail a été fait, mais la communication était difficile et il a fallu plusieurs révisions.',
-        createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(), // Jusqu'à 30 jours dans le passé
-        isPublic: Math.random() > 0.1, // 90% des avis sont publics
-        likes: Math.floor(Math.random() * 10)
+        createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        helpfulCount: Math.floor(Math.random() * 10)
       };
     });
     
@@ -97,8 +96,6 @@ const reviewService = {
       
       return {
         id: `review-${Date.now()}-${index}`,
-        order: { id: `order-${index}` } as Order,
-        service: { id: serviceId, title: 'Service simulé' } as Service,
         reviewer: {
           id: `client-${index}`,
           name: `Client ${index}`,
@@ -106,21 +103,22 @@ const reviewService = {
           email: `client${index}@example.com`,
           createdAt: new Date().toISOString()
         } as User,
-        recipient: {
-          id: `provider-${serviceId}`,
-          name: 'Prestataire de service',
-          role: 'freelancer',
-          email: 'provider@example.com',
+        service: { 
+          id: serviceId, 
+          title: 'Service simulé', 
+          slug: `service-${serviceId}`,
+          price: 100,
+          deliveryTime: 3,
+          isActive: true,
           createdAt: new Date().toISOString()
-        } as User,
+        } as Service,
         rating: isPositive ? 4 + Math.random() : 2 + Math.random() * 2,
         title: isPositive ? 'Excellent service' : 'Service moyen',
         content: isPositive 
           ? 'Je recommande vivement ce prestataire. Le travail fourni était de très haute qualité et livré rapidement.'
           : 'Le résultat final est correct mais le délai n\'a pas été respecté et la communication était difficile.',
-        createdAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000).toISOString(), // Jusqu'à 60 jours dans le passé
-        isPublic: true,
-        likes: Math.floor(Math.random() * 15)
+        createdAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000).toISOString(),
+        helpfulCount: Math.floor(Math.random() * 15)
       };
     });
     
@@ -148,16 +146,13 @@ const reviewService = {
     // Simuler une évaluation créée avec succès
     const mockReview: Review = {
       id: `review-${Date.now()}`,
-      order: { id: params.orderId } as Order,
-      service: { id: params.serviceId } as Service,
       reviewer: { id: params.reviewerId } as User,
-      recipient: { id: params.recipientId } as User,
+      service: { id: params.serviceId } as Service,
       rating: params.rating,
-      title: params.title,
       content: params.content,
+      title: params.title,
       createdAt: new Date().toISOString(),
-      isPublic: params.isPublic,
-      likes: 0
+      helpfulCount: 0
     };
     
     return {
@@ -272,10 +267,44 @@ const reviewService = {
       // Simuler un appel API pour récupérer les statistiques du freelancer
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Obtenir les services depuis un service fictif (à remplacer par un appel API réel)
-      const orderService = await import('./orderService').then(m => m.default);
-      const disputeService = await import('./disputeService').then(m => m.default);
-      const securityService = await import('./securityService').then(m => m.default);
+      // Au lieu d'importer dynamiquement, créons des objets fictifs
+      const orderService = {
+        getFreelancerOrderStats: async (userId: string) => ({
+          totalOrders: 25 + Math.floor(Math.random() * 30),
+          completedOrders: 20 + Math.floor(Math.random() * 25),
+          inProgressOrders: 2 + Math.floor(Math.random() * 3),
+          cancelledOrders: Math.floor(Math.random() * 3),
+          averageCompletionTime: 3 + Math.random() * 4, // en jours
+          orderCompletionRate: 0.85 + Math.random() * 0.15,
+          disputedOrders: Math.floor(Math.random() * 3),
+          revenueStats: {
+            total: 100000,
+            lastMonth: 20000,
+            lastWeek: 5000
+          }
+        })
+      };
+      
+      const disputeService = {
+        getFreelancerDisputeHistory: async (userId: string) => ({
+          totalDisputes: Math.floor(Math.random() * 5),
+          resolvedInFavor: Math.floor(Math.random() * 3),
+          resolvedAgainst: Math.floor(Math.random() * 2),
+          openDisputes: Math.floor(Math.random() * 1),
+          disputeSummary: []
+        })
+      };
+      
+      const securityService = {
+        getUserVerificationStatus: async (userId: string) => ({
+          isVerified: Math.random() > 0.3,
+          verificationLevel: Math.random() > 0.7 ? 'full' : Math.random() > 0.4 ? 'basic' : 'none',
+          verifiedEmail: true,
+          verifiedPhone: Math.random() > 0.3,
+          verifiedIdentity: Math.random() > 0.6,
+          verifiedAddress: Math.random() > 0.7
+        })
+      };
       
       // Récupérer le nombre total de commandes
       const orderStats = await orderService.getFreelancerOrderStats(userId);

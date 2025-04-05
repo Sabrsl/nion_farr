@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { FiX, FiAlertTriangle, FiInfo, FiUpload, FiFile, FiTrash } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import disputeService from '../../services/disputeService';
+import { disputeService } from '../../services/disputeService';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface DisputeModalProps {

@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
-import { Dispute, Order, User, OrderStatus, ResolutionType } from '../types';
+import { Dispute, Order, User, OrderStatus, ResolutionType, DisputeHistory } from '../types';
 import orderService from './orderService';
-import securityService from './securityService';
+import { securityService } from './securityService';
 import disputeLogService from './disputeLogService';
 import disputePermissionService, { DisputeAction } from './disputePermissionService';
 
@@ -11,6 +11,25 @@ class DisputeService {
 
   constructor() {
     this.orderService = orderService;
+  }
+
+  /**
+   * Récupère les détails d'un litige par son ID
+   * @param id ID du litige
+   */
+  async getDisputeById(id: string): Promise<Dispute> {
+    try {
+      const response = await fetch(`${this.apiUrl}/${id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Erreur lors de la récupération du litige: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur dans getDisputeById:', error);
+      throw error;
+    }
   }
 
   /**
@@ -64,7 +83,7 @@ class DisputeService {
       }
       
       // Vérifier que l'utilisateur est impliqué dans la commande
-      if (order.client.id !== userId && order.service.provider.id !== userId) {
+      if (order.client.id !== userId && (order.service?.provider?.id !== userId)) {
         return { success: false, message: 'Vous n\'êtes pas autorisé à ouvrir un litige pour cette commande' };
       }
 
@@ -149,7 +168,7 @@ class DisputeService {
         'system',
         'notification_envoyée',
         `Notifications envoyées aux parties concernées`,
-        { recipientIds: [order.client.id, order.service.provider.id].filter(id => id !== userId) }
+        { recipientIds: [order.client.id, order.service?.provider?.id].filter(id => id !== undefined && id !== userId) }
       );
       
       return {
@@ -533,19 +552,27 @@ class DisputeService {
   }
 
   /**
-   * Transfère les fonds au vendeur
+   * Transférer les fonds au vendeur
    * @private
    */
   private async transferFundsToSeller(order: Order, pourcentage: number = 100): Promise<void> {
     try {
       const montant = order.price * (pourcentage / 100);
       
+      // Vérifier que le vendeur existe
+      if (!order.service || !order.service.provider || !order.service.provider.id) {
+        console.error('Erreur: Informations du vendeur manquantes');
+        throw new Error('Informations du vendeur manquantes');
+      }
+      
+      const sellerId = order.service.provider.id;
+      
       // Simuler un appel API pour transférer les fonds au vendeur
       await fetch('/api/payments/transfer', {
         method: 'POST',
         body: JSON.stringify({
           orderId: order.id,
-          sellerId: order.service.provider.id,
+          sellerId,
           amount: montant
         })
       });
@@ -556,7 +583,7 @@ class DisputeService {
         body: JSON.stringify({
           type: 'transfer',
           orderId: order.id,
-          userId: order.service.provider.id,
+          userId: sellerId,
           amount: montant,
           details: `Paiement suite à résolution de litige - ${pourcentage}%`
         })
@@ -742,7 +769,6 @@ class DisputeService {
   ): Promise<void> {
     try {
       const client = order.client;
-      const seller = order.service.provider;
       
       let clientTitle = '';
       let clientMessage = '';
@@ -776,8 +802,8 @@ class DisputeService {
       }
       
       // Notifier le vendeur (sauf si c'est lui qui a déclenché la notification)
-      if (seller.id !== senderId) {
-        await this.notifyUser(seller.id, sellerTitle, sellerMessage);
+      if (order.service?.provider && order.service.provider.id !== senderId) {
+        await this.notifyUser(order.service.provider.id, sellerTitle, sellerMessage);
       }
     } catch (error) {
       console.error('Erreur lors de la notification des parties:', error);
@@ -907,7 +933,7 @@ class DisputeService {
         // 1. Litige non résolu sous 3 jours → transmis automatiquement à l'admin
         if (daysSinceCreation >= 3) {
           // Vérifier si le litige a déjà été escaladé à l'admin
-          const hasAdminInvolved = dispute.updates.some(update => {
+          const hasAdminInvolved = dispute.updates.some((update: { userId: string; message: string; type?: string }) => {
             const isAdmin = update.userId.startsWith('admin-');
             const isEscalationComment = update.message.includes('escaladé automatiquement');
             return isAdmin && isEscalationComment;
@@ -924,8 +950,8 @@ class DisputeService {
           // Vérifier si le litige est inactif (pas de mise à jour récente des parties concernées)
           const lastUpdate = new Date(
             dispute.updates
-              .filter(update => !update.userId.startsWith('admin-') || update.type !== 'system')
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.createdAt || dispute.createdAt
+              .filter((update: { userId: string; type?: string }) => !update.userId.startsWith('admin-') || update.type !== 'system')
+              .sort((a: { createdAt: string }, b: { createdAt: string }) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.createdAt || dispute.createdAt
           );
           
           const daysSinceLastUpdate = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
@@ -1414,5 +1440,4 @@ class DisputeService {
   }
 }
 
-export const disputeService = new DisputeService();
-export default disputeService; 
+export const disputeService = new DisputeService(); 

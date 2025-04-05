@@ -19,6 +19,7 @@ import {
   FiMenu,
   FiX
 } from 'react-icons/fi';
+import Layout from '../components/layout/Layout';
 
 const DevenirFreelance: NextPage = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -35,119 +36,10 @@ const DevenirFreelance: NextPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white font-sans">
-      <Head>
-        <title>Devenir Freelance | NionFar.sn - La Plateforme de Freelance au Sénégal</title>
-        <meta name="description" content="Rejoignez la communauté NionFar en tant que freelance et développez votre activité professionnelle. Accédez à des clients locaux et internationaux, sans intermédiaire." />
-        <meta name="keywords" content="freelance, Sénégal, travail indépendant, services freelance, devenir freelance" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      </Head>
-
-      {/* Header with glass morphism effect */}
-      <header className={`fixed w-full z-50 transition-all duration-300 ${
-        scrollPosition > 50 ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4 md:py-6">
-            <Link href="/" className="flex items-center">
-              <span className={`text-2xl font-bold ${
-                scrollPosition > 50 
-                  ? 'text-indigo-600' 
-                  : 'text-white'
-              }`}>
-                NionFar<span className={`${scrollPosition > 50 ? 'text-violet-500' : 'text-indigo-300'}`}>.sn</span>
-              </span>
-            </Link>
-            
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-10">
-              <Link 
-                href="/explorer" 
-                className={`text-sm font-medium ${scrollPosition > 50 ? 'text-gray-800' : 'text-white'} hover:text-indigo-500 transition-colors`}
-              >
-                Explorer
-              </Link>
-              <Link 
-                href="/comment-ca-marche" 
-                className={`text-sm font-medium ${scrollPosition > 50 ? 'text-gray-800' : 'text-white'} hover:text-indigo-500 transition-colors`}
-              >
-                Comment ça marche
-              </Link>
-              <Link 
-                href="/devenir-freelance" 
-                className={`text-sm font-medium ${scrollPosition > 50 ? 'text-indigo-500' : 'text-indigo-300'}`}
-              >
-                Devenir freelance
-              </Link>
-              <Link 
-                href="/contact" 
-                className={`text-sm font-medium ${scrollPosition > 50 ? 'text-gray-800' : 'text-white'} hover:text-indigo-500 transition-colors`}
-              >
-                Contact
-              </Link>
-            </nav>
-            
-            <div className="hidden md:flex items-center space-x-6 relative z-10">
-              <Link 
-                href="/login" 
-                className={`text-sm font-medium ${scrollPosition > 50 ? 'text-gray-800' : 'text-white'} hover:text-indigo-500 transition-colors`}
-              >
-                Connexion
-              </Link>
-              <Link 
-                href="/register?type=freelance" 
-                className={`${
-                  scrollPosition > 50 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-white text-indigo-600'
-                } text-sm font-medium px-5 py-2.5 rounded-full hover:bg-indigo-700 hover:text-white transition-all shadow-lg hover:shadow-indigo-500/25 relative z-20`}
-              >
-                Inscription
-              </Link>
-            </div>
-            
-            {/* Mobile menu button */}
-            <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? (
-                <FiX className={`w-6 h-6 ${scrollPosition > 50 ? 'text-gray-800' : 'text-white'}`} />
-              ) : (
-                <FiMenu className={`w-6 h-6 ${scrollPosition > 50 ? 'text-gray-800' : 'text-white'}`} />
-              )}
-            </button>
-          </div>
-        </div>
-        
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-100 shadow-xl">
-            <div className="px-4 pt-2 pb-4 space-y-1">
-              <Link href="/explorer" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
-                Explorer
-              </Link>
-              <Link href="/comment-ca-marche" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
-                Comment ça marche
-              </Link>
-              <Link href="/devenir-freelance" className="block px-3 py-2 text-indigo-600 bg-indigo-50 rounded-lg">
-                Devenir freelance
-              </Link>
-              <Link href="/contact" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
-                Contact
-              </Link>
-              <div className="pt-4 mt-4 border-t border-gray-100">
-                <Link href="/login" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
-                  Connexion
-                </Link>
-                <Link href="/register?type=freelance" className="block px-3 py-2 mt-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg text-center">
-                  Inscription
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
-
+    <Layout
+      title="Devenir Freelance | NionFar.sn - La Plateforme de Freelance au Sénégal"
+      description="Rejoignez la communauté NionFar en tant que freelance et développez votre activité professionnelle. Accédez à des clients locaux et internationaux, sans intermédiaire."
+    >
       <main>
         {/* Hero Section with Dynamic Background */}
         <section className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 pt-32 pb-24">
@@ -198,16 +90,16 @@ const DevenirFreelance: NextPage = () => {
             >
               <Link 
                 href="/register?type=freelance" 
-                className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-white text-indigo-600 font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group relative z-10"
+                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-white text-indigo-600 font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group text-sm sm:text-base"
               >
-                Commencer maintenant
+                Créer mon compte freelance
                 <FiChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link 
-                href="/en-savoir-plus-freelance" 
-                className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-white/30 text-white font-medium backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+                href="/contact" 
+                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full border border-white/30 text-white font-medium backdrop-blur-sm hover:bg-white/10 transition-all duration-300 text-sm sm:text-base"
               >
-                En savoir plus
+                Contacter l'équipe
               </Link>
             </motion.div>
             
@@ -215,24 +107,10 @@ const DevenirFreelance: NextPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="mt-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 inline-flex items-center"
+              className="mt-10 text-indigo-200 text-sm"
             >
-              <div className="flex -space-x-4 mr-4">
-                <div className="w-10 h-10 rounded-full border-2 border-indigo-800 bg-indigo-100 flex items-center justify-center text-indigo-800 font-bold">A</div>
-                <div className="w-10 h-10 rounded-full border-2 border-indigo-800 bg-indigo-100 flex items-center justify-center text-indigo-800 font-bold">S</div>
-                <div className="w-10 h-10 rounded-full border-2 border-indigo-800 bg-indigo-100 flex items-center justify-center text-indigo-800 font-bold">F</div>
-                <div className="w-10 h-10 rounded-full border-2 border-indigo-800 bg-indigo-100 flex items-center justify-center text-indigo-800 font-bold">+</div>
-              </div>
-              <p className="text-white">
-                <span className="font-semibold">1500+ freelances</span> ont déjà rejoint NionFar
-              </p>
+              <p>Pas de frais d'inscription • Commission de 15% uniquement sur les projets réalisés • Paiements sécurisés</p>
             </motion.div>
-          </div>
-          
-          <div className="absolute bottom-0 w-full">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-              <path fill="#ffffff" fillOpacity="1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,218.7C672,235,768,245,864,229.3C960,213,1056,171,1152,165.3C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-            </svg>
           </div>
         </section>
         
@@ -898,7 +776,7 @@ const DevenirFreelance: NextPage = () => {
           </div>
         </footer>
       </main>
-    </div>
+    </Layout>
   );
 };
 

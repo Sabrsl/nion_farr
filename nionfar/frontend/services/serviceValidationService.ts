@@ -142,7 +142,7 @@ class ServiceValidationService {
    */
   async checkModeration(service: Service): Promise<{requiresModeration: boolean, reasons: string[]}> {
     const reasons: string[] = [];
-    const content = `${service.title} ${service.summary || ''} ${service.description || ''}`.toLowerCase();
+    const content = `${service.title} ${service.description || ''}`.toLowerCase();
     
     // Vérifier les mots-clés interdits
     this.FORBIDDEN_KEYWORDS.forEach(keyword => {

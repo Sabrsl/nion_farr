@@ -1,54 +1,58 @@
 import { AppProps } from 'next/app';
-import Head from 'next/head';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import '../styles/globals.css';
-import { AuthProvider } from '../contexts/AuthContext';
 import { useEffect } from 'react';
-import schedulerService from '../services/schedulerService';
-
-// Create a client
-const queryClient = new QueryClient();
+import Head from 'next/head';
+import { AuthProvider } from '../contexts/AuthContext';
+import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }: AppProps) {
-  // Démarrer le service de planification
+  // Mettre à jour le titre de la page uniquement côté client
   useEffect(() => {
-    // Démarrer le service uniquement côté client
     if (typeof window !== 'undefined') {
-      schedulerService.start();
+      document.title = 'Nionfar';
+      
+      // Log les erreurs JavaScript qui pourraient affecter la navigation
+      window.addEventListener('error', (event) => {
+        console.error('Erreur JavaScript capturée:', event.error);
+      });
     }
+  }, []);
 
-    // Nettoyer lors du démontage du composant
-    return () => {
-      if (typeof window !== 'undefined') {
-        schedulerService.stop();
+  // Ajouter des logs de débogage pour comprendre les problèmes de navigation
+  useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest('a');
+      
+      if (anchor) {
+        const href = anchor.getAttribute('href');
+        console.log('Lien cliqué:', href);
+        
+        // Ne pas interférer avec les liens externes ou les liens avec target="_blank"
+        if (href && !href.startsWith('http') && !href.startsWith('mailto:') && !anchor.getAttribute('target')) {
+          e.preventDefault();
+          
+          // Forcer la navigation par window.location
+          console.log('Forçage de la navigation vers:', href);
+          window.location.href = href;
+        }
       }
+    };
+
+    document.addEventListener('click', handleLinkClick, true);
+    
+    return () => {
+      document.removeEventListener('click', handleLinkClick, true);
     };
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>NionFar</title>
-        </Head>
-        <Component {...pageProps} />
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-      </AuthProvider>
-    </QueryClientProvider>
+    <AuthProvider>
+      <Head>
+        <title>Nionfar.sn | La plateforme de freelance au Sénégal</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+      <Component {...pageProps} />
+    </AuthProvider>
   );
 }
 

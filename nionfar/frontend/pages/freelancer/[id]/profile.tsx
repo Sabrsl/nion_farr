@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import FreelancerProfile from '../../../components/freelancer/FreelancerProfile';
 import FreelancerRankingCard from '../../../components/freelancer/FreelancerRankingCard';
 import Layout from '../../../components/layout/Layout';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/Tabs';
+import { CustomTabs, CustomTabsList, CustomTabsTrigger, CustomTabsContent } from '../../../components/ui/CustomTabs';
 
 const FreelancerProfilePage: React.FC = () => {
   const router = useRouter();
@@ -21,40 +21,42 @@ const FreelancerProfilePage: React.FC = () => {
                 id: freelancerId,
                 name: "",
                 email: "",
-                createdAt: ""
+                createdAt: "",
+                role: "provider",
+                isVerified: false
               }} 
             />
             
-            <Tabs defaultValue="portfolio" className="mt-6">
-              <TabsList>
-                <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-                <TabsTrigger value="reviews">Avis</TabsTrigger>
-                <TabsTrigger value="services">Services</TabsTrigger>
-                <TabsTrigger value="disputes">Litiges</TabsTrigger>
-              </TabsList>
+            <CustomTabs defaultValue="portfolio" className="mt-6">
+              <CustomTabsList>
+                <CustomTabsTrigger value="portfolio">Portfolio</CustomTabsTrigger>
+                <CustomTabsTrigger value="reviews">Avis</CustomTabsTrigger>
+                <CustomTabsTrigger value="services">Services</CustomTabsTrigger>
+                <CustomTabsTrigger value="disputes">Litiges</CustomTabsTrigger>
+              </CustomTabsList>
               
-              <TabsContent value="portfolio">
+              <CustomTabsContent value="portfolio">
                 <div className="p-4 bg-white rounded-lg shadow-md">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Portfolio</h3>
                   <p className="text-gray-600">Aucun élément de portfolio n'a encore été ajouté.</p>
                 </div>
-              </TabsContent>
+              </CustomTabsContent>
               
-              <TabsContent value="reviews">
+              <CustomTabsContent value="reviews">
                 <div className="p-4 bg-white rounded-lg shadow-md">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Avis clients</h3>
                   <p className="text-gray-600">Aucun avis n'a encore été publié.</p>
                 </div>
-              </TabsContent>
+              </CustomTabsContent>
               
-              <TabsContent value="services">
+              <CustomTabsContent value="services">
                 <div className="p-4 bg-white rounded-lg shadow-md">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Services proposés</h3>
                   <p className="text-gray-600">Aucun service n'est actuellement proposé.</p>
                 </div>
-              </TabsContent>
+              </CustomTabsContent>
               
-              <TabsContent value="disputes">
+              <CustomTabsContent value="disputes">
                 <div className="p-4 bg-white rounded-lg shadow-md">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Historique des litiges</h3>
                   <div className="bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-600">
@@ -62,8 +64,8 @@ const FreelancerProfilePage: React.FC = () => {
                     <p className="mt-2">L'historique complet des litiges et leur résolution est disponible dans le tableau de bord d'administration.</p>
                   </div>
                 </div>
-              </TabsContent>
-            </Tabs>
+              </CustomTabsContent>
+            </CustomTabs>
           </div>
           
           {/* Colonne de droite: Classement et autres informations */}

@@ -8,16 +8,16 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { formatDate, timeAgo } from '../../../../utils/helpers';
 import { FiAlertTriangle, FiLoader, FiCheckCircle, FiXCircle, FiArrowLeft, FiInfo, FiUser, FiMessageSquare } from 'react-icons/fi';
 import Link from 'next/link';
-import Button from '../../../../components/ui/Button';
-import disputeService from '../../../../services/disputeService';
+import { Button } from '../../../../components/ui/Button';
+import { disputeService } from '../../../../services/disputeService';
 
 const DisputeDetailPage: NextPage = () => {
   const router = useRouter();
   const { id } = router.query;
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [dispute, setDispute] = useState<Dispute | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [componentLoading, setComponentLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resolution, setResolution] = useState<ResolutionType>('remboursement_total');
   const [resolutionReason, setResolutionReason] = useState('');
@@ -27,23 +27,23 @@ const DisputeDetailPage: NextPage = () => {
 
   useEffect(() => {
     // Si l'utilisateur n'est pas authentifié après le chargement, rediriger vers la connexion
-    if (!loading && !user) {
+    if (!isLoading && !user) {
       router.push('/auth/login?redirect=/dashboard/admin/disputes');
       return;
     }
 
     // Si l'utilisateur n'est pas administrateur, rediriger vers la page d'accueil
-    if (!loading && user && user.role !== 'admin') {
+    if (!isLoading && user && user.role !== 'admin') {
       router.push('/dashboard');
       return;
     }
-  }, [user, loading, router]);
+  }, [user, isLoading, router]);
 
   useEffect(() => {
     const fetchDisputeDetails = async () => {
       if (!id || !user) return;
 
-      setIsLoading(true);
+      setComponentLoading(true);
       setError(null);
 
       try {
@@ -80,6 +80,12 @@ const DisputeDetailPage: NextPage = () => {
         const mockOrder: Order = {
           id: 'order123456',
           title: 'Création d\'un logo professionnel',
+          serviceId: 'service456',
+          serviceName: 'Création d\'un logo professionnel',
+          providerId: 'seller789',
+          providerName: 'Freelancer Test',
+          clientId: 'user123',
+          orderDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
           client: {
             id: 'user123',
             email: 'client@example.com',
@@ -95,7 +101,11 @@ const DisputeDetailPage: NextPage = () => {
               email: 'freelancer@example.com', 
               name: 'Freelancer Test',
               createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
-            }
+            },
+            slug: 'logo-professionnel',
+            deliveryTime: 3,
+            isActive: true,
+            createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
           },
           status: 'litige',
           price: 15000,
@@ -112,7 +122,7 @@ const DisputeDetailPage: NextPage = () => {
         console.error('Erreur lors de la récupération des détails du litige:', error);
         setError('Une erreur est survenue lors de la récupération des détails du litige. Veuillez réessayer.');
       } finally {
-        setIsLoading(false);
+        setComponentLoading(false);
       }
     };
 
@@ -180,7 +190,7 @@ const DisputeDetailPage: NextPage = () => {
           
           return {
             ...prev,
-            status: 'terminée_manuellement'
+            status: 'litige'
           };
         });
         
@@ -265,7 +275,7 @@ const DisputeDetailPage: NextPage = () => {
     }
   };
 
-  if (loading || !user) {
+  if (componentLoading || !user) {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center h-64">
@@ -308,7 +318,7 @@ const DisputeDetailPage: NextPage = () => {
                 </div>
               )}
               
-              {isLoading ? (
+              {componentLoading ? (
                 <div className="flex justify-center items-center h-64">
                   <FiLoader className="h-8 w-8 text-indigo-500 animate-spin" />
                 </div>
@@ -361,7 +371,7 @@ const DisputeDetailPage: NextPage = () => {
                               <FiUser className="mr-1 h-4 w-4 text-gray-400" />
                               {order.client.id === dispute.initiatedBy 
                                 ? `${order.client.name} (Client)` 
-                                : `${order.service.provider.name} (Vendeur)`}
+                                : `${order.service.provider?.name} (Vendeur)`}
                             </dd>
                           </div>
                           <div className="sm:col-span-2">
@@ -423,8 +433,8 @@ const DisputeDetailPage: NextPage = () => {
                                   <p className="text-sm font-medium text-gray-900">
                                     {update.userId === order.client.id 
                                       ? `${order.client.name} (Client)` 
-                                      : update.userId === order.service.provider.id 
-                                        ? `${order.service.provider.name} (Vendeur)` 
+                                      : update.userId === order.service.provider?.id 
+                                        ? `${order.service.provider?.name} (Vendeur)` 
                                         : 'Administrateur'}
                                   </p>
                                   <p className="text-sm text-gray-500">{timeAgo(update.createdAt)}</p>
@@ -503,7 +513,7 @@ const DisputeDetailPage: NextPage = () => {
                           </div>
                           <div className="sm:col-span-1">
                             <dt className="text-sm font-medium text-gray-500">Vendeur</dt>
-                            <dd className="mt-1 text-sm text-gray-900">{order.service.provider.name}</dd>
+                            <dd className="mt-1 text-sm text-gray-900">{order.service.provider?.name}</dd>
                           </div>
                         </dl>
                       </div>

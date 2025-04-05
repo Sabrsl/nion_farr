@@ -46,6 +46,25 @@ const NewConversationPage: NextPage = () => {
         setAvailableUsers(mockUsers.filter(user => user.id !== 'USR-001'));
         setOrders(freelancerOrders);
         
+        // Vérifier si un recipient est spécifié dans l'URL
+        const { recipient } = router.query;
+        if (recipient && typeof recipient === 'string') {
+          // Trouver l'utilisateur correspondant dans la liste des utilisateurs disponibles
+          const user = mockUsers.find(u => u.id === recipient);
+          if (user) {
+            // Sélectionner l'utilisateur
+            setSelectedUser(user);
+            
+            // Vérifier si l'utilisateur a des commandes
+            const userOrders = freelancerOrders.filter(order => order.client.id === user.id);
+            if (userOrders.length > 0) {
+              setStep('select-order');
+            } else {
+              setStep('write-message');
+            }
+          }
+        }
+        
         setIsLoading(false);
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
@@ -54,7 +73,7 @@ const NewConversationPage: NextPage = () => {
     };
     
     fetchData();
-  }, []);
+  }, [router.query]);
 
   // Gérer les fichiers sélectionnés
   const handleFilesSelected = (files: File[]) => {

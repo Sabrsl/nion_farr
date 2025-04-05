@@ -75,11 +75,11 @@ const AdminDisputesPage: NextPage = () => {
             reason: 'Qualité insatisfaisante',
             details: 'Le service reçu ne correspond pas du tout à la description. La qualité est bien inférieure à ce qui était promis.',
             attachments: [],
-            status: 'résolu',
+            status: 'résolu_en_faveur_client',
             createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 jours avant
             resolvedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 jours avant
             resolvedBy: 'admin456',
-            resolution: 'client',
+            resolution: 'remboursement_total',
             updates: [
               {
                 userId: 'user456',
@@ -191,7 +191,7 @@ const AdminDisputesPage: NextPage = () => {
                       <div className="px-4 py-5 sm:p-6">
                         <dt className="text-sm font-medium text-gray-500 truncate">Litiges résolus récemment</dt>
                         <dd className="mt-1 text-3xl font-semibold text-green-600">
-                          {disputes.filter(d => d.status === 'résolu' && new Date(d.resolvedAt!).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length}
+                          {disputes.filter(d => (d.status === 'résolu_en_faveur_client' || d.status === 'résolu_en_faveur_vendeur') && new Date(d.resolvedAt!).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length}
                         </dd>
                       </div>
                     </div>
@@ -199,11 +199,11 @@ const AdminDisputesPage: NextPage = () => {
                       <div className="px-4 py-5 sm:p-6">
                         <dt className="text-sm font-medium text-gray-500 truncate">Temps moyen de résolution</dt>
                         <dd className="mt-1 text-3xl font-semibold text-gray-900">
-                          {disputes.filter(d => d.status === 'résolu' && d.resolvedAt).length > 0 
+                          {disputes.filter(d => (d.status === 'résolu_en_faveur_client' || d.status === 'résolu_en_faveur_vendeur') && d.resolvedAt).length > 0 
                             ? Math.round(disputes
-                                .filter(d => d.status === 'résolu' && d.resolvedAt)
+                                .filter(d => (d.status === 'résolu_en_faveur_client' || d.status === 'résolu_en_faveur_vendeur') && d.resolvedAt)
                                 .reduce((acc, d) => acc + (new Date(d.resolvedAt!).getTime() - new Date(d.createdAt).getTime()) / (1000 * 60 * 60 * 24), 0) / 
-                                disputes.filter(d => d.status === 'résolu' && d.resolvedAt).length
+                                disputes.filter(d => (d.status === 'résolu_en_faveur_client' || d.status === 'résolu_en_faveur_vendeur') && d.resolvedAt).length
                               ) + ' jours'
                             : 'N/A'}
                         </dd>
@@ -234,9 +234,9 @@ const AdminDisputesPage: NextPage = () => {
                       Litiges ouverts
                     </button>
                     <button
-                      onClick={() => setStatusFilter('résolu')}
+                      onClick={() => setStatusFilter('résolu_en_faveur_client')}
                       className={`px-4 py-2 rounded-md text-sm font-medium ${
-                        statusFilter === 'résolu' 
+                        statusFilter === 'résolu_en_faveur_client' 
                           ? 'bg-green-100 text-green-700' 
                           : 'bg-white text-gray-700 hover:bg-gray-50'
                       }`}

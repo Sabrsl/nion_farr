@@ -28,14 +28,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     id,
     title,
     price,
-    rating,
-    totalReviews,
-    deliveryTime,
-    images,
+    rating = 0,
+    totalReviews = 0,
+    deliveryTime = 1,
     provider,
-    slug,
     description
   } = service;
+
+  const images = (service as any).images;
+  const slug = (service as any).slug || id;
 
   const handleImageError = () => {
     setImageError(true);
@@ -49,7 +50,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100 flex flex-col sm:flex-row">
         {/* Image section - plus petit en vue liste */}
         <div className="relative w-full sm:w-1/3 h-48 sm:h-auto flex-shrink-0">
-          <Link href={`/services/${slug || id}`}>
+          <a href={`/services/${slug || id}`}>
             <div className="w-full h-full">
               {!imageError ? (
                 <img
@@ -64,7 +65,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                 </div>
               )}
             </div>
-          </Link>
+          </a>
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -90,30 +91,30 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                 {provider.avatar ? (
                   <img
                     src={provider.avatar}
-                    alt={provider.username || 'Freelance'}
+                    alt={(provider as any).username || provider.name || 'Freelance'}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://placehold.co/40x40/6366f1/ffffff?text=${(provider.username || 'F').charAt(0).toUpperCase()}`;
+                      (e.target as HTMLImageElement).src = `https://placehold.co/40x40/6366f1/ffffff?text=${((provider as any).username || provider.name || 'F').charAt(0).toUpperCase()}`;
                     }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600">
-                    {(provider.username || 'F').charAt(0).toUpperCase()}
+                    {((provider as any).username || provider.name || 'F').charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
               <span className="text-sm text-gray-600 font-medium">
-                {provider.username || 'Freelance'}
+                {(provider as any).username || provider.name || 'Freelance'}
               </span>
             </div>
           )}
 
           {/* Title - plus grand en vue liste */}
-          <Link href={`/services/${slug || id}`}>
+          <a href={`/services/${slug || id}`}>
             <h3 className="font-medium text-gray-900 mb-2 hover:text-indigo-600 transition-colors text-lg line-clamp-1 sm:line-clamp-2">
               {title}
             </h3>
-          </Link>
+          </a>
 
           {/* Rating */}
           <div className="flex items-center mb-3">
@@ -161,7 +162,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100">
       {/* Image section - plus grande en vue grille */}
       <div className="relative h-48 sm:h-40 md:h-48">
-        <Link href={`/services/${slug || id}`}>
+        <a href={`/services/${slug || id}`}>
           <div className="w-full h-full">
             {!imageError ? (
               <img
@@ -176,7 +177,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
               </div>
             )}
           </div>
-        </Link>
+        </a>
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -202,30 +203,30 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
               {provider.avatar ? (
                 <img
                   src={provider.avatar}
-                  alt={provider.username || 'Freelance'}
+                  alt={(provider as any).username || provider.name || 'Freelance'}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://placehold.co/40x40/6366f1/ffffff?text=${(provider.username || 'F').charAt(0).toUpperCase()}`;
+                    (e.target as HTMLImageElement).src = `https://placehold.co/40x40/6366f1/ffffff?text=${((provider as any).username || provider.name || 'F').charAt(0).toUpperCase()}`;
                   }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600">
-                  {(provider.username || 'F').charAt(0).toUpperCase()}
+                  {((provider as any).username || provider.name || 'F').charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
             <span className="text-sm text-gray-600 font-medium">
-              {provider.username || 'Freelance'}
+              {(provider as any).username || provider.name || 'Freelance'}
             </span>
           </div>
         )}
 
         {/* Title */}
-        <Link href={`/services/${slug || id}`}>
+        <a href={`/services/${slug || id}`}>
           <h3 className="font-medium text-gray-900 mb-1 hover:text-indigo-600 transition-colors line-clamp-2">
             {title}
           </h3>
-        </Link>
+        </a>
 
         {/* Rating */}
         <div className="flex items-center mb-2">

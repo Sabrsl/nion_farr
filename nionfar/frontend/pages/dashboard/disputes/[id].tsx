@@ -24,6 +24,12 @@ import { fr } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import Head from 'next/head';
 import { motion } from 'framer-motion';
+import { Tab } from '@headlessui/react';
+
+// Extended Order interface for dispute resolution
+interface ExtendedOrder extends Order {
+  seller: User;
+}
 
 const DisputeDetailPage: NextPage = () => {
   const router = useRouter();
@@ -31,7 +37,7 @@ const DisputeDetailPage: NextPage = () => {
   const { user, loading: authLoading } = useAuth();
   
   const [dispute, setDispute] = useState<Dispute | null>(null);
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<ExtendedOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentLoading, setCommentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +86,7 @@ const DisputeDetailPage: NextPage = () => {
         };
 
         // Mock order data
-        const mockOrder: Order = {
+        const mockOrder: ExtendedOrder = {
           id: 'order-123',
           title: 'Création de logo pour entreprise',
           price: 250,
@@ -93,22 +99,26 @@ const DisputeDetailPage: NextPage = () => {
             createdAt: '2023-01-15T12:00:00Z',
             role: 'client'
           },
+          service: {
+            id: 'service-1',
+            title: 'Création de logo professionnel',
+            price: 250,
+            slug: 'creation-logo-professionnel',
+            deliveryTime: 3,
+            isActive: true,
+            createdAt: '2023-01-01T00:00:00Z'
+          },
+          createdAt: '2023-09-01T10:00:00Z',
+          messages: 3,
+          isPaid: true,
+          requirements: 'Création d\'un logo moderne pour une entreprise de services informatiques',
           seller: {
             id: 'seller-1',
             name: 'Sophie Martin',
             email: 'sophie.martin@example.com',
             createdAt: '2022-11-05T09:30:00Z',
             role: 'freelancer'
-          },
-          service: {
-            id: 'service-1',
-            title: 'Création de logo professionnel',
-            price: 250
-          },
-          createdAt: '2023-09-01T10:00:00Z',
-          messages: [],
-          isPaid: true,
-          requirements: 'Création d\'un logo moderne pour une entreprise de services informatiques'
+          }
         };
         
         setDispute(mockDispute);
@@ -179,9 +189,9 @@ const DisputeDetailPage: NextPage = () => {
           role: 'client' 
         };
       }
-      if (userId === order.seller.id) {
+      if (userId === (order as ExtendedOrder).seller?.id) {
         return { 
-          name: order.seller.name, 
+          name: (order as ExtendedOrder).seller.name, 
           role: 'vendeur' 
         };
       }
@@ -196,7 +206,7 @@ const DisputeDetailPage: NextPage = () => {
     // if (dispute.status !== 'ouvert') return false;
     
     return user.id === order.client.id || 
-           user.id === order.seller.id || 
+           (user.id === (order as ExtendedOrder).seller?.id) || 
            user.role === 'admin';
   };
 
@@ -562,7 +572,7 @@ const DisputeDetailPage: NextPage = () => {
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">{user?.role === 'freelancer' ? 'Client' : 'Vendeur'}</h3>
                     <p className="mt-1 text-sm text-gray-900">
-                      {user?.role === 'freelancer' ? order.client.name : order.seller.name}
+                      {user?.role === 'freelancer' ? order.client.name : ((order as ExtendedOrder).seller ? (order as ExtendedOrder).seller.name : 'N/A')}
                     </p>
                   </div>
                 </div>

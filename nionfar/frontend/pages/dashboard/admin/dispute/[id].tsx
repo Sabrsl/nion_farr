@@ -4,7 +4,7 @@ import { Dispute, Order } from '../../../../types';
 import DisputeStatus from '../../../../components/dashboard/DisputeStatus';
 import DisputeResolutionForm from '../../../../components/dashboard/DisputeResolutionForm';
 import DisputeLogViewer from '../../../../components/dashboard/DisputeLogViewer';
-import disputeService from '../../../../services/disputeService';
+import { disputeService } from '../../../../services/disputeService';
 import orderService from '../../../../services/orderService';
 import disputeLogService from '../../../../services/disputeLogService';
 import DashboardLayout from '../../../../components/dashboard/DashboardLayout';
@@ -19,6 +19,7 @@ const DisputeDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
+  const [disputeMessage, setDisputeMessage] = useState('');
 
   useEffect(() => {
     async function fetchDisputeDetails() {
@@ -172,7 +173,7 @@ const DisputeDetailsPage: React.FC = () => {
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Vendeur</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{order.service.provider.name}</dd>
+                    <dd className="mt-1 text-sm text-gray-900">{order.service?.provider?.name || 'N/A'}</dd>
                   </div>
                   <div className="md:col-span-2">
                     <dt className="text-sm font-medium text-gray-500">Raison du litige</dt>

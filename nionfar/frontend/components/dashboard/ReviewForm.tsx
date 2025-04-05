@@ -26,9 +26,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [contentWarning, setContentWarning] = useState<string | null>(null);
 
-  const targetId = isClientReview 
-    ? order.service.provider?.id || 'provider-id' 
-    : order.client?.id || 'client-id';
+  // Déterminer le destinataire du review (client ou prestataire)
+  const recipientId = isClientReview 
+    ? (order as any).service?.provider?.id || 'provider-id'
+    : (order as any).client?.id || 'client-id';
 
   // Vérifier le contenu pour détecter les termes inappropriés
   const checkContent = async () => {
@@ -76,8 +77,8 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
       const result = await reviewService.submitReview({
         orderId: order.id,
         reviewerId: currentUser.id,
-        recipientId: targetId,
-        serviceId: order.service.id,
+        recipientId,
+        serviceId: (order as any).service?.id || order.serviceId,
         rating,
         title,
         content,

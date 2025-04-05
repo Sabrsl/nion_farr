@@ -14,8 +14,11 @@ import {
   FiEye, 
   FiEyeOff 
 } from 'react-icons/fi';
+import { useRouter } from 'next/router';
+import authService from '../services/authService';
 
 const Register: NextPage = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -24,7 +27,7 @@ const Register: NextPage = () => {
     passwordConfirm: '',
     phoneNumber: '',
     termsAccepted: false,
-    accountType: 'freelance', // Par défaut: freelance
+    accountType: 'freelance' as 'freelance' | 'client', // Par défaut: freelance
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -42,7 +45,7 @@ const Register: NextPage = () => {
     }));
   };
 
-  const handleSelectAccountType = (type: string) => {
+  const handleSelectAccountType = (type: 'freelance' | 'client') => {
     setFormData(prev => ({
       ...prev,
       accountType: type
@@ -103,31 +106,61 @@ const Register: NextPage = () => {
     }
 
     try {
-      // Dans un vrai projet, nous appellerions l'API d'inscription ici
-      console.log('Tentative d\'inscription avec:', formData);
-      
-      // Simuler un délai d'API
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      // Simuler une réponse réussie
-      setSuccessMessage('Inscription réussie! Veuillez vérifier votre email pour confirmer votre compte.');
-      
-      // Réinitialiser le formulaire
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        passwordConfirm: '',
-        phoneNumber: '',
-        termsAccepted: false,
-        accountType: 'freelance',
+      // Préparation des données pour l'inscription en adaptant au format attendu par le backend
+      const registrationData = {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber || undefined,
+        password: formData.password,
+        passwordConfirm: formData.passwordConfirm,
+        termsAccepted: formData.termsAccepted,
+        role: formData.accountType // Ajout du rôle même s'il n'est pas explicitement demandé dans le DTO
+      };
+
+      console.log('Données d\'inscription envoyées:', registrationData);
+
+      // Appel au service d'authentification pour l'inscription
+      const response = await authService.register({
+        username: `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}`,
+        email: formData.email,
+        phone: formData.phoneNumber || undefined,
+        password: formData.password,
+        fullName: `${formData.firstName} ${formData.lastName}`,
+        acceptTerms: formData.termsAccepted,
+        role: formData.accountType as 'freelance' | 'client'
       });
-      
-      setCurrentStep(1);
-    } catch (error) {
+
+      if (response.success) {
+        if (registrationData.phoneNumber) {
+          // Si un numéro de téléphone est fourni, redirection vers la page de vérification OTP
+          router.push({
+            pathname: '/auth/verify-otp',
+            query: { phone: registrationData.phoneNumber }
+          });
+        } else {
+          // Afficher un message de succès avant la redirection
+          setSuccessMessage(response.message || 'Inscription réussie! Vous allez être redirigé...');
+          
+          // Définir un délai pour la redirection pour que l'utilisateur voie le message
+          setTimeout(() => {
+            // Redirection vers le tableau de bord approprié
+            const dashboardPath = formData.accountType === 'client' ? '/dashboard/client' : '/dashboard';
+            console.log('Redirection vers:', dashboardPath);
+            router.push(dashboardPath);
+          }, 2000);
+        }
+      } else {
+        setErrorMessage(response.message || 'Une erreur est survenue lors de l\'inscription.');
+      }
+    } catch (error: any) {
       console.error('Erreur d\'inscription:', error);
-      setErrorMessage('Une erreur est survenue lors de l\'inscription. Veuillez réessayer.');
+      // Gestion d'erreur plus détaillée
+      if (error.response && error.response.data) {
+        setErrorMessage(error.response.data.message || 'Une erreur est survenue lors de l\'inscription.');
+      } else {
+        setErrorMessage('Erreur de connexion au serveur. Veuillez vérifier votre connexion internet et réessayer.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -147,6 +180,17 @@ const Register: NextPage = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    // Récupérer le type à partir de l'URL si disponible
+    if (router.query.type) {
+      const accountType = router.query.type === 'freelance' ? 'freelance' : 'client';
+      setFormData(prev => ({
+        ...prev,
+        accountType: accountType as 'freelance' | 'client'
+      }));
+    }
+  }, [router.query.type]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-700 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">

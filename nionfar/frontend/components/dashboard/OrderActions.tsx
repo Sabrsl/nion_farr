@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiClock, FiCheckCircle, FiClipboard, FiDownload, FiAlertTriangle, FiThumbsUp, FiRepeat, FiEdit, FiMessageSquare, FiCheck, FiXCircle, FiStar } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import Button from '../ui/Button';
+import { Button } from '../ui/Button';
 import { Order, OrderStatus, User } from '../../types';
 import DisputeModal from './DisputeModal';
 import ReviewModal from './ReviewModal';
@@ -17,7 +17,7 @@ const OrderActions: React.FC<OrderActionsProps> = ({ order, currentUser, onStatu
   const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const isClient = currentUser.role === 'client';
-  const isSeller = currentUser.role === 'freelancer';
+  const isSeller = currentUser.role === 'provider';
   
   // Vérification si l'utilisateur a déjà évalué cette commande (à implémenter avec une API réelle)
   const [hasReviewed, setHasReviewed] = useState(false);
@@ -29,7 +29,7 @@ const OrderActions: React.FC<OrderActionsProps> = ({ order, currentUser, onStatu
       await new Promise(resolve => setTimeout(resolve, 800));
       
       if (onStatusChange) {
-        onStatusChange('en_cours' as OrderStatus);
+        onStatusChange('in_progress');
       }
       
       toast.success('Commande acceptée avec succès !');
@@ -46,7 +46,7 @@ const OrderActions: React.FC<OrderActionsProps> = ({ order, currentUser, onStatu
       await new Promise(resolve => setTimeout(resolve, 800));
       
       if (onStatusChange) {
-        onStatusChange('annulé' as OrderStatus);
+        onStatusChange('cancelled');
       }
       
       toast.info('Commande refusée.');
@@ -63,7 +63,7 @@ const OrderActions: React.FC<OrderActionsProps> = ({ order, currentUser, onStatu
       await new Promise(resolve => setTimeout(resolve, 800));
       
       if (onStatusChange) {
-        onStatusChange('terminé' as OrderStatus);
+        onStatusChange('completed');
       }
       
       toast.success('Commande marquée comme terminée !');
@@ -92,145 +92,172 @@ const OrderActions: React.FC<OrderActionsProps> = ({ order, currentUser, onStatu
   const handleDisputeSubmitted = () => {
     setIsDisputeModalOpen(false);
     if (onStatusChange) {
-      onStatusChange('litige' as OrderStatus);
+      onStatusChange('dispute');
     }
   };
 
   // Rendu des actions en fonction du statut de la commande et du rôle de l'utilisateur
   const renderActions = () => {
-    switch (order.status) {
-      case 'pending':
-      case 'en_attente':
-      case 'en_attente_acceptation':
-      case 'en_attente_paiement':
-        if (isSeller) {
-          return (
-            <div className="flex flex-col space-y-3">
-              <button
-                onClick={handleAcceptOrder}
-                className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center"
-              >
-                <FiCheck className="mr-2" /> Accepter la commande
-              </button>
-              <button
-                onClick={handleRejectOrder}
-                className="w-full bg-red-100 text-red-700 py-2 px-4 rounded hover:bg-red-200 transition-colors flex items-center justify-center"
-              >
-                <FiXCircle className="mr-2" /> Refuser la commande
-              </button>
-            </div>
-          );
-        }
-        return (
-          <div className="text-sm text-gray-600">
-            En attente d'acceptation par le vendeur...
-          </div>
-        );
-      
-      case 'in_progress':
-      case 'en_cours':
-        if (isSeller) {
-          return (
-            <div className="flex flex-col space-y-3">
-              <Link href={`/dashboard/orders/${order.id}/deliver`} className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center">
-                <FiDownload className="mr-2" /> Livrer la commande
-              </Link>
-              <button
-                onClick={handleCompleteOrder}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors flex items-center justify-center"
-              >
-                <FiCheck className="mr-2" /> Marquer comme terminée
-              </button>
-            </div>
-          );
-        }
-        if (isClient) {
-          return (
-            <div className="flex flex-col space-y-3">
-              <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center">
-                <FiMessageSquare className="mr-2" /> Contacter le vendeur
-              </Link>
-              <button
-                onClick={openDisputeModal}
-                className="w-full bg-red-100 text-red-700 py-2 px-4 rounded hover:bg-red-200 transition-colors flex items-center justify-center"
-              >
-                <FiAlertTriangle className="mr-2" /> Signaler un problème
-              </button>
-            </div>
-          );
-        }
-        return null;
-      
-      case 'completed':
-      case 'terminé':
-      case 'terminée':
-        if (isClient && !hasReviewed) {
-          return (
-            <div className="flex flex-col space-y-3">
-              <button
-                onClick={openReviewModal}
-                className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center"
-              >
-                <FiStar className="mr-2" /> Évaluer cette commande
-              </button>
-              <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded hover:bg-gray-200 transition-colors flex items-center justify-center">
-                <FiMessageSquare className="mr-2" /> Contacter le vendeur
-              </Link>
-            </div>
-          );
-        }
-        if (isSeller && !hasReviewed) {
-          return (
-            <div className="flex flex-col space-y-3">
-              <button
-                onClick={openReviewModal}
-                className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center"
-              >
-                <FiStar className="mr-2" /> Évaluer ce client
-              </button>
-              <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded hover:bg-gray-200 transition-colors flex items-center justify-center">
-                <FiMessageSquare className="mr-2" /> Contacter le client
-              </Link>
-            </div>
-          );
-        }
-        if (hasReviewed) {
-          return (
-            <div className="flex flex-col space-y-3">
-              <div className="text-sm text-green-600 flex items-center">
-                <FiCheck className="mr-2" /> Évaluation soumise
-              </div>
-              <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded hover:bg-gray-200 transition-colors flex items-center justify-center">
-                <FiMessageSquare className="mr-2" /> Contacter l'{isSeller ? 'acheteur' : 'vendeur'}
-              </Link>
-            </div>
-          );
-        }
-        return null;
-      
-      case 'annulé':
-      case 'annulée':
-        return (
-          <div className="text-sm text-red-600">
-            Cette commande a été annulée.
-          </div>
-        );
-      
-      case 'litige':
+    // Utiliser des assertions de type pour éviter les erreurs de typage avec les statuts français
+    const status = order.status;
+    
+    // Vérifie si le statut correspond à "en attente"
+    const isPending = 
+      status === 'pending' || 
+      (status as any) === 'en_attente' || 
+      (status as any) === 'en_attente_acceptation' || 
+      (status as any) === 'en_attente_paiement';
+    
+    // Vérifie si le statut correspond à "en cours"
+    const isInProgress = 
+      status === 'in_progress' || 
+      (status as any) === 'en_cours';
+    
+    // Vérifie si le statut correspond à "terminé"
+    const isCompleted = 
+      status === 'completed' || 
+      (status as any) === 'terminé' || 
+      (status as any) === 'terminée';
+    
+    // Vérifie si le statut correspond à "annulé"
+    const isCancelled = 
+      status === 'cancelled' || 
+      (status as any) === 'annulé' || 
+      (status as any) === 'annulée';
+    
+    // Vérifie si le statut correspond à "litige"
+    const isDispute = 
+      status === 'dispute' || 
+      (status as any) === 'litige';
+
+    if (isPending) {
+      if (isSeller) {
         return (
           <div className="flex flex-col space-y-3">
-            <Link href={`/dashboard/disputes?order=${order.id}`} className="w-full bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700 transition-colors flex items-center justify-center">
-              <FiAlertTriangle className="mr-2" /> Voir le litige
+            <button
+              onClick={handleAcceptOrder}
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center"
+            >
+              <FiCheck className="mr-2" /> Accepter la commande
+            </button>
+            <button
+              onClick={handleRejectOrder}
+              className="w-full bg-red-100 text-red-700 py-2 px-4 rounded hover:bg-red-200 transition-colors flex items-center justify-center"
+            >
+              <FiXCircle className="mr-2" /> Refuser la commande
+            </button>
+          </div>
+        );
+      }
+      return (
+        <div className="text-sm text-gray-600">
+          En attente d'acceptation par le vendeur...
+        </div>
+      );
+    }
+    
+    if (isInProgress) {
+      if (isSeller) {
+        return (
+          <div className="flex flex-col space-y-3">
+            <Link href={`/dashboard/orders/${order.id}/deliver`} className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center">
+              <FiDownload className="mr-2" /> Livrer la commande
             </Link>
+            <button
+              onClick={handleCompleteOrder}
+              className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors flex items-center justify-center"
+            >
+              <FiCheck className="mr-2" /> Marquer comme terminée
+            </button>
+          </div>
+        );
+      }
+      if (isClient) {
+        return (
+          <div className="flex flex-col space-y-3">
+            <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center">
+              <FiMessageSquare className="mr-2" /> Contacter le vendeur
+            </Link>
+            <button
+              onClick={openDisputeModal}
+              className="w-full bg-red-100 text-red-700 py-2 px-4 rounded hover:bg-red-200 transition-colors flex items-center justify-center"
+            >
+              <FiAlertTriangle className="mr-2" /> Signaler un problème
+            </button>
+          </div>
+        );
+      }
+      return null;
+    }
+    
+    if (isCompleted) {
+      if (isClient && !hasReviewed) {
+        return (
+          <div className="flex flex-col space-y-3">
+            <button
+              onClick={openReviewModal}
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center"
+            >
+              <FiStar className="mr-2" /> Évaluer cette commande
+            </button>
+            <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded hover:bg-gray-200 transition-colors flex items-center justify-center">
+              <FiMessageSquare className="mr-2" /> Contacter le vendeur
+            </Link>
+          </div>
+        );
+      }
+      if (isSeller && !hasReviewed) {
+        return (
+          <div className="flex flex-col space-y-3">
+            <button
+              onClick={openReviewModal}
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors flex items-center justify-center"
+            >
+              <FiStar className="mr-2" /> Évaluer ce client
+            </button>
+            <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded hover:bg-gray-200 transition-colors flex items-center justify-center">
+              <FiMessageSquare className="mr-2" /> Contacter le client
+            </Link>
+          </div>
+        );
+      }
+      if (hasReviewed) {
+        return (
+          <div className="flex flex-col space-y-3">
+            <div className="text-sm text-green-600 flex items-center">
+              <FiCheck className="mr-2" /> Évaluation soumise
+            </div>
             <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded hover:bg-gray-200 transition-colors flex items-center justify-center">
               <FiMessageSquare className="mr-2" /> Contacter l'{isSeller ? 'acheteur' : 'vendeur'}
             </Link>
           </div>
         );
-      
-      default:
-        return null;
+      }
+      return null;
     }
+    
+    if (isCancelled) {
+      return (
+        <div className="text-sm text-red-600">
+          Cette commande a été annulée.
+        </div>
+      );
+    }
+    
+    if (isDispute) {
+      return (
+        <div className="flex flex-col space-y-3">
+          <Link href={`/dashboard/disputes?order=${order.id}`} className="w-full bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700 transition-colors flex items-center justify-center">
+            <FiAlertTriangle className="mr-2" /> Voir le litige
+          </Link>
+          <Link href={`/dashboard/messages?order=${order.id}`} className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded hover:bg-gray-200 transition-colors flex items-center justify-center">
+            <FiMessageSquare className="mr-2" /> Contacter l'{isSeller ? 'acheteur' : 'vendeur'}
+          </Link>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   return (

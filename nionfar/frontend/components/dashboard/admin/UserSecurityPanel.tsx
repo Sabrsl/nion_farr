@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiAlertTriangle, FiUserX, FiUserCheck, FiCheckCircle, FiEye, FiPhone, FiGlobe, FiUsers } from 'react-icons/fi';
-import securityService from '../../../services/securityService';
+import { securityService } from '../../../services/securityService';
 import { User } from '../../../types';
 import { toast } from 'react-toastify';
 

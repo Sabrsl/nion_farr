@@ -28,10 +28,13 @@ import {
   FiHelpCircle
 } from 'react-icons/fi';
 import { IconType } from 'react-icons';
+import { authService } from '../../services/authService';
+import { Avatar } from '../ui/Avatar';
 
 interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
+  description?: string;
 }
 
 // Définir l'interface pour les éléments de navigation
@@ -44,7 +47,8 @@ interface NavItem {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
   children, 
-  title = 'Tableau de Bord | NionFar.sn'
+  title = 'Tableau de Bord | NionFar.sn',
+  description
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -86,11 +90,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     { name: 'Support', href: '/dashboard/support', icon: FiHelpCircle },
   ];
 
+  // Fonction de déconnexion
+  const handleLogout = async () => {
+    console.log('Tentative de déconnexion depuis DashboardLayout');
+    try {
+      await authService.logout();
+      console.log('Déconnexion réussie, redirection...');
+      router.push('/');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-gray-50">
       <Head>
-        <title>{title}</title>
-        <meta name="description" content="Tableau de bord freelance NionFar" />
+        <title>{typeof title === 'string' ? title : 'Dashboard | Nionfar'}</title>
+        <meta name="description" content={description || 'Tableau de bord Nionfar - Gérez vos services et commandes'} />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
         <style jsx global>{`
           .hide-scrollbar {
@@ -225,8 +242,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             
             {/* Logout button - at the bottom */}
             <div className="pt-4 mt-4 border-t border-gray-200">
-              <Link 
-                href="/logout" 
+              <a 
+                href="/logout"
                 className="flex items-center rounded-lg py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 icon-transition"
               >
                 <div className="min-w-[40px] flex justify-center items-center">
@@ -235,7 +252,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <span className="lg:opacity-0 lg:group-hover:opacity-100 opacity-transition whitespace-nowrap truncate">
                   Déconnexion
                 </span>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -324,9 +341,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     Mes services
                   </Link>
                   <div className="border-t border-gray-100 my-1"></div>
-                  <Link href="/logout" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <a
+                    href="/logout"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
                     Déconnexion
-                  </Link>
+                  </a>
                 </div>
               )}
             </div>

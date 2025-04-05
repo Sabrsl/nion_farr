@@ -42,18 +42,19 @@ const OrderList: React.FC<OrderListProps> = ({
   useEffect(() => {
     // Filtre les commandes en fonction de l'onglet actif et autres critères
     const filterOrders = () => {
-      let filtered = [...orders];
+      // Utiliser une assertion de type pour éviter les erreurs
+      let filtered = [...orders] as any[];
 
       // Filtrer par onglet
       if (activeTab === 'active') {
         filtered = filtered.filter(order => 
-          ['en_attente_acceptation', 'en_cours', 'livré', 'en_modification', 'livraison_en_retard'].includes(order.status)
+          ['en_attente_acceptation', 'en_cours', 'livré', 'en_modification', 'livraison_en_retard'].includes(order.status as any)
         );
       } else if (activeTab === 'completed') {
-        filtered = filtered.filter(order => order.status === 'terminée');
+        filtered = filtered.filter(order => (order.status as any) === 'terminée' || order.status === 'completed');
       } else if (activeTab === 'cancelled') {
         filtered = filtered.filter(order => 
-          ['annulée', 'litige'].includes(order.status)
+          ['annulée', 'litige', 'cancelled', 'dispute'].includes(order.status as any)
         );
       }
 
@@ -61,18 +62,20 @@ const OrderList: React.FC<OrderListProps> = ({
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(order => 
-          order.title.toLowerCase().includes(query) || 
-          order.service.title.toLowerCase().includes(query) ||
-          order.requirements.toLowerCase().includes(query)
+          order.title?.toLowerCase().includes(query) || 
+          order.service?.title?.toLowerCase().includes(query) ||
+          order.requirements?.toLowerCase().includes(query) || 
+          order.id?.toLowerCase().includes(query) ||
+          false
         );
       }
 
       // Filtrer par date
       if (dateRange.start) {
-        filtered = filtered.filter(order => new Date(order.createdAt) >= new Date(dateRange.start));
+        filtered = filtered.filter(order => new Date(order.createdAt || '') >= new Date(dateRange.start));
       }
       if (dateRange.end) {
-        filtered = filtered.filter(order => new Date(order.createdAt) <= new Date(dateRange.end));
+        filtered = filtered.filter(order => new Date(order.createdAt || '') <= new Date(dateRange.end));
       }
 
       setFilteredOrders(filtered);
@@ -267,20 +270,14 @@ const OrderList: React.FC<OrderListProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
-          <AnimatePresence>
-            {filteredOrders.map((order, index) => (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                layout
-              >
-                <OrderCard order={order} isSeller={isSeller} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+        <div className="space-y-4">
+          {filteredOrders.map(order => (
+            <OrderCard 
+              key={order.id} 
+              order={order as any}
+              isSeller={isSeller} 
+            />
+          ))}
         </div>
       )}
     </div>

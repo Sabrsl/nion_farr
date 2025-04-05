@@ -8,6 +8,10 @@ export type Category = {
   icon: string;
   slug: string;
   count: number;
+  image?: string;
+  parentId?: string;
+  children?: Category[];
+  subcategories?: SubCategory[];
 };
 
 export type NavItem = {
@@ -21,48 +25,59 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role?: string;
-  image?: string;
   avatar?: string;
-  createdAt: string;
-  isVerified?: boolean;
-  specialty?: string;
-  bio?: string;
-  skills?: string[];
-  languages?: string[];
-  username?: string;
-  level?: string;
-  rating?: number;
-  memberSince?: Date;
   phone?: string;
-  address?: string;
+  role: 'client' | 'provider' | 'admin';
+  isVerified: boolean;
+  bio?: string;
+  location?: string;
   website?: string;
-  updatedAt?: string;
+  languages?: string[];
+  skills?: string[];
+  joinedAt?: string;
+  createdAt?: string;
+  username?: string;
+  rating?: number;
+  level?: string;
+  memberSince?: Date;
+  specialty?: string;
+  totalReviews?: number;
   completedOrders?: number;
+  isOnline?: boolean;
 }
 
 export interface Service {
   id: string;
   title: string;
-  description?: string;
-  summary?: string;
+  description: string;
+  shortDescription?: string;
   price: number;
+  oldPrice?: number;
+  image?: string;
+  gallery?: string[];
+  category?: string | { id: string; name: string };
+  subcategory?: string;
+  tags?: string[];
   rating?: number;
   totalReviews?: number;
+  isActive: boolean;
+  isFeatured?: boolean;
   deliveryTime?: number;
   revisions?: number;
-  images?: string[];
-  image?: string;
-  provider?: User;
-  slug?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  category?: {
+  provider?: {
     id: string;
     name: string;
+    avatar?: string;
+    rating?: number;
+    totalReviews?: number;
+    username?: string;
+    level?: string;
   };
-  tags?: string[];
-  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  queuedOrders?: number;
+  images?: string[];
+  slug?: string;
   orderCount?: number;
 }
 
@@ -110,34 +125,40 @@ export type OrderStatus =
 export interface Notification {
   id: string;
   userId: string;
+  type: 'order' | 'message' | 'review' | 'system';
   title: string;
-  message: string;
-  content?: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'message' | 'order' | 'system' | 'payment';
+  content: string;
   isRead: boolean;
   createdAt: string;
   link?: string;
+  message?: string;
 }
 
 export interface Order {
   id: string;
-  title: string;
-  client: User;
-  seller?: User;
-  service: Service;
+  serviceId: string;
+  serviceName: string;
+  serviceImage?: string;
+  providerId: string;
+  providerName: string;
+  providerAvatar?: string;
+  clientId: string;
   status: OrderStatus;
   price: number;
-  createdAt: string;
-  deadline: string;
-  isPaid: boolean;
-  requirements: string;
-  messages: any[] | number;
+  orderDate: string;
+  expectedDeliveryDate?: string;
+  deliveryDate?: string;
+  rating?: number;
+  review?: string;
   deliverables?: Deliverable[];
-  revisionRequests?: RevisionRequest[];
-  dispute?: Dispute;
-  payment?: Payment;
-  lastUpdatedAt?: string;
-  deliveryValidationDeadline?: string;
+  title?: string;
+  client?: any;
+  service?: any;
+  createdAt?: string;
+  deadline?: string;
+  isPaid?: boolean;
+  requirements?: string;
+  messages?: any[];
 }
 
 export interface Earnings {
@@ -170,74 +191,87 @@ export interface NotificationLegacy {
 }
 
 export interface FreelancerStats {
-  earnings: Earnings;
-  analytics: Analytics;
+  earnings: {
+    total: number;
+    pending: number;
+    withdrawn: number;
+    available: number;
+  };
   activeOrders: number;
+  analytics: {
+    totalOrders: number;
+    views: number;
+    conversionRate: number;
+    averageRating: number;
+    totalReviews: number;
+    clicks: number;
+    completionRate: number;
+    pendingOrders: number;
+    totalEarnings: number;
+  };
   pendingReviews: number;
   responseRate: number;
   responseTime: string;
-  availableBalance?: number;
 }
 
 export interface Attachment {
   id: string;
   name: string;
   url: string;
-  type: 'image' | 'document' | 'audio' | 'video' | 'archive' | 'other';
-  size: number;
+  size?: string | number;
+  type: string;
   thumbnailUrl?: string;
   extension?: string;
   originalName?: string;
   uploadedAt?: string;
-  isUploading?: boolean;
-  progress?: number;
 }
 
 export interface Message {
   id: string;
+  conversationId?: string;
+  conversation?: string;
+  senderId?: string;
+  sender?: any;
+  receiverId?: string;
+  receiver?: any;
+  senderName?: string;
+  senderAvatar?: string;
   content: string;
-  sender: User;
-  receiver: User;
-  conversation: string;
-  createdAt: string;
   isRead: boolean;
+  createdAt: string;
   attachments?: Attachment[];
-  isDelivered?: boolean;
-  isFailed?: boolean;
-  isUploading?: boolean;
-  replyTo?: Message;
 }
 
 export interface Conversation {
   id: string;
-  participants: User[];
-  lastMessage?: Message;
+  participants: string[] | any[];
+  lastMessage?: string | any;
+  lastMessageDate?: string;
   unreadCount: number;
-  order?: Order;
-  createdAt: string;
-  updatedAt: string;
-  isActive: boolean;
+  orderId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+  order?: any;
 }
 
 export interface Review {
   id: string;
-  order: Order;
-  service: Service;
-  reviewer: User;
-  recipient: User;
+  serviceId?: string;
+  userId?: string;
+  userName?: string;
+  userAvatar?: string;
   rating: number;
-  title: string;
   content: string;
   createdAt: string;
-  updatedAt?: string;
-  isPublic: boolean;
+  title?: string;
+  helpfulCount?: number;
   reply?: {
     content: string;
     createdAt: string;
   };
-  likes: number;
-  isHelpful?: boolean;
-  tags?: string[];
+  reviewer?: any;
+  service?: any;
 }
 
 export interface Transaction {
@@ -266,7 +300,7 @@ export interface Withdrawal {
     number: string;
     name: string;
   };
-  status: 'en_attente' | 'validé' | 'rejeté';
+  status: 'en_attente' | 'validé' | 'rejeté' | 'completed' | 'pending';
   createdAt: string;
   processedAt?: string;
   processedBy?: string;
@@ -280,10 +314,13 @@ export interface Withdrawal {
 
 export interface Deliverable {
   id: string;
-  orderId: string;
-  message: string;
-  fileUrls: string[];
-  createdAt: string;
+  name: string;
+  url: string;
+  size?: string;
+  orderId?: string;
+  message?: string;
+  fileUrls?: string[];
+  createdAt?: string;
   isRevision?: boolean;
 }
 
@@ -344,9 +381,10 @@ export interface Payment {
   id: string;
   orderId: string;
   amount: number;
-  status: 'attente' | 'validé' | 'remboursé' | 'échoué';
-  method: 'carte' | 'mobile_money' | 'virement';
-  transactionId: string;
+  currency: string;
+  method: 'card' | 'wave' | 'orange';
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  transactionId?: string;
   createdAt: string;
 }
 
@@ -522,4 +560,59 @@ export interface AccountLink {
   verifiedAt?: string;
   verifiedBy?: string;
   notes?: string;
+}
+
+/**
+ * Certificate type definition
+ */
+export interface Certificate {
+  id: string;
+  title: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialUrl?: string;
+}
+
+/**
+ * Portfolio item type definition
+ */
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description?: string;
+  image: string;
+  category?: string;
+  images?: string[];
+  projectUrl?: string;
+  technologies?: string[];
+}
+
+export interface SubCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  categoryId: string;
+}
+
+export interface TabsProps {
+  tabs: Array<{ id: string; label: string; count?: number }>;
+  activeTab: string;
+  onChange: (tabId: string) => void;
+}
+
+export interface EmptyStateProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  onAction?: () => void;
+  actionLabel?: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
 } 

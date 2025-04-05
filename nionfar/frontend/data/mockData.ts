@@ -11,17 +11,19 @@ import {
 import { categories } from './categories';
 
 // Utilisateur connecté (freelance)
-export const currentUser: User = {
+export const currentUser = {
   id: 'USR-001',
   username: 'Amadou Diop',
+  name: 'Amadou Diop',
   email: 'amadou.diop@example.com',
   avatar: '/img/avatars/user-1.jpg',
   bio: 'Designer graphique spécialisé en branding et UX/UI avec plus de 5 ans d\'expérience',
   rating: 4.9,
   level: 'Level 2 Seller',
   memberSince: new Date('2022-03-15'),
+  role: 'provider',
   isVerified: true
-};
+} as User;
 
 // Services du freelance
 export const freelancerServices: Service[] = [
@@ -34,7 +36,11 @@ export const freelancerServices: Service[] = [
     totalReviews: 124,
     deliveryTime: 3,
     images: ['/img/services/logo-1.jpg', '/img/services/logo-2.jpg'],
-    provider: currentUser,
+    provider: {
+      id: "1", 
+      name: "John Doe",
+      level: "expert"
+    },
     slug: 'logo-professionnel-entreprise',
     createdAt: '2023-05-12',
     updatedAt: '2023-07-18',
@@ -55,7 +61,11 @@ export const freelancerServices: Service[] = [
     totalReviews: 87,
     deliveryTime: 7,
     images: ['/img/services/branding-1.jpg', '/img/services/branding-2.jpg'],
-    provider: currentUser,
+    provider: {
+      id: "1", 
+      name: "John Doe",
+      level: "expert"
+    },
     slug: 'identite-visuelle-complete',
     createdAt: '2023-04-24',
     updatedAt: '2023-06-30',
@@ -76,7 +86,11 @@ export const freelancerServices: Service[] = [
     totalReviews: 53,
     deliveryTime: 10,
     images: ['/img/services/ui-1.jpg', '/img/services/ui-2.jpg'],
-    provider: currentUser,
+    provider: {
+      id: "1", 
+      name: "John Doe",
+      level: "expert"
+    },
     slug: 'maquette-ui-ux-application-mobile',
     createdAt: '2023-06-08',
     updatedAt: '2023-08-01',
@@ -108,7 +122,15 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-18',
     isPaid: true,
     requirements: 'Nous voulons un logo moderne et élégant pour notre nouveau restaurant de cuisine fusion. Les couleurs principales sont le vert et le doré.',
-    messages: []
+    messages: [],
+    serviceId: freelancerServices[0].id,
+    serviceName: freelancerServices[0].title,
+    serviceImage: freelancerServices[0].images?.[0] || '',
+    providerId: currentUser.id,
+    providerName: currentUser.name,
+    providerAvatar: currentUser.avatar,
+    clientId: 'CLI-001',
+    orderDate: '2023-08-15'
   },
   {
     id: 'ORD-1235',
@@ -126,7 +148,15 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-21',
     isPaid: true,
     requirements: 'Notre cabinet recherche une identité visuelle professionnelle et sérieuse, qui inspire confiance. Nous préférons des tons bleu marine et or.',
-    messages: []
+    messages: [],
+    serviceId: freelancerServices[1].id,
+    serviceName: freelancerServices[1].title,
+    serviceImage: freelancerServices[1].images?.[0] || '',
+    providerId: currentUser.id,
+    providerName: currentUser.name,
+    providerAvatar: currentUser.avatar,
+    clientId: 'CLI-002',
+    orderDate: '2023-08-14'
   },
   {
     id: 'ORD-1232',
@@ -144,7 +174,15 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-23',
     isPaid: true,
     requirements: 'Nous lançons une application de paiement mobile et avons besoin d\'une interface intuitive et sécurisante. L\'application doit être facile à utiliser même pour les personnes peu habituées à la technologie.',
-    messages: []
+    messages: [],
+    serviceId: freelancerServices[2].id,
+    serviceName: freelancerServices[2].title,
+    serviceImage: freelancerServices[2].images?.[0] || '',
+    providerId: currentUser.id,
+    providerName: currentUser.name,
+    providerAvatar: currentUser.avatar,
+    clientId: 'CLI-003',
+    orderDate: '2023-08-13'
   },
   {
     id: 'ORD-1230',
@@ -162,7 +200,15 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-13',
     isPaid: true,
     requirements: 'Nous vendons des produits artisanaux sénégalais et avons besoin d\'un logo qui reflète l\'artisanat local tout en restant moderne.',
-    messages: []
+    messages: [],
+    serviceId: freelancerServices[0].id,
+    serviceName: freelancerServices[0].title,
+    serviceImage: freelancerServices[0].images?.[0] || '',
+    providerId: currentUser.id,
+    providerName: currentUser.name,
+    providerAvatar: currentUser.avatar,
+    clientId: 'CLI-004',
+    orderDate: '2023-08-10'
   },
   {
     id: 'ORD-1228',
@@ -180,7 +226,15 @@ export const freelancerOrders: Order[] = [
     deadline: '2023-08-18',
     isPaid: true,
     requirements: 'Nous créons une plateforme de formation en ligne et avons besoin d\'une interface claire et engageante pour les apprenants.',
-    messages: []
+    messages: [],
+    serviceId: freelancerServices[2].id,
+    serviceName: freelancerServices[2].title,
+    serviceImage: freelancerServices[2].images?.[0] || '',
+    providerId: currentUser.id,
+    providerName: currentUser.name,
+    providerAvatar: currentUser.avatar,
+    clientId: 'CLI-005',
+    orderDate: '2023-08-08'
   }
 ];
 
@@ -217,6 +271,7 @@ export const freelancerNotifications: Notification[] = [
     type: 'order',
     title: 'Nouvelle commande reçue',
     message: 'Vous avez reçu une nouvelle commande pour "Conception de logo"',
+    content: 'Vous avez reçu une nouvelle commande pour "Conception de logo"',
     createdAt: '2023-08-15T10:30:00',
     isRead: false,
     link: '/dashboard/orders/ORD-1234'
@@ -227,6 +282,7 @@ export const freelancerNotifications: Notification[] = [
     type: 'message',
     title: 'Nouveau message de Fatou Diallo',
     message: 'Bonjour, je voudrais savoir si vous pouvez ajouter une révision supplémentaire...',
+    content: 'Bonjour, je voudrais savoir si vous pouvez ajouter une révision supplémentaire...',
     createdAt: '2023-08-15T08:45:00',
     isRead: true,
     link: '/dashboard/messages/MSG-567'
@@ -237,6 +293,7 @@ export const freelancerNotifications: Notification[] = [
     type: 'system',
     title: 'Paiement reçu',
     message: '25 000 FCFA ont été ajoutés à votre solde pour la commande #ORD-1230',
+    content: '25 000 FCFA ont été ajoutés à votre solde pour la commande #ORD-1230',
     createdAt: '2023-08-14T15:20:00',
     isRead: true,
     link: '/dashboard/earnings'
@@ -247,19 +304,21 @@ export const freelancerNotifications: Notification[] = [
     type: 'system',
     title: 'Mise à jour des conditions de service',
     message: 'Veuillez prendre connaissance des nouvelles conditions de service qui entreront en vigueur le 1er septembre.',
+    content: 'Veuillez prendre connaissance des nouvelles conditions de service qui entreront en vigueur le 1er septembre.',
     createdAt: '2023-08-14T09:10:00',
     isRead: false,
-    link: '/dashboard/settings/legal'
+    link: '/terms'
   },
   {
     id: 'NOTIF-005',
     userId: 'USR-001',
-    type: 'order',
-    title: 'Commande marquée comme terminée',
-    message: 'La commande #ORD-1230 a été marquée comme terminée par le client.',
-    createdAt: '2023-08-13T16:45:00',
+    type: 'review',
+    title: 'Nouvelle évaluation reçue',
+    message: 'Ibrahima Dieng a laissé une évaluation 5 étoiles pour votre service "Conception de logo"',
+    content: 'Ibrahima Dieng a laissé une évaluation 5 étoiles pour votre service "Conception de logo"',
+    createdAt: '2023-08-13T14:15:00',
     isRead: true,
-    link: '/dashboard/orders/ORD-1230'
+    link: '/dashboard/reviews'
   }
 ];
 
@@ -305,6 +364,7 @@ export const mockTransactions: Transaction[] = [
 export const mockWithdrawals: Withdrawal[] = [
   {
     id: 'withdrawal-1',
+    userId: 'USR-001',
     amount: 50000,
     status: 'completed',
     method: 'mobile_money',
@@ -314,10 +374,11 @@ export const mockWithdrawals: Withdrawal[] = [
       name: 'John Doe'
     },
     createdAt: '2024-03-28T15:30:00Z',
-    completedAt: '2024-03-28T15:35:00Z'
+    processedAt: '2024-03-28T15:35:00Z'
   },
   {
     id: 'withdrawal-2',
+    userId: 'USR-001',
     amount: 75000,
     status: 'pending',
     method: 'bank_transfer',
@@ -332,4 +393,75 @@ export const mockWithdrawals: Withdrawal[] = [
 
 export { categories };
 
-// Other mock data can be defined here... 
+// Other mock data can be defined here...
+
+// Historique des retraits
+export const withdrawalHistory: Withdrawal[] = [
+  {
+    id: 'WD-001',
+    userId: 'USR-001',
+    amount: 150000,
+    method: 'mobile_money',
+    accountDetails: {
+      type: 'Wave',
+      number: '77123456',
+      name: 'Amadou Diop'
+    },
+    status: 'validé',
+    createdAt: '2023-08-01T14:30:00',
+    processedAt: '2023-08-02T10:15:00',
+    processedBy: 'ADMIN-001',
+    transactionDetails: {
+      reference: 'TRX-89012',
+      processedAt: '2023-08-02T10:15:00'
+    }
+  },
+  {
+    id: 'WD-002',
+    userId: 'USR-001',
+    amount: 100000,
+    method: 'mobile_money',
+    accountDetails: {
+      type: 'Orange Money',
+      number: '76987654',
+      name: 'Amadou Diop'
+    },
+    status: 'validé',
+    createdAt: '2023-07-15T11:45:00',
+    processedAt: '2023-07-16T09:30:00',
+    processedBy: 'ADMIN-002',
+    transactionDetails: {
+      reference: 'TRX-56789',
+      processedAt: '2023-07-16T09:30:00'
+    }
+  },
+  {
+    id: 'WD-003',
+    userId: 'USR-001',
+    amount: 75000,
+    method: 'bank_transfer',
+    accountDetails: {
+      type: 'Banque Atlantique',
+      number: 'SN-123456789',
+      name: 'Amadou Diop'
+    },
+    status: 'en_attente',
+    createdAt: '2023-08-10T15:20:00'
+  },
+  {
+    id: 'WD-004',
+    userId: 'USR-001',
+    amount: 50000,
+    method: 'bank_transfer',
+    accountDetails: {
+      type: 'CBAO',
+      number: 'SN-987654321',
+      name: 'Amadou Diop'
+    },
+    status: 'rejeté',
+    createdAt: '2023-06-20T13:10:00',
+    processedAt: '2023-06-21T14:20:00',
+    processedBy: 'ADMIN-001',
+    rejectionReason: 'Informations bancaires incorrectes. Veuillez vérifier le numéro de compte.'
+  }
+]; 

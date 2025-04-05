@@ -50,7 +50,7 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
       const eligibilityCheck = await withdrawalService.checkWithdrawalEligibility(user.id);
       setIsEligible(eligibilityCheck.eligible);
       if (!eligibilityCheck.eligible) {
-        setEligibilityMessage(eligibilityCheck.reason);
+        setEligibilityMessage(eligibilityCheck.reason || 'Vous n\'êtes pas éligible pour effectuer un retrait actuellement');
       } else {
         setEligibilityMessage(null);
       }

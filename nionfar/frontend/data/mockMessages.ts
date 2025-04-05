@@ -5,42 +5,60 @@ export const mockUsers: User[] = [
   {
     id: 'USR-001',
     username: 'Amadou Diop',
+    name: 'Amadou Diop',
+    email: 'amadou.diop@example.com',
     avatar: '/img/avatars/user-1.jpg',
+    role: 'provider',
     isVerified: true,
     isOnline: true
   },
   {
     id: 'USR-002',
     username: 'Fatou Diallo',
+    name: 'Fatou Diallo',
+    email: 'fatou.diallo@example.com',
     avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+    role: 'client',
     isVerified: true,
     isOnline: true
   },
   {
     id: 'USR-003',
     username: 'Modou Ndiaye',
+    name: 'Modou Ndiaye',
+    email: 'modou.ndiaye@example.com',
     avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+    role: 'client',
     isVerified: true,
     isOnline: false
   },
   {
     id: 'USR-004',
     username: 'Aminata Sow',
+    name: 'Aminata Sow',
+    email: 'aminata.sow@example.com',
     avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+    role: 'client',
     isVerified: false,
     isOnline: true
   },
   {
     id: 'USR-005',
     username: 'Ibrahima Dieng',
+    name: 'Ibrahima Dieng',
+    email: 'ibrahima.dieng@example.com',
     avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
+    role: 'client',
     isVerified: true,
     isOnline: false
   },
   {
     id: 'USR-006',
     username: 'Aissatou Ba',
+    name: 'Aissatou Ba',
+    email: 'aissatou.ba@example.com',
     avatar: 'https://randomuser.me/api/portraits/women/22.jpg',
+    role: 'client',
     isVerified: true,
     isOnline: false
   }

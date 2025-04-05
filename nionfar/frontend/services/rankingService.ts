@@ -6,10 +6,10 @@ import {
   User 
 } from '../types';
 
-import disputeService from './disputeService';
+import { disputeService } from './disputeService';
 import orderService from './orderService';
 import reviewService from './reviewService';
-import securityService from './securityService';
+import { securityService } from './securityService';
 
 /**
  * Service pour gérer le classement des freelancers
@@ -357,8 +357,8 @@ class RankingService {
       
     if (disputeRatio > 0.15) {
       badges.push({
-        type: 'dispute_rate',
-        severity: disputeRatio > 0.25 ? 'high' : 'medium',
+        type: 'dispute_rate' as const,
+        severity: disputeRatio > 0.25 ? 'high' as const : 'medium' as const,
         label: 'Taux de litiges élevé',
         description: `Ce freelancer a des litiges sur ${Math.round(disputeRatio * 100)}% de ses commandes.`
       });
@@ -370,8 +370,8 @@ class RankingService {
       
       if (lostRatio > 0.5) {
         badges.push({
-          type: 'resolution_rate',
-          severity: lostRatio > 0.75 ? 'high' : 'medium',
+          type: 'resolution_rate' as const,
+          severity: lostRatio > 0.75 ? 'high' as const : 'medium' as const,
           label: 'Litiges souvent perdus',
           description: `Ce freelancer a perdu ${Math.round(lostRatio * 100)}% de ses litiges.`
         });
@@ -386,8 +386,8 @@ class RankingService {
     
     if (recentDisputesLost >= 3) {
       badges.push({
-        type: 'resolution_rate',
-        severity: recentDisputesLost >= 5 ? 'high' : 'medium',
+        type: 'resolution_rate' as const,
+        severity: recentDisputesLost >= 5 ? 'high' as const : 'medium' as const,
         label: 'Litiges récents perdus',
         description: `Ce freelancer a perdu ${recentDisputesLost} litiges au cours des 3 derniers mois.`
       });

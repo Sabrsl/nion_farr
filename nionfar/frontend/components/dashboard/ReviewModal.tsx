@@ -1,6 +1,6 @@
 import React, { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XIcon } from '@heroicons/react/outline';
+import { FiX } from 'react-icons/fi';
 import { Order, User, Review } from '../../types';
 import ReviewForm from './ReviewForm';
 
@@ -59,14 +59,17 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-xl transition-all">
-                <div className="absolute top-0 right-0 pt-4 pr-4">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <Dialog.Title className="text-lg font-medium text-gray-900">
+                    {isClientReview ? 'Évaluer le service' : 'Évaluer le client'}
+                  </Dialog.Title>
                   <button
                     type="button"
-                    className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     onClick={onClose}
                   >
                     <span className="sr-only">Fermer</span>
-                    <XIcon className="h-6 w-6" aria-hidden="true" />
+                    <FiX className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
                 
