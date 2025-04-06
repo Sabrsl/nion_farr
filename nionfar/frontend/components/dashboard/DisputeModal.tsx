@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Fragment, ElementType } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { FiX, FiAlertTriangle, FiInfo, FiUpload, FiFile, FiTrash } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -110,11 +110,11 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
   ];
 
   return (
-    <Transition show={isOpen} as={React.Fragment}>
-      <Dialog as="div" className="fixed inset-0 z-50 overflow-y-auto" onClose={onClose}>
+    <Transition show={isOpen} as={Fragment}>
+      <Dialog className="fixed inset-0 z-50 overflow-y-auto" onClose={onClose}>
         <div className="min-h-screen px-4 text-center">
           <Transition.Child
-            as={React.Fragment}
+            as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0"
             enterTo="opacity-100"
@@ -122,14 +122,14 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-black bg-opacity-30" />
+            <div className="fixed inset-0 bg-black bg-opacity-30" />
           </Transition.Child>
 
           {/* Centrer la modale */}
           <span className="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
           
           <Transition.Child
-            as={React.Fragment}
+            as={Fragment}
             enter="ease-out duration-300"
             enterFrom="opacity-0 scale-95"
             enterTo="opacity-100 scale-100"
@@ -139,7 +139,7 @@ const DisputeModal: React.FC<DisputeModalProps> = ({
           >
             <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
               <div className="flex justify-between items-center mb-4">
-                <Dialog.Title as="h3" className="text-lg font-medium text-gray-900 flex items-center">
+                <Dialog.Title className="text-lg font-medium text-gray-900 flex items-center">
                   <FiAlertTriangle className="mr-2 text-yellow-500" />
                   Signaler un problème
                 </Dialog.Title>

@@ -34,7 +34,7 @@ class DisputePermissionService {
     // Vérifier le rôle de l'utilisateur
     const isAdmin = user.role === 'admin';
     const isClient = user.role === 'client';
-    const isFreelancer = user.role === 'freelancer';
+    const isFreelancer = user.role === 'provider';
     
     switch (action) {
       case DisputeAction.OPEN:

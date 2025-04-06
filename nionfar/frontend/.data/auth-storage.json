@@ -1,0 +1,17 @@
+{
+  "users": {
+    "user_1743930515682_m4kyrep1": {
+      "id": "user_1743930515682_m4kyrep1",
+      "email": "test@example.com",
+      "name": "test",
+      "role": "client",
+      "password": "hashed_Nionfar2024!",
+      "isVerified": true,
+      "createdAt": "2025-04-06T09:08:35.682Z",
+      "passwordLastChanged": "2025-04-06T09:09:42.099Z"
+    }
+  },
+  "verificationCodes": {},
+  "passwordResetTokens": {},
+  "lastUpdated": "2025-04-06T09:09:42.100Z"
+}

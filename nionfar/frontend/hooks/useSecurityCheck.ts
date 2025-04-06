@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import securityService, { SecurityAlert, KycInfo } from '../services/securityService';
+import { securityService, SecurityAlert, KycInfo } from '../services/securityService';
 
 interface UseSecurityCheckResult {
   isLoading: boolean;

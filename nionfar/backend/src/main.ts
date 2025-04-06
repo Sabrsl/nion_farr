@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { AppModule } from './app.module';
 import { rateLimit } from 'express-rate-limit';
 import { ConfigService } from '@nestjs/config';
 
@@ -10,11 +10,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   
-  // Global prefix for all routes
-  const apiPrefix = configService.get<string>('API_PREFIX');
-  app.setGlobalPrefix(apiPrefix);
-
-  // Security middlewares
+  // Variables d'environnement
+  const port = configService.get<number>('PORT') || 3001;
+  const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
+  const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+  
+  // Middlewares de sécurité
   app.use(helmet());
   
   // Rate limiting
@@ -25,15 +26,18 @@ async function bootstrap() {
       message: 'Too many requests from this IP, please try again later',
     }),
   );
-
-  // Enable CORS for the frontend
+  
+  // CORS
   app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL'),
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: [frontendUrl],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   });
-
-  // Validation
+  
+  // Préfixe global pour toutes les routes
+  app.setGlobalPrefix(apiPrefix);
+  
+  // Validation des données
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -44,21 +48,21 @@ async function bootstrap() {
       },
     }),
   );
-
-  // Swagger documentation
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('NionFar API')
-    .setDescription('API documentation for NionFar platform')
+  
+  // Configuration Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Nionfar API')
+    .setDescription('API de la plateforme de services freelance Nionfar')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
   
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
-
-  const port = configService.get<number>('PORT') || 3001;
+  // Démarrage du serveur
   await app.listen(port);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  console.log(`Application started on port ${port}`);
+  console.log(`API documentation available at http://localhost:${port}/${apiPrefix}/docs`);
 }
 
 bootstrap(); 

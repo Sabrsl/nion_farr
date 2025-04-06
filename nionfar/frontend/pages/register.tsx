@@ -15,7 +15,8 @@ import {
   FiEyeOff 
 } from 'react-icons/fi';
 import { useRouter } from 'next/router';
-import authService from '../services/authService';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { authService } from '../services/authService';
 
 const Register: NextPage = () => {
   const router = useRouter();

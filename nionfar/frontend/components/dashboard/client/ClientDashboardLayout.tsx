@@ -21,7 +21,9 @@ import {
   FiHeart
 } from 'react-icons/fi';
 import { IconType } from 'react-icons';
-import authService from '../../../services/authService';
+// Suppression de l'import problématique
+// Commenté plutôt que supprimé pour référence
+// import { authService } from '../../../services/authService';
 
 interface NavItem {
   name: string;

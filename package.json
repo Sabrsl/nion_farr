@@ -9,6 +9,7 @@
     "lint": "cd nionfar/frontend && npm run lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.1",
     "@radix-ui/react-tooltip": "^1.1.8",
     "@tinymce/tinymce-react": "^6.1.0",
     "class-transformer": "^0.5.1",
@@ -17,7 +18,10 @@
     "classnames": "^2.5.1",
     "framer-motion": "^12.6.3",
     "react-dropzone": "^14.3.8",
+    "react-hook-form": "^7.55.0",
+    "react-icons": "^5.5.0",
     "react-intersection-observer": "^9.16.0",
+    "react-toastify": "^11.0.5",
     "swr": "^2.3.3",
     "tinymce": "^7.7.2"
   },

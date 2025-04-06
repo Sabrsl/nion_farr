@@ -51,29 +51,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const storedUser = localStorage.getItem(USER_STORAGE_KEY);
       
-      // Mémoriser l'état précédent pour détecter les changements
-      const wasAuthenticated = !!user;
-      const userId = user?.id;
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[AuthContext] Refreshing auth state:', { 
-          wasAuthenticated, 
-          userId,
-          storedUser: !!storedUser 
-        });
-      }
-      
       if (storedUser) {
         try {
           const userData = JSON.parse(storedUser);
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[AuthContext] User data loaded from localStorage:', { 
-              userId: userData.id,
-              isNew: userId !== userData.id
-            });
-          }
-          
           setUser(userData);
         } catch (e) {
           console.error('[AuthContext] Erreur lors du parsing des données utilisateur:', e);
@@ -81,9 +61,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(null);
         }
       } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[AuthContext] No user found in localStorage, clearing state');
-        }
         setUser(null);
       }
     } catch (error) {
@@ -126,34 +103,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
-      // Pour la démonstration, on vérifie juste si l'email contient "test"
-      if (email.includes('test')) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Authentification simulée réussie pour:', email);
+      // En production, effectuer une requête API réelle
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Identifiants invalides');
         }
         
-        const mockUser: User = {
-          id: 'usr_' + Math.random().toString(36).substr(2, 9),
-          email,
-          name: email.split('@')[0],
-          avatar: undefined,
-          phone: undefined,
-          role: 'client',
-          isVerified: false,
-        } as User;
+        const userData = await response.json();
         
-        const userWithMeta = {
-          ...mockUser,
-          createdAt: new Date().toISOString()
-        };
-        
-        setUser(mockUser);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithMeta));
+        setUser(userData.user);
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData.user));
         
         return true;
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        return false;
       }
-      
-      return false;
     } catch (error) {
       console.error('Erreur de connexion:', error);
       return false;
@@ -167,14 +140,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const logout = async () => {
     try {
-      console.log('AuthContext: Déconnexion...');
       setLoading(true);
-      // Ici, on pourrait appeler une API pour déconnecter l'utilisateur côté serveur
+      
+      // Appeler l'API pour déconnecter l'utilisateur côté serveur
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST'
+        });
+      } catch (error) {
+        console.error('Erreur lors de la déconnexion côté serveur:', error);
+      }
       
       localStorage.removeItem(USER_STORAGE_KEY);
-      console.log('AuthContext: localStorage nettoyé');
       setUser(null);
-      console.log('AuthContext: Utilisateur déconnecté');
     } catch (error) {
       console.error('Erreur de déconnexion:', error);
     } finally {
@@ -188,63 +166,88 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: Partial<User> & { password: string }) => {
     try {
       setLoading(true);
-      // Ici, on pourrait appeler une API pour inscrire l'utilisateur
       
-      if (userData.email) {
-        const mockUser: User = {
-          id: 'usr_' + Math.random().toString(36).substr(2, 9),
-          email: userData.email,
-          name: userData.name || userData.email.split('@')[0],
-          avatar: userData.avatar,
-          phone: userData.phone,
-          role: userData.role || 'client',
-          isVerified: false,
-        } as User;
+      // Appeler l'API pour inscrire l'utilisateur
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
         
-        const userWithMeta = {
-          ...mockUser,
-          createdAt: new Date().toISOString()
-        };
+        if (!response.ok) {
+          throw new Error('Erreur lors de l\'inscription');
+        }
         
-        setUser(mockUser);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userWithMeta));
+        const data = await response.json();
+        
+        // Si l'inscription est réussie mais n'authentifie pas automatiquement
+        if (data.success && !data.user) {
+          return true;
+        }
+        
+        // Si l'inscription authentifie automatiquement
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        }
         
         return true;
+      } catch (error) {
+        console.error('Erreur lors de l\'inscription:', error);
+        return false;
       }
-      
-      return false;
     } catch (error) {
-      console.error('Erreur d\'inscription:', error);
+      console.error('Erreur lors de l\'inscription:', error);
       return false;
     } finally {
       setLoading(false);
     }
   };
-
+  
   /**
-   * Met à jour les données de l'utilisateur courant
+   * Met à jour les informations de l'utilisateur
    */
   const updateUser = async (userData: Partial<User>) => {
     try {
       setLoading(true);
+      
       if (!user) {
-        return false;
+        throw new Error('Aucun utilisateur connecté');
       }
       
-      // Ici, on pourrait appeler une API pour mettre à jour le profil
-      
-      const updatedUser = { 
-        ...user, 
-        ...userData, 
-        updatedAt: new Date().toISOString() 
-      };
-      
-      setUser(updatedUser);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
-      
-      return true;
+      // Appeler l'API pour mettre à jour l'utilisateur
+      try {
+        const response = await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la mise à jour du profil');
+        }
+        
+        const data = await response.json();
+        
+        if (data.user) {
+          const updatedUser = { ...user, ...data.user };
+          setUser(updatedUser);
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+          return true;
+        }
+        
+        return false;
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour du profil:', error);
+        return false;
+      }
     } catch (error) {
-      console.error('Erreur de mise à jour du profil:', error);
+      console.error('Erreur lors de la mise à jour du profil:', error);
       return false;
     } finally {
       setLoading(false);

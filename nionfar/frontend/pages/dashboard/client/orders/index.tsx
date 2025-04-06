@@ -17,10 +17,10 @@ import Link from 'next/link';
 import { Order, OrderStatus, User } from '../../../../types';
 
 // Extended Order interface for our component needs
-interface ExtendedOrder extends Omit<Order, 'status'> {
-  status: OrderStatus;
+interface ExtendedOrder extends Order {
   seller: User;
   deliveryValidationDeadline?: string;
+  clientId: string;
 }
 
 const ClientOrdersPage: NextPage = () => {
@@ -36,6 +36,16 @@ const ClientOrdersPage: NextPage = () => {
     return amount.toLocaleString() + ' FCFA';
   };
 
+  // Formater la date
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'Non spécifiée';
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   useEffect(() => {
     // Simuler le chargement des données
     const timer = setTimeout(() => {
@@ -46,6 +56,11 @@ const ClientOrdersPage: NextPage = () => {
         {
           id: 'ORD-1234',
           title: 'Conception de logo pour restaurant',
+          serviceId: 'SRV-001',
+          serviceName: 'Création de logo professionnel',
+          providerId: 'SEL-001',
+          providerName: 'Amadou Diop',
+          clientId: 'CLI-001',
           client: {
             id: 'CLI-001',
             name: 'Fatou Diallo',
@@ -53,7 +68,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'fatou.diallo@example.com',
             avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
             isVerified: true,
-            createdAt: '2023-01-15'
+            createdAt: '2023-01-15',
+            role: 'client'
           },
           seller: {
             id: 'SEL-001',
@@ -62,7 +78,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'amadou.diop@example.com',
             avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
             isVerified: true,
-            createdAt: '2022-10-05'
+            createdAt: '2022-10-05',
+            role: 'provider'
           },
           service: {
             id: 'SRV-001',
@@ -81,14 +98,21 @@ const ClientOrdersPage: NextPage = () => {
           price: 25000,
           createdAt: '2023-08-15',
           deadline: '2023-08-18',
+          orderDate: '2023-08-15',
+          expectedDeliveryDate: '2023-08-18',
           isPaid: true,
-          messages: 8,
+          messages: [],
           requirements: 'Création d\'un logo moderne pour restaurant',
           deliveryValidationDeadline: '2023-08-21'
         },
         {
           id: 'ORD-1235',
           title: 'Développement d\'une landing page',
+          serviceId: 'SRV-002',
+          serviceName: 'Création d\'une landing page attractive',
+          providerId: 'SEL-002',
+          providerName: 'Modou Ndiaye',
+          clientId: 'CLI-001',
           client: {
             id: 'CLI-001',
             name: 'Fatou Diallo',
@@ -96,7 +120,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'fatou.diallo@example.com',
             avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
             isVerified: true,
-            createdAt: '2023-01-15'
+            createdAt: '2023-01-15',
+            role: 'client'
           },
           seller: {
             id: 'SEL-002',
@@ -105,7 +130,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'modou.ndiaye@example.com',
             avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
             isVerified: true,
-            createdAt: '2022-09-12'
+            createdAt: '2022-09-12',
+            role: 'provider'
           },
           service: {
             id: 'SRV-002',
@@ -124,13 +150,20 @@ const ClientOrdersPage: NextPage = () => {
           price: 75000,
           createdAt: '2023-08-14',
           deadline: '2023-08-19',
+          orderDate: '2023-08-14',
+          expectedDeliveryDate: '2023-08-19',
           isPaid: true,
-          messages: 3,
+          messages: [],
           requirements: 'Création d\'une landing page responsive avec formulaire de contact'
         },
         {
           id: 'ORD-1232',
           title: 'Rédaction d\'articles SEO (x5)',
+          serviceId: 'SRV-003',
+          serviceName: 'Rédaction d\'articles SEO de qualité',
+          providerId: 'SEL-003',
+          providerName: 'Aminata Sow',
+          clientId: 'CLI-001',
           client: {
             id: 'CLI-001',
             name: 'Fatou Diallo',
@@ -138,7 +171,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'fatou.diallo@example.com',
             avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
             isVerified: true,
-            createdAt: '2023-01-15'
+            createdAt: '2023-01-15',
+            role: 'client'
           },
           seller: {
             id: 'SEL-003',
@@ -147,7 +181,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'aminata.sow@example.com',
             avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
             isVerified: false,
-            createdAt: '2022-11-20'
+            createdAt: '2022-11-20',
+            role: 'provider'
           },
           service: {
             id: 'SRV-003',
@@ -166,13 +201,20 @@ const ClientOrdersPage: NextPage = () => {
           price: 75000,
           createdAt: '2023-08-13',
           deadline: '2023-08-17',
+          orderDate: '2023-08-13',
+          expectedDeliveryDate: '2023-08-17',
           isPaid: true,
-          messages: 5,
+          messages: [],
           requirements: 'Rédaction de 5 articles SEO optimisés avec recherche de mots-clés'
         },
         {
           id: 'ORD-1230',
           title: 'Conception de flyer promotionnel',
+          serviceId: 'SRV-004',
+          serviceName: 'Conception de flyers professionnels',
+          providerId: 'SEL-004',
+          providerName: 'Omar Sall',
+          clientId: 'CLI-001',
           client: {
             id: 'CLI-001',
             name: 'Fatou Diallo',
@@ -180,7 +222,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'fatou.diallo@example.com',
             avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
             isVerified: true,
-            createdAt: '2023-01-15'
+            createdAt: '2023-01-15',
+            role: 'client'
           },
           seller: {
             id: 'SEL-004',
@@ -189,7 +232,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'omar.sall@example.com',
             avatar: 'https://randomuser.me/api/portraits/men/22.jpg',
             isVerified: true,
-            createdAt: '2022-08-10'
+            createdAt: '2022-08-10',
+            role: 'provider'
           },
           service: {
             id: 'SRV-004',
@@ -208,13 +252,20 @@ const ClientOrdersPage: NextPage = () => {
           price: 30000,
           createdAt: '2023-08-10',
           deadline: '2023-08-12',
+          orderDate: '2023-08-10',
+          expectedDeliveryDate: '2023-08-12',
           isPaid: true,
-          messages: 12,
+          messages: [],
           requirements: 'Création d\'un flyer promotionnel pour un événement'
         },
         {
           id: 'ORD-1228',
           title: 'Traduction de document français-anglais',
+          serviceId: 'SRV-005',
+          serviceName: 'Traduction français-anglais',
+          providerId: 'SEL-005',
+          providerName: 'Aïda Kane',
+          clientId: 'CLI-001',
           client: {
             id: 'CLI-001',
             name: 'Fatou Diallo',
@@ -222,7 +273,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'fatou.diallo@example.com',
             avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
             isVerified: true,
-            createdAt: '2023-01-15'
+            createdAt: '2023-01-15',
+            role: 'client'
           },
           seller: {
             id: 'SEL-005',
@@ -231,7 +283,8 @@ const ClientOrdersPage: NextPage = () => {
             email: 'aida.kane@example.com',
             avatar: 'https://randomuser.me/api/portraits/women/28.jpg',
             isVerified: true,
-            createdAt: '2022-07-05'
+            createdAt: '2022-07-05',
+            role: 'provider'
           },
           service: {
             id: 'SRV-005',
@@ -250,9 +303,11 @@ const ClientOrdersPage: NextPage = () => {
           price: 20000,
           createdAt: '2023-08-08',
           deadline: '2023-08-09',
+          orderDate: '2023-08-06',
+          expectedDeliveryDate: '2023-08-09',
           isPaid: true,
-          messages: 4,
-          requirements: 'Traduction d\'un document commercial de 10 pages'
+          messages: [],
+          requirements: 'Traduction d\'un document de 10 pages du français vers l\'anglais'
         }
       ]);
     }, 800);
@@ -262,58 +317,58 @@ const ClientOrdersPage: NextPage = () => {
 
   // Filtrer et trier les commandes
   const filteredOrders = useMemo(() => {
-    // Filtrer par recherche
-    let filtered = orders.filter(order => {
-      const searchLower = searchQuery.toLowerCase();
-      return (
-        order.id.toLowerCase().includes(searchLower) ||
-        order.title.toLowerCase().includes(searchLower) ||
-        (order.seller.username ? order.seller.username.toLowerCase().includes(searchLower) : false) ||
-        order.service.title.toLowerCase().includes(searchLower)
-      );
-    });
+    let result = [...orders];
 
-    // Filtrer par statut
+    // Appliquer le filtre de statut
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(order => {
-        if (statusFilter === 'in_progress') return order.status === 'en_cours';
-        if (statusFilter === 'delivered') return order.status === 'livré';
-        if (statusFilter === 'completed') return order.status === 'terminée' || order.status === 'terminé';
-        if (statusFilter === 'disputes') return order.status === 'litige';
-        return true;
+      result = result.filter(order => order.status === statusFilter);
+    }
+
+    // Appliquer le filtre de période
+    if (periodFilter === 'last-month') {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      result = result.filter(order => order.createdAt && new Date(order.createdAt) >= oneMonthAgo);
+    } else if (periodFilter === 'last-3-months') {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      result = result.filter(order => order.createdAt && new Date(order.createdAt) >= threeMonthsAgo);
+    }
+
+    // Appliquer la recherche
+    if (searchQuery.trim() !== '') {
+      const searchLower = searchQuery.toLowerCase();
+      result = result.filter(order => {
+        return (
+          order.id.toLowerCase().includes(searchLower) ||
+          (order.title ? order.title.toLowerCase().includes(searchLower) : false) ||
+          (order.seller.username ? order.seller.username.toLowerCase().includes(searchLower) : false) ||
+          (order.service.title ? order.service.title.toLowerCase().includes(searchLower) : false)
+        );
       });
     }
 
-    // Filtrer par période
-    if (periodFilter !== 'all') {
-      const now = new Date();
-      const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
-      const ninetyDaysAgo = new Date(now.setDate(now.getDate() - 90));
-      const yearStart = new Date(now.getFullYear(), 0, 1);
-      
-      filtered = filtered.filter(order => {
-        const orderDate = new Date(order.createdAt);
-        if (periodFilter === '30days') return orderDate >= thirtyDaysAgo;
-        if (periodFilter === '90days') return orderDate >= ninetyDaysAgo;
-        if (periodFilter === 'year') return orderDate >= yearStart;
-        return true;
+    // Appliquer le tri
+    if (sortBy === 'date-desc') {
+      result.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
       });
+    } else if (sortBy === 'date-asc') {
+      result.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+    } else if (sortBy === 'price-desc') {
+      result.sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'price-asc') {
+      result.sort((a, b) => a.price - b.price);
     }
 
-    // Trier les commandes
-    return filtered.sort((a, b) => {
-      if (sortBy === 'date-asc') {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (sortBy === 'date-desc') {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      } else if (sortBy === 'price-asc') {
-        return a.price - b.price;
-      } else if (sortBy === 'price-desc') {
-        return b.price - a.price;
-      }
-      return 0;
-    });
-  }, [orders, searchQuery, statusFilter, periodFilter, sortBy]);
+    return result;
+  }, [orders, statusFilter, periodFilter, searchQuery, sortBy]);
 
   return (
     <ClientDashboardLayout title="Mes Commandes | NionFar.sn">
@@ -385,9 +440,8 @@ const ClientOrdersPage: NextPage = () => {
                   className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 >
                   <option value="all">Toutes les périodes</option>
-                  <option value="30days">30 derniers jours</option>
-                  <option value="90days">90 derniers jours</option>
-                  <option value="year">Cette année</option>
+                  <option value="last-month">Dernier mois</option>
+                  <option value="last-3-months">3 derniers mois</option>
                 </select>
               </div>
               
@@ -459,7 +513,7 @@ const ClientOrdersPage: NextPage = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-start">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 mb-1">{order.service.title}</div>
+                            <div className="text-sm font-medium text-gray-900 mb-1">{order.service.title || 'Commande sans titre'}</div>
                             <div className="text-xs text-gray-500">ID: {order.id}</div>
                           </div>
                         </div>
@@ -509,7 +563,7 @@ const ClientOrdersPage: NextPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {new Date(order.createdAt).toLocaleDateString('fr-FR')}
+                          {formatDate(order.createdAt)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">

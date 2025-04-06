@@ -19,7 +19,7 @@ import {
 } from 'react-icons/fi';
 import ClientDashboardLayout from '../../../../components/dashboard/ClientDashboardLayout';
 import Link from 'next/link';
-import { Order } from '../../../../types';
+import { Order, OrderStatus } from '../../../../types';
 
 const OrderDetailPage: NextPage = () => {
   const router = useRouter();
@@ -34,12 +34,13 @@ const OrderDetailPage: NextPage = () => {
     return amount?.toLocaleString() + ' FCFA';
   };
   
-  // Formater les dates
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('fr-FR', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
+  // Formater la date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Non spécifiée';
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
@@ -49,64 +50,44 @@ const OrderDetailPage: NextPage = () => {
     // Simuler le chargement des données
     const timer = setTimeout(() => {
       // Commande fictive pour démonstration
-      setOrder({
-        id: id as string,
-        title: 'Conception de logo pour restaurant',
-        client: {
-          id: 'CLI-001',
-          name: 'Fatou Diallo',
-          username: 'Fatou Diallo',
-          email: 'fatou.diallo@example.com',
-          avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-          isVerified: true,
-          createdAt: '2023-01-15'
-        },
-        seller: {
-          id: 'SEL-001',
-          name: 'Amadou Diop',
-          username: 'Amadou Diop',
-          email: 'amadou.diop@example.com',
-          avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-          isVerified: true,
-          createdAt: '2022-10-05'
-        },
-        service: {
-          id: 'SRV-001',
-          title: 'Je vais créer un logo professionnel pour votre entreprise',
-          price: 25000,
-          rating: 4.9,
-          totalReviews: 124,
-          deliveryTime: 3,
-          images: [],
-          orderCount: 243,
-          createdAt: '2023-05-12',
-          slug: 'logo-professionnel'
-        },
-        status: 'livré',
+      const mockOrder = {
+        id: 'ORD-123456',
+        serviceId: 'SRV-789',
+        serviceName: 'Création de logo professionnel',
+        providerId: 'PRV-001',
+        providerName: 'Amadou Diop',
+        providerAvatar: 'https://randomuser.me/api/portraits/men/44.jpg',
+        clientId: 'CLT-001',
+        status: 'livré' as OrderStatus,
         price: 25000,
+        orderDate: '2023-08-15',
+        expectedDeliveryDate: '2023-08-20',
+        deliveryDate: '2023-08-17',
+        title: 'Création de logo pour restaurant',
         createdAt: '2023-08-15',
-        deadline: '2023-08-18',
+        deadline: '2023-08-20',
         isPaid: true,
+        requirements: 'Création d\'un logo moderne pour restaurant avec des couleurs chaudes (orange, rouge). Style épuré et minimaliste. Format vectoriel et PNG transparent. Trois propositions différentes.',
         messages: [
           {
             id: 'MSG-001',
             sender: 'client',
-            content: 'Bonjour, je souhaite un logo moderne pour mon restaurant.',
-            createdAt: '2023-08-15T10:30:00',
+            content: 'Bonjour, je suis impatient de voir votre travail pour mon logo.',
+            createdAt: '2023-08-15T09:30:00',
             isRead: true
           },
           {
             id: 'MSG-002',
-            sender: 'seller',
-            content: 'Bonjour, merci pour votre commande. Je vais travailler sur votre logo dès aujourd\'hui.',
-            createdAt: '2023-08-15T11:15:00',
+            sender: 'provider',
+            content: 'Bonjour ! Merci pour votre commande. Je vais commencer à travailler sur votre logo dès aujourd\'hui. Avez-vous des exemples de logos que vous aimez?',
+            createdAt: '2023-08-15T10:15:00',
             isRead: true
           },
           {
             id: 'MSG-003',
-            sender: 'seller',
-            content: 'Avez-vous des exemples de logos que vous aimez ?',
-            createdAt: '2023-08-15T11:16:00',
+            sender: 'provider',
+            content: 'Quel style préférez-vous? Minimaliste, coloré, vintage?',
+            createdAt: '2023-08-15T10:20:00',
             isRead: true
           },
           {
@@ -117,18 +98,38 @@ const OrderDetailPage: NextPage = () => {
             isRead: true
           }
         ],
-        requirements: 'Création d\'un logo moderne pour restaurant avec des couleurs chaudes (orange, rouge). Style épuré et minimaliste. Format vectoriel et PNG transparent. Trois propositions différentes.',
-        deliveryValidationDeadline: '2023-08-21',
         deliverables: [
           {
             id: 'DEL-001',
+            name: 'Logo design v1',
+            url: 'https://example.com/files/logo_v1.zip',
             orderId: id as string,
             message: 'Voici la première version de votre logo. J\'attends vos retours.',
             fileUrls: ['https://example.com/files/logo_v1.zip'],
             createdAt: '2023-08-17T16:20:00'
           }
-        ]
-      });
+        ],
+        
+        // Informations additionnelles pour l'affichage
+        service: {
+          id: 'SRV-789',
+          title: 'Création de logo professionnel',
+          description: 'Je crée des logos professionnels et modernes adaptés à votre identité de marque.',
+          category: 'Design Graphique',
+          image: 'https://images.unsplash.com/photo-1572044162444-ad60f128bdea?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8bG9nb3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
+          provider: {
+            id: 'PRV-001',
+            name: 'Amadou Diop',
+            rating: 4.9
+          },
+          price: 25000,
+          deliveryTime: 5,
+          revisions: 3,
+          rating: 4.8,
+          slug: 'logo-professionnel'
+        }
+      };
+      setOrder(mockOrder);
       setIsLoading(false);
     }, 800);
     
@@ -136,16 +137,16 @@ const OrderDetailPage: NextPage = () => {
   }, [id]);
 
   // Vérifier si la commande peut être validée (livrée et pas en litige)
-  const canAcceptDelivery = order?.status === 'livré' && !order?.dispute;
+  const canAcceptDelivery = order?.status === 'livré';
   
   // Vérifier si une modification peut être demandée
-  const canRequestRevision = order?.status === 'livré' && !order?.dispute;
+  const canRequestRevision = order?.status === 'livré';
   
   // Vérifier si un litige peut être ouvert
-  const canOpenDispute = (order?.status === 'livré' || order?.status === 'en_cours' || order?.status === 'livraison_en_retard') && !order?.dispute;
+  const canOpenDispute = ['livré', 'en_cours', 'livraison_en_retard'].includes(order?.status as string);
   
   // Vérifier si un avis peut être laissé
-  const canLeaveReview = (order?.status === 'terminée' || order?.status === 'terminé') && !(order as any)?.review;
+  const canLeaveReview = order?.status === 'terminée' || order?.status === 'terminé';
 
   // Gérer la validation de la livraison
   const handleAcceptDelivery = () => {
@@ -319,9 +320,9 @@ const OrderDetailPage: NextPage = () => {
                 <p className="text-sm text-gray-600">
                   <span className="font-medium">Livraison prévue:</span> {formatDate(order.deadline)}
                 </p>
-                {order.deliveryValidationDeadline && (
+                {(order as any).deliveryValidationDeadline && (
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Date limite de validation:</span> {formatDate(order.deliveryValidationDeadline)}
+                    <span className="font-medium">Date limite de validation:</span> {formatDate((order as any).deliveryValidationDeadline)}
                   </p>
                 )}
               </div>
@@ -349,27 +350,27 @@ const OrderDetailPage: NextPage = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 overflow-hidden">
-                  {order.seller?.avatar ? (
+                  {order.service?.provider?.avatar ? (
                     <img 
-                      src={order.seller.avatar} 
-                      alt={order.seller.username}
+                      src={order.service.provider.avatar} 
+                      alt={order.service.provider.username || "Vendeur"}
                       className="h-10 w-10 object-cover"
                     />
                   ) : (
-                    <div className="h-10 w-10 flex items-center justify-center bg-indigo-100 text-indigo-600">
+                    <div className="flex items-center justify-center h-10 w-10 bg-indigo-100 text-indigo-500">
                       <FiUser className="h-5 w-5" />
                     </div>
                   )}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900 flex items-center">
-                    {order.seller.username}
-                    {order.seller.isVerified && (
+                    {order.service?.provider?.username || order.providerName}
+                    {order.service?.provider?.isVerified && (
                       <FiCheck className="ml-1 h-3 w-3 text-green-500" />
                     )}
                   </p>
                   <Link
-                    href={`/sellers/${order.seller.id}`}
+                    href={`/sellers/${order.service?.provider?.id || order.providerId}`}
                     className="text-xs text-indigo-600 hover:text-indigo-800"
                   >
                     Voir le profil
@@ -454,21 +455,21 @@ const OrderDetailPage: NextPage = () => {
                         <div>
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 overflow-hidden">
-                              {order.seller?.avatar ? (
+                              {order.service?.provider?.avatar ? (
                                 <img 
-                                  src={order.seller.avatar} 
-                                  alt={order.seller.username}
+                                  src={order.service.provider.avatar} 
+                                  alt={order.service.provider.username || "Vendeur"}
                                   className="h-8 w-8 object-cover"
                                 />
                               ) : (
-                                <div className="h-8 w-8 flex items-center justify-center bg-indigo-100 text-indigo-600">
+                                <div className="flex items-center justify-center h-8 w-8 bg-indigo-100 text-indigo-500">
                                   <FiUser className="h-4 w-4" />
                                 </div>
                               )}
                             </div>
                             <div className="ml-3">
-                              <p className="text-sm font-medium text-gray-900">{order.seller.username}</p>
-                              <p className="text-xs text-gray-500">{new Date(deliverable.createdAt).toLocaleString('fr-FR')}</p>
+                              <p className="text-sm font-medium text-gray-900">{order.service?.provider?.username || order.providerName}</p>
+                              <p className="text-xs text-gray-500">{deliverable.createdAt ? new Date(deliverable.createdAt).toLocaleString('fr-FR') : 'Date inconnue'}</p>
                             </div>
                           </div>
                           <div className="mt-3 text-sm text-gray-700 whitespace-pre-line">

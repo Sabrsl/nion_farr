@@ -44,6 +44,8 @@ export interface User {
   totalReviews?: number;
   completedOrders?: number;
   isOnline?: boolean;
+  averageResponseTime?: number;
+  lastActive?: string;
 }
 
 export interface Service {
@@ -118,7 +120,9 @@ export type OrderStatus =
   | 'terminée'
   | 'annulé'
   | 'annulée'
+  | 'cancelled'
   | 'litige'
+  | 'dispute'
   | 'livraison_en_retard'
   | 'terminée_manuellement';
 
@@ -159,6 +163,7 @@ export interface Order {
   isPaid?: boolean;
   requirements?: string;
   messages?: any[];
+  seller?: any;
 }
 
 export interface Earnings {
@@ -240,6 +245,12 @@ export interface Message {
   isRead: boolean;
   createdAt: string;
   attachments?: Attachment[];
+  isTemporary?: boolean;
+  isDelivered?: boolean;
+  subject?: string;
+  hasAttachment?: boolean;
+  serviceId?: string;
+  serviceTitle?: string;
 }
 
 export interface Conversation {

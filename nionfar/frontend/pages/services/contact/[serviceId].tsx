@@ -78,6 +78,7 @@ const Text: React.FC<{children: React.ReactNode; className?: string}> = ({ child
 interface ExtendedUser extends User {
   responseTime?: string;
   totalReviews?: number;
+  address?: string;
 }
 
 // Extended Service interface to include seller with the extended user type

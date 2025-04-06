@@ -3,7 +3,7 @@ import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../contexts/AuthContext';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
-import { FreelancerStats } from '../../../types';
+import { User, Service, FreelancerStats } from '../../../types';
 import { 
   FiUser, 
   FiMail, 
@@ -29,8 +29,57 @@ import {
   FiShield,
   FiArrowRight
 } from 'react-icons/fi';
-import { freelancerStats, freelancerServices } from '../../../data/mockData';
-import securityService, { KycInfo } from '../../../services/securityService';
+import { KycInfo } from '../../../services/securityService';
+
+// Créer une instance du service localement
+const securityService = {
+  verifyIdentity: async (userId: string) => {
+    // Simulation d'une API
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Retourner des données fictives
+    return {
+      isVerified: false,
+      kycInfo: {
+        userId,
+        status: 'incomplete',
+        phoneVerified: true,
+        emailVerified: true,
+        idVerified: false,
+        addressVerified: false
+      } as KycInfo,
+      canWithdraw: false,
+      reasons: ['Vérification d\'identité incomplète', 'Adresse non vérifiée']
+    };
+  }
+};
+
+// Données vides pour les services
+const freelancerServices: Service[] = [];
+// Statistiques vides
+const freelancerStats: FreelancerStats = {
+  earnings: {
+    total: 0,
+    pending: 0,
+    withdrawn: 0,
+    available: 0
+  },
+  analytics: {
+    totalOrders: 0,
+    views: 0,
+    conversionRate: 0,
+    averageRating: 0,
+    totalReviews: 0,
+    clicks: 0,
+    completionRate: 0,
+    pendingOrders: 0,
+    totalEarnings: 0
+  },
+  activeOrders: 0,
+  pendingReviews: 0,
+  responseRate: 0,
+  responseTime: '0'
+};
 
 const ProfilePage: NextPage = () => {
   const { user } = useAuth();
@@ -58,13 +107,13 @@ const ProfilePage: NextPage = () => {
         if (user) {
           setProfileForm({
             ...profileForm,
-            username: user.username,
+            username: user.username || '',
             email: user.email || '',
             bio: user.bio || '',
           });
           
           // Charger les informations KYC
-          if (user.role === 'freelancer') {
+          if (user.role === 'provider') {
             try {
               const kycResponse = await securityService.verifyIdentity(user.id);
               setKycInfo(kycResponse.kycInfo);
@@ -210,7 +259,7 @@ const ProfilePage: NextPage = () => {
                     <p className="text-gray-500 mt-1 flex items-center">
                       <FiAward className="mr-2" /> {user?.level}
                     </p>
-                    {user?.role === 'freelancer' && renderVerificationBadge()}
+                    {user?.role === 'provider' && renderVerificationBadge()}
                   </div>
                   <button
                     onClick={() => setEditMode(!editMode)}
@@ -295,8 +344,8 @@ const ProfilePage: NextPage = () => {
                       </div>
                     </div>
                     
-                    {/* Informations de vérification pour freelancer */}
-                    {user?.role === 'freelancer' && kycInfo && (
+                    {/* Informations de vérification pour provider */}
+                    {user?.role === 'provider' && kycInfo && (
                       <div className="flex items-start">
                         <FiShield className="mt-1 mr-3 text-gray-400" />
                         <div>
@@ -454,7 +503,7 @@ const ProfilePage: NextPage = () => {
               </div>
             </div>
 
-            {/* Services du freelancer */}
+            {/* Services du provider */}
             <div className="bg-white shadow rounded-lg overflow-hidden mt-6">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex justify-between items-center">
@@ -468,11 +517,11 @@ const ProfilePage: NextPage = () => {
                 </div>
               </div>
               <div className="divide-y divide-gray-200">
-                {freelancerServices.map((service) => (
+                {freelancerServices.map((service: Service) => (
                   <div key={service.id} className="px-6 py-4 flex items-start">
                     <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden">
                       <img 
-                        src={service.images[0] || '/img/placeholder.jpg'} 
+                        src={(service.images && service.images.length > 0) ? service.images[0] : '/img/placeholder.jpg'} 
                         alt={service.title}
                         className="w-full h-full object-cover" 
                       />

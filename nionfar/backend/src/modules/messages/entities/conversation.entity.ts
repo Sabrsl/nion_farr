@@ -7,6 +7,8 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
+  OneToOne,
+  JoinColumn
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Message } from './message.entity';
@@ -34,11 +36,24 @@ export class Conversation {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ default: false })
+  isOrderRelated: boolean;
+
   @OneToMany(() => Message, (message) => message.conversation)
   messages: Message[];
 
+  @OneToOne(() => Message, { nullable: true })
+  @JoinColumn({ name: 'lastMessageId' })
+  lastMessage: Message | null;
+
+  @Column({ nullable: true })
+  lastMessageId: string;
+
   @Column({ type: 'timestamp', nullable: true })
   lastMessageAt: Date;
+
+  @Column({ type: 'json', default: '{}' })
+  unreadCount: Record<string, number>;
 
   @CreateDateColumn()
   createdAt: Date;

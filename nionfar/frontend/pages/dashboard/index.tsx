@@ -95,6 +95,12 @@ const Dashboard: NextPage = () => {
           {
             id: 'ORD-1234',
             title: 'Conception de logo pour restaurant',
+            serviceId: 'SRV-001',
+            serviceName: 'Création de logo professionnel',
+            providerId: 'PRV-001',
+            providerName: 'Amadou Diop',
+            clientId: 'CLI-001',
+            orderDate: '2023-08-15',
             client: {
               id: 'CLI-001',
               username: 'Fatou Diallo',
@@ -118,12 +124,18 @@ const Dashboard: NextPage = () => {
             createdAt: '2023-08-15',
             deadline: '2023-08-18',
             isPaid: true,
-            messages: 8,
+            messages: [],
             requirements: 'Création d\'un logo moderne pour restaurant'
           },
           {
             id: 'ORD-1235',
             title: 'Développement d\'une landing page',
+            serviceId: 'SRV-002',
+            serviceName: 'Création de landing page attractive',
+            providerId: 'PRV-002',
+            providerName: 'Modou Ndiaye',
+            clientId: 'CLI-001',
+            orderDate: '2023-08-14',
             client: {
               id: 'CLI-002',
               username: 'Modou Ndiaye',
@@ -147,12 +159,18 @@ const Dashboard: NextPage = () => {
             createdAt: '2023-08-14',
             deadline: '2023-08-19',
             isPaid: true,
-            messages: 3,
+            messages: [],
             requirements: 'Création d\'une landing page responsive avec formulaire de contact'
           },
           {
             id: 'ORD-1232',
             title: 'Rédaction d\'articles SEO (x5)',
+            serviceId: 'SRV-003',
+            serviceName: 'Rédaction d\'articles SEO de qualité',
+            providerId: 'PRV-003',
+            providerName: 'Aminata Sow',
+            clientId: 'CLI-001',
+            orderDate: '2023-08-13',
             client: {
               id: 'CLI-003',
               username: 'Aminata Sow',
@@ -176,8 +194,43 @@ const Dashboard: NextPage = () => {
             createdAt: '2023-08-13',
             deadline: '2023-08-17',
             isPaid: true,
-            messages: 5,
+            messages: [],
             requirements: 'Rédaction de 5 articles SEO optimisés avec recherche de mots-clés'
+          },
+          {
+            id: 'ORD-1233',
+            title: 'Création d\'un flyer promotionnel pour un événement',
+            serviceId: 'SRV-004',
+            serviceName: 'Conception de flyers professionnels',
+            providerId: 'PRV-004',
+            providerName: 'Omar Sall',
+            clientId: 'CLI-004',
+            orderDate: '2023-08-10',
+            client: {
+              id: 'CLI-004',
+              username: 'Mariama Diallo',
+              avatar: 'https://randomuser.me/api/portraits/women/72.jpg',
+              isVerified: true
+            },
+            service: {
+              id: 'SRV-004',
+              title: 'Je vais créer un flyer promotionnel pour un événement',
+              price: 50000,
+              rating: 4.7,
+              totalReviews: 34,
+              deliveryTime: 7,
+              images: [],
+              orderCount: 78,
+              createdAt: '2023-07-15',
+              slug: 'flyer-promotionnel'
+            },
+            status: 'completed',
+            price: 50000,
+            createdAt: '2023-08-10',
+            deadline: '2023-08-17',
+            isPaid: true,
+            messages: [],
+            requirements: 'Création d\'un flyer promotionnel pour un événement'
           }
         ]);
         
@@ -207,7 +260,7 @@ const Dashboard: NextPage = () => {
           {
             id: 'NOTIF-003',
             userId: 'USR-001',
-            type: 'payment',
+            type: 'system',
             title: 'Paiement reçu',
             message: 'Paiement reçu pour commande',
             content: '25 000 FCFA ont été ajoutés à votre solde pour la commande #ORD-1230',

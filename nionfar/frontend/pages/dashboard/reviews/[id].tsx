@@ -178,13 +178,13 @@ const ReviewDetailPage: React.FC<ReviewDetailPageProps> = ({ reviewId }) => {
                 <div className="flex items-center space-x-4 mt-3 md:mt-0">
                   <Button 
                     variant="secondary"
-                    onClick={() => router.push(`/dashboard/orders/${review.order.id}`)}
+                    onClick={() => router.push('/dashboard/orders')}
                   >
-                    Voir la commande
+                    Voir mes commandes
                   </Button>
                   <Button 
                     variant="secondary"
-                    onClick={() => router.push(`/services/${review.service.id}`)}
+                    onClick={() => router.push(`/services/${review.service?.id || '#'}`)}
                   >
                     Voir le service
                   </Button>
@@ -202,7 +202,7 @@ const ReviewDetailPage: React.FC<ReviewDetailPageProps> = ({ reviewId }) => {
                 </div>
                 <div className="flex items-center mb-2">
                   <FiThumbsUp className="mr-1" />
-                  <span>{review.likes} mentions J'aime</span>
+                  <span>{review.helpfulCount || 0} mentions J'aime</span>
                 </div>
               </div>
               

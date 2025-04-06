@@ -10,31 +10,31 @@ import { FiAlertTriangle, FiLoader, FiFilter, FiSearch } from 'react-icons/fi';
 
 const AdminDisputesPage: NextPage = () => {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [disputes, setDisputes] = useState<Dispute[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDisputes, setIsLoadingDisputes] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
 
   useEffect(() => {
     // Si l'utilisateur n'est pas authentifié après le chargement, rediriger vers la connexion
-    if (!loading && !user) {
+    if (!isLoading && !user) {
       router.push('/auth/login?redirect=/dashboard/admin/disputes');
       return;
     }
 
     // Si l'utilisateur n'est pas administrateur, rediriger vers la page d'accueil
-    if (!loading && user && user.role !== 'admin') {
+    if (!isLoading && user && user.role !== 'admin') {
       router.push('/dashboard');
       return;
     }
-  }, [user, loading, router]);
+  }, [user, isLoading, router]);
 
   useEffect(() => {
     const fetchDisputes = async () => {
       if (!user) return;
 
-      setIsLoading(true);
+      setIsLoadingDisputes(true);
       setError(null);
 
       try {
@@ -126,7 +126,7 @@ const AdminDisputesPage: NextPage = () => {
         console.error('Erreur lors de la récupération des litiges:', error);
         setError('Une erreur est survenue lors de la récupération des litiges. Veuillez réessayer.');
       } finally {
-        setIsLoading(false);
+        setIsLoadingDisputes(false);
       }
     };
 
@@ -135,7 +135,7 @@ const AdminDisputesPage: NextPage = () => {
     }
   }, [user]);
 
-  if (loading || !user) {
+  if (isLoadingDisputes || !user) {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center h-64">
@@ -171,7 +171,7 @@ const AdminDisputesPage: NextPage = () => {
                     </div>
                   </div>
                 </div>
-              ) : isLoading ? (
+              ) : isLoadingDisputes ? (
                 <div className="flex justify-center items-center h-64">
                   <FiLoader className="h-8 w-8 text-indigo-500 animate-spin" />
                 </div>

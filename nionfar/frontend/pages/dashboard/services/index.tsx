@@ -24,9 +24,11 @@ import {
 } from 'react-icons/fi';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { Service } from '../../../types';
-import { freelancerServices } from '../../../data/mockData';
+// Définition des services à l'intérieur du fichier au lieu d'importer
+const freelancerServices: Service[] = [];
 import { Tab } from '@headlessui/react';
-import { Dialog } from '@headlessui/react';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import { Tooltip } from '../../../components/ui/Tooltip';
 import { Badge } from '../../../components/ui/Badge';
 import { ServiceCard } from '../../../components/dashboard/ServiceCard';
@@ -60,9 +62,9 @@ const ServicesPage: NextPage = () => {
       total: services.length,
       active,
       inactive: services.length - active,
-      avgRating: services.reduce((acc, s) => acc + s.rating, 0) / services.length,
-      totalOrders: services.reduce((acc, s) => acc + s.orderCount, 0),
-      totalRevenue: services.reduce((acc, s) => acc + (s.price * s.orderCount), 0)
+      avgRating: services.reduce((acc, s) => acc + (s.rating || 0), 0) / (services.length || 1),
+      totalOrders: services.reduce((acc, s) => acc + (s.orderCount || 0), 0),
+      totalRevenue: services.reduce((acc, s) => acc + (s.price * (s.orderCount || 0)), 0)
     };
   }, [services]);
 
@@ -96,7 +98,13 @@ const ServicesPage: NextPage = () => {
     
     // Filter by category
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(service => service.category && service.category.id === categoryFilter);
+      filtered = filtered.filter(service => {
+        if (!service.category) return false;
+        if (typeof service.category === 'object') {
+          return service.category.id === categoryFilter;
+        }
+        return service.category === categoryFilter;
+      });
     }
     
     // Filter by search
@@ -114,21 +122,21 @@ const ServicesPage: NextPage = () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'date-asc':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime();
         case 'date-desc':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
         case 'price-asc':
           return a.price - b.price;
         case 'price-desc':
           return b.price - a.price;
         case 'orders-asc':
-          return a.orderCount - b.orderCount;
+          return (a.orderCount || 0) - (b.orderCount || 0);
         case 'orders-desc':
-          return b.orderCount - a.orderCount;
-        case 'rating-asc':
-          return a.rating - b.rating;
+          return (b.orderCount || 0) - (a.orderCount || 0);
         case 'rating-desc':
-          return b.rating - a.rating;
+          return (b.rating || 0) - (a.rating || 0);
+        case 'rating-asc':
+          return (a.rating || 0) - (b.rating || 0);
         default:
           return 0;
       }
@@ -197,7 +205,8 @@ const ServicesPage: NextPage = () => {
   );
 
   // Calculate color for rating badge
-  const getRatingColor = (rating: number) => {
+  const getRatingColor = (rating: number | undefined): string => {
+    if (!rating) return 'bg-gray-50 text-gray-700 border-gray-200';
     if (rating >= 4.5) return 'bg-green-50 text-green-700 border-green-200';
     if (rating >= 4) return 'bg-teal-50 text-teal-700 border-teal-200';
     if (rating >= 3.5) return 'bg-blue-50 text-blue-700 border-blue-200';
@@ -587,22 +596,19 @@ const ServicesPage: NextPage = () => {
         {/* Delete Confirmation Modal */}
         <AnimatePresence>
           {isDeleteModalOpen && selectedService && (
-            <Dialog
-              as={motion.div}
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 overflow-y-auto"
-              open={isDeleteModalOpen}
-              onClose={() => setIsDeleteModalOpen(false)}
             >
-              <div className="flex items-center justify-center min-h-screen p-4">
-                <Dialog.Overlay 
-                  as={motion.div}
+              <div className="flex items-center justify-center min-h-screen p-4 text-center">
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm" 
+                  className="fixed inset-0 bg-black bg-opacity-30"
+                  onClick={() => setIsDeleteModalOpen(false)}
                 />
 
                 <motion.div
@@ -617,16 +623,16 @@ const ServicesPage: NextPage = () => {
                       <div className="p-3 rounded-full bg-red-100 text-red-600 mr-4">
                         <FiAlertCircle className="h-6 w-6" />
                       </div>
-                      <Dialog.Title as="h3" className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold text-gray-900">
                         Supprimer le service
-                      </Dialog.Title>
+                      </h3>
                     </div>
                     
-                    <Dialog.Description className="text-gray-600 mb-6">
+                    <div className="text-gray-600 mb-6">
                       Êtes-vous sûr de vouloir supprimer <span className="font-medium">"{selectedService.title}"</span>? Cette action est irréversible et toutes les données associées seront définitivement perdues.
-                    </Dialog.Description>
+                    </div>
                     
-                    {selectedService.orderCount > 0 && (
+                    {selectedService.orderCount && selectedService.orderCount > 0 && (
                       <div className="bg-amber-50 text-amber-800 p-4 rounded-lg mb-6 flex items-start">
                         <FiAlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
                         <p className="text-sm">
@@ -656,7 +662,7 @@ const ServicesPage: NextPage = () => {
                   </div>
                 </motion.div>
               </div>
-            </Dialog>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -671,7 +677,7 @@ type ServicesListProps = {
   onToggleStatus: (id: string) => void;
   onDeleteClick: (service: Service) => void;
   formatDate: (date: string) => string;
-  getRatingColor: (rating: number) => string;
+  getRatingColor: (rating: number | undefined) => string;
 };
 
 const ServicesList = ({ services, viewMode, onToggleStatus, onDeleteClick, formatDate, getRatingColor }: ServicesListProps) => {
@@ -750,7 +756,7 @@ const ServiceListItem = ({ service, onToggleStatus, onDeleteClick, formatDate, g
   onToggleStatus: (id: string) => void;
   onDeleteClick: (service: Service) => void;
   formatDate: (date: string) => string;
-  getRatingColor: (rating: number) => string;
+  getRatingColor: (rating: number | undefined) => string;
   variants: any;
 }) => {
   return (
@@ -809,13 +815,13 @@ const ServiceListItem = ({ service, onToggleStatus, onDeleteClick, formatDate, g
               <div className="flex items-center text-xs text-gray-500 mb-2">
                 <div className="flex items-center mr-3">
                   <FiCalendar className="h-3.5 w-3.5 mr-1" />
-                  {formatDate(service.createdAt)}
+                  {formatDate(service.createdAt || '')}
                 </div>
                 <div className="flex items-center mr-3">
                   <FiClock className="h-3.5 w-3.5 mr-1" />
                   <span>Livraison: {service.deliveryTime}j</span>
                 </div>
-                {service.category && (
+                {typeof service.category === 'object' && service.category && (
                   <div className="flex items-center">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
                       {service.category.name}
@@ -828,7 +834,7 @@ const ServiceListItem = ({ service, onToggleStatus, onDeleteClick, formatDate, g
             <div className="flex items-center space-x-3">
               <div className={`flex items-center ${getRatingColor(service.rating)} px-2 py-0.5 rounded text-xs font-medium border`}>
                 <FiStar className="h-3.5 w-3.5 mr-1 fill-current" />
-                <span>{service.rating.toFixed(1)}</span>
+                <span>{service.rating ? service.rating.toFixed(1) : '0.0'}</span>
                 <span className="text-xs ml-1 opacity-80">({service.totalReviews})</span>
               </div>
               

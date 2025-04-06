@@ -5,6 +5,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validate } from './config/env.validation';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AppController } from './app.controller';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -16,6 +18,11 @@ import { MessagesModule } from './modules/messages/messages.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { DatabaseModule } from '../config/database.module';
+import { UserModule } from '../modules/user.module';
+import { EmailModule } from './modules/email/email.module';
+import { SmsModule } from './modules/sms/sms.module';
+import { DisputesModule } from './modules/disputes/disputes.module';
 
 @Module({
   imports: [
@@ -44,8 +51,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     
     // Rate limiting
     ThrottlerModule.forRoot([{
-      ttl: 60, // seconds
-      limit: 10, // max number of requests
+      ttl: 60,
+      limit: 10,
     }]),
     
     // JWT
@@ -60,6 +67,15 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
       }),
     }),
     
+    // Connexion à MongoDB
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => ({
+        uri: config.get<string>('MONGODB_URI'),
+      }),
+    }),
+    
     // Application modules
     AuthModule,
     UsersModule,
@@ -70,7 +86,13 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     ReviewsModule,
     AdminModule,
     NotificationsModule,
+    DisputesModule,
+    DatabaseModule,
+    UserModule,
+    EmailModule,
+    SmsModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,

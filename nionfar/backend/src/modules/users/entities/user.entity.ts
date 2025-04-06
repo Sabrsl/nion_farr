@@ -15,6 +15,13 @@ import { Order } from '../../orders/entities/order.entity';
 import { Review } from '../../reviews/entities/review.entity';
 import { Message } from '../../messages/entities/message.entity';
 
+export enum UserStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended',
+  PENDING_VERIFICATION = 'pending_verification',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -23,27 +30,105 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({ length: 100 })
   firstName: string;
 
-  @Column()
+  @Column({ length: 100 })
   lastName: string;
 
+  @Column({ unique: true, nullable: true })
+  username: string;
+
+  @Column({ select: false })
+  password: string;
+
+  @Column({ 
+    type: 'enum', 
+    enum: UserRole, 
+    default: UserRole.CLIENT 
+  })
+  role: UserRole;
+
+  @Column({ 
+    type: 'enum', 
+    enum: UserStatus, 
+    default: UserStatus.PENDING_VERIFICATION 
+  })
+  status: UserStatus;
+
   @Column({ nullable: true })
-  phoneNumber: string;
+  phone: string;
+
+  @Column({ nullable: true })
+  address: string;
+
+  @Column({ nullable: true })
+  city: string;
+
+  @Column({ nullable: true })
+  country: string;
+
+  @Column({ nullable: true })
+  bio: string;
+
+  @Column('simple-array', { nullable: true })
+  skills: string[];
+
+  @Column({ default: false })
+  isEmailVerified: boolean;
 
   @Column({ default: false })
   isPhoneVerified: boolean;
 
-  @Exclude()
-  @Column()
-  password: string;
-
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
-  role: UserRole;
-
   @Column({ default: false })
-  isEmailVerified: boolean;
+  isIdentityVerified: boolean;
+
+  @Column({ nullable: true })
+  memberSince: Date;
+
+  @Column({ type: 'json', nullable: true })
+  providerProfile: {
+    title: string;
+    description: string;
+    experience: number;
+    hourlyRate: number;
+    languages: string[];
+    responseTime: string;
+    availability: string;
+  };
+
+  @Column({ default: 0 })
+  completedOrders: number;
+
+  @Column({ default: 0, type: 'decimal', precision: 3, scale: 2 })
+  rating: number;
+
+  @Column({ default: 0 })
+  totalReviews: number;
+
+  @Column({ type: 'json', nullable: true })
+  paymentInfo: {
+    accountType: string;
+    accountName: string;
+    accountNumber: string;
+    bankName: string;
+    swiftCode: string;
+    mobileMoneyProvider: string;
+    mobileMoneyNumber: string;
+  };
+
+  @Column({ type: 'json', nullable: true })
+  notificationPreferences: {
+    email: boolean;
+    sms: boolean;
+    browserPush: boolean;
+    orderUpdates: boolean;
+    marketingEmails: boolean;
+    newMessages: boolean;
+  };
+
+  @Column({ nullable: true })
+  phoneNumber: string;
 
   @Column({ default: false })
   isTwoFactorEnabled: boolean;
@@ -56,25 +141,10 @@ export class User {
   avatar?: string;
 
   @Column({ type: 'text', nullable: true })
-  bio?: string;
-
-  @Column({ nullable: true })
-  address?: string;
-
-  @Column({ nullable: true })
-  city?: string;
-
-  @Column({ nullable: true })
-  country?: string;
+  bioText?: string;
 
   @Column({ default: 0 })
   balance: number;
-
-  @Column({ default: 0 })
-  rating: number;
-
-  @Column({ default: 0 })
-  totalReviews: number;
 
   @Column({ default: false })
   isFreelancer: boolean;

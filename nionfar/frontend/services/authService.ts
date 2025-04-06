@@ -896,4 +896,5 @@ class AuthService {
   }
 }
 
+// Exporter une instance du service
 export const authService = new AuthService(); 

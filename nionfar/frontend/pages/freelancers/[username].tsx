@@ -86,6 +86,14 @@ interface FreelancerPublicProfileProps {
   initialReviews: CustomReview[];
 }
 
+// Define custom Tab type compatible with the Tabs component
+interface TabWithIcon {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  count?: number;
+}
+
 const FreelancerPublicProfile: NextPage<FreelancerPublicProfileProps> = ({
   initialFreelancer,
   initialServices,
@@ -258,10 +266,10 @@ const FreelancerPublicProfile: NextPage<FreelancerPublicProfileProps> = ({
     });
   }, [freelancer]);
 
-  // Define our tabs with icons
-  const tabsWithIcons: Tab[] = [
-    { id: 'services', label: 'Services', icon: <FiTag /> },
-    { id: 'reviews', label: `Avis (${reviews.length})`, icon: <FiStar /> }
+  // Define our tabs with icons that match the expected interface
+  const tabsWithIcons: TabWithIcon[] = [
+    { id: 'services', label: 'Services', icon: FiTag },
+    { id: 'reviews', label: `Avis (${reviews.length})`, icon: FiStar }
   ];
 
   // Render loading state

@@ -121,14 +121,14 @@ const OrderActions: React.FC<OrderActionsProps> = ({ order, currentUser, onStatu
     
     // Vérifie si le statut correspond à "annulé"
     const isCancelled = 
-      status === 'cancelled' || 
-      (status as any) === 'annulé' || 
-      (status as any) === 'annulée';
+      status === ('cancelled' as OrderStatus) || 
+      status === 'annulé' || 
+      status === 'annulée';
     
     // Vérifie si le statut correspond à "litige"
-    const isDispute = 
-      status === 'dispute' || 
-      (status as any) === 'litige';
+    const isDispute =
+      status === 'dispute' ||
+      status === 'litige';
 
     if (isPending) {
       if (isSeller) {

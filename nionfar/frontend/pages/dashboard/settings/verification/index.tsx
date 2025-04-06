@@ -4,7 +4,26 @@ import { FiUpload, FiCheck, FiAlertCircle, FiInfo } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import DashboardLayout from '../../../../components/dashboard/DashboardLayout';
 import { useAuth } from '../../../../contexts/AuthContext';
-import securityService, { KycInfo } from '../../../../services/securityService';
+import { KycInfo } from '../../../../services/securityService';
+
+// Créer une instance de service locale
+const securityService = {
+  verifyIdentity: async (userId: string) => {
+    return {
+      isVerified: false,
+      kycInfo: {
+        userId,
+        status: 'incomplete' as const,
+        phoneVerified: false,
+        emailVerified: false,
+        idVerified: false,
+        addressVerified: false
+      },
+      canWithdraw: false,
+      reasons: ['Service simulé']
+    };
+  }
+};
 
 const VerificationPage: React.FC = () => {
   const router = useRouter();

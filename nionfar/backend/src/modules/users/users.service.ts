@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import { UserRole } from './enums/user-role.enum';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,10 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<User> {
     return this.usersRepository.findOne({ where: { email } });
+  }
+
+  async findByRole(role: UserRole): Promise<User[]> {
+    return this.usersRepository.find({ where: { role } });
   }
 
   async create(user: User): Promise<User> {

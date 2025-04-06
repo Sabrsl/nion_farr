@@ -23,7 +23,6 @@ import {
   FiPlusCircle
 } from 'react-icons/fi';
 import { IconType } from 'react-icons';
-import authService from '../../../services/authService';
 
 interface NavItem {
   name: string;

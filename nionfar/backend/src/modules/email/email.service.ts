@@ -2,6 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
+interface EmailOptions {
+  to: string;
+  subject: string;
+  html?: string;
+  template?: string;
+  context?: Record<string, any>;
+}
+
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
@@ -18,13 +26,35 @@ export class EmailService {
     });
   }
 
-  async sendEmail(to: string, subject: string, html: string): Promise<void> {
-    await this.transporter.sendMail({
-      from: `"${this.configService.get<string>('EMAIL_FROM_NAME')}" <${this.configService.get<string>('EMAIL_FROM')}>`,
-      to,
-      subject,
-      html,
-    });
+  async sendEmail(options: EmailOptions): Promise<void>;
+  async sendEmail(to: string, subject: string, html: string): Promise<void>;
+  async sendEmail(
+    toOrOptions: string | EmailOptions,
+    subject?: string,
+    html?: string
+  ): Promise<void> {
+    if (typeof toOrOptions === 'string') {
+      // Legacy format
+      await this.transporter.sendMail({
+        from: `"${this.configService.get<string>('EMAIL_FROM_NAME')}" <${this.configService.get<string>('EMAIL_FROM')}>`,
+        to: toOrOptions,
+        subject,
+        html,
+      });
+    } else {
+      // New format with options object
+      const { to, subject, html: htmlContent, template, context } = toOrOptions;
+      
+      // TODO: implement template handling if needed
+      const finalHtml = htmlContent || `Template: ${template}, Context: ${JSON.stringify(context)}`;
+      
+      await this.transporter.sendMail({
+        from: `"${this.configService.get<string>('EMAIL_FROM_NAME')}" <${this.configService.get<string>('EMAIL_FROM')}>`,
+        to,
+        subject,
+        html: finalHtml,
+      });
+    }
   }
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {

@@ -18,8 +18,35 @@ import Link from 'next/link';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import FileUploader from '../../../components/dashboard/FileUploader';
 import { User, Order } from '../../../types';
-import { mockUsers } from '../../../data/mockMessages';
-import { freelancerOrders } from '../../../data/mockData';
+// Remplacer l'importation par une constante locale
+// import { freelancerOrders } from '../../../data/mockData';
+
+// Données de commandes vides
+const freelancerOrders: Order[] = [];
+
+// Créer un objet mockUsers localement
+const mockUsers: User[] = [
+  {
+    id: 'USR-001',
+    name: 'Amadou Diop',
+    email: 'amadou.diop@example.com',
+    role: 'provider',
+    isVerified: true,
+    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+    username: 'AmadouD',
+    createdAt: '2022-05-10'
+  },
+  {
+    id: 'USR-002',
+    name: 'Fatou Diallo',
+    email: 'fatou.diallo@example.com',
+    role: 'client',
+    isVerified: true,
+    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+    username: 'FatouD',
+    createdAt: '2022-07-15'
+  }
+];
 
 const NewConversationPage: NextPage = () => {
   const router = useRouter();
@@ -56,7 +83,7 @@ const NewConversationPage: NextPage = () => {
             setSelectedUser(user);
             
             // Vérifier si l'utilisateur a des commandes
-            const userOrders = freelancerOrders.filter(order => order.client.id === user.id);
+            const userOrders = freelancerOrders.filter((order: Order) => order.client.id === user.id);
             if (userOrders.length > 0) {
               setStep('select-order');
             } else {
@@ -87,10 +114,10 @@ const NewConversationPage: NextPage = () => {
     );
   };
 
-  // Filtrage des utilisateurs par recherche
+  // Filtrage des utilisateurs avec vérification pour username
   const filteredUsers = searchQuery 
     ? availableUsers.filter(user => 
-        user.username.toLowerCase().includes(searchQuery.toLowerCase()))
+        user.username?.toLowerCase().includes(searchQuery.toLowerCase()))
     : availableUsers;
   
   // Filtrage des commandes par utilisateur sélectionné
@@ -104,7 +131,7 @@ const NewConversationPage: NextPage = () => {
     
     // Si l'utilisateur a des commandes, passer à l'étape de sélection de commande
     // Sinon, passer directement à l'étape de rédaction de message
-    const userOrders = orders.filter(order => order.client.id === user.id);
+    const userOrders = orders.filter((order: Order) => order.client.id === user.id);
     if (userOrders.length > 0) {
       setStep('select-order');
     } else {
@@ -254,12 +281,12 @@ const NewConversationPage: NextPage = () => {
                           {user.avatar ? (
                             <img 
                               src={user.avatar} 
-                              alt={user.username} 
+                              alt={user.username?.charAt(0) || user.name?.charAt(0) || 'U'} 
                               className="w-10 h-10 rounded-full object-cover"
                             />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
-                              {user.username.charAt(0)}
+                              {user.username?.charAt(0) || user.name?.charAt(0) || 'U'}
                             </div>
                           )}
                           {user.isVerified && (
@@ -269,7 +296,7 @@ const NewConversationPage: NextPage = () => {
                           )}
                         </div>
                         <div className="ml-3">
-                          <h3 className="text-base font-medium text-gray-900">{user.username}</h3>
+                          <h3 className="text-base font-medium text-gray-900">{user.username || user.name}</h3>
                           <p className="text-sm text-gray-500">
                             {orders.some(order => order.client.id === user.id)
                               ? 'Client avec commande(s)'
@@ -313,12 +340,12 @@ const NewConversationPage: NextPage = () => {
                     {selectedUser.avatar ? (
                       <img 
                         src={selectedUser.avatar} 
-                        alt={selectedUser.username} 
+                        alt={selectedUser.username?.charAt(0) || selectedUser.name?.charAt(0) || 'U'} 
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
-                        {selectedUser.username.charAt(0)}
+                        {selectedUser.username?.charAt(0) || selectedUser.name?.charAt(0) || 'U'}
                       </div>
                     )}
                     {selectedUser.isVerified && (
@@ -328,7 +355,7 @@ const NewConversationPage: NextPage = () => {
                     )}
                   </div>
                   <div className="ml-4">
-                    <h2 className="text-lg font-medium text-gray-900">{selectedUser.username}</h2>
+                    <h2 className="text-lg font-medium text-gray-900">{selectedUser.username || selectedUser.name}</h2>
                     <p className="text-sm text-gray-500">Sélectionnez une commande ou continuez sans en sélectionner</p>
                   </div>
                 </div>
@@ -412,12 +439,12 @@ const NewConversationPage: NextPage = () => {
                     {selectedUser.avatar ? (
                       <img 
                         src={selectedUser.avatar} 
-                        alt={selectedUser.username} 
+                        alt={selectedUser.username?.charAt(0) || selectedUser.name?.charAt(0) || 'U'} 
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
-                        {selectedUser.username.charAt(0)}
+                        {selectedUser.username?.charAt(0) || selectedUser.name?.charAt(0) || 'U'}
                       </div>
                     )}
                     {selectedUser.isVerified && (
@@ -427,7 +454,7 @@ const NewConversationPage: NextPage = () => {
                     )}
                   </div>
                   <div className="ml-4">
-                    <h2 className="text-lg font-medium text-gray-900">{selectedUser.username}</h2>
+                    <h2 className="text-lg font-medium text-gray-900">{selectedUser.username || selectedUser.name}</h2>
                     {selectedOrder ? (
                       <div className="flex items-center text-sm text-gray-500">
                         <FiShoppingBag className="h-3.5 w-3.5 mr-1" />
@@ -541,7 +568,7 @@ const NewConversationPage: NextPage = () => {
               {step === 'write-message' && (
                 <span>
                   Discussion avec{' '}
-                  <span className="font-medium text-gray-700">{selectedUser?.username}</span>
+                  <span className="font-medium text-gray-700">{selectedUser?.username || selectedUser?.name}</span>
                   {selectedOrder && (
                     <>
                       {' '}à propos de la commande{' '}

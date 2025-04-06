@@ -12,57 +12,89 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+// Définir le type OrderWithExtras pour correspondre à celui attendu par le composant OrderDetails
+interface OrderWithExtras extends Order {
+  deliveryValidationDeadline?: string;
+  deliverables?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    createdAt: string;
+  }>;
+  dispute?: {
+    id: string;
+    status: string;
+    reason?: string;
+    createdAt: string;
+  };
+}
+
 // Simuler des données pour le développement
-const MOCK_ORDER: Order = {
+const MOCK_ORDER: OrderWithExtras = {
   id: 'order-1',
   title: 'Conception de logo pour restaurant',
+  serviceId: 'service-1',
+  serviceName: 'Conception de logo professionnel',
+  providerId: 'provider-1',
+  providerName: 'Amadou Diop',
+  clientId: 'client-1',
+  orderDate: '2023-05-10',
   client: {
     id: 'client-1',
     name: 'Fatou Diallo',
-    email: 'fatou@example.com',
+    email: 'fatou.diallo@example.com',
     avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-    createdAt: '2023-01-01T00:00:00.000Z'
+    createdAt: '2023-01-15'
   },
   service: {
     id: 'service-1',
-    title: 'Je vais créer un logo professionnel pour votre entreprise',
-    description: 'Un logo unique et mémorable qui représente parfaitement votre marque.',
+    title: 'Conception de logo professionnel',
+    description: 'Je vais concevoir un logo professionnel et moderne pour votre entreprise',
     price: 25000,
     rating: 4.9,
     totalReviews: 124,
     deliveryTime: 3,
-    images: ['/img/services/logo-1.jpg'],
-    provider: {
-      id: 'seller-1',
-      name: 'Amadou Diop',
-      email: 'amadou@example.com',
-      avatar: '/img/avatars/user-1.jpg',
-      createdAt: '2022-01-01T00:00:00.000Z'
-    },
-    slug: 'logo-professionnel',
-    createdAt: '2023-08-15',
-    category: {
-      id: 'category-1',
-      name: 'Design graphique'
-    },
-    tags: ['logo', 'branding'],
-    orderCount: 243,
+    revisions: 2,
+    images: ['https://via.placeholder.com/300'],
+    tags: ['logo', 'design', 'branding'],
+    createdAt: '2023-01-01',
     isActive: true
   },
-  status: 'en_cours',
+  status: 'completed',
   price: 25000,
-  createdAt: '2023-09-01T10:00:00.000Z',
-  deadline: '2023-09-04T23:59:59.000Z',
+  createdAt: '2023-05-15',
+  deadline: '2023-05-18',
   isPaid: true,
-  requirements: 'Nous voulons un logo moderne et élégant pour notre nouveau restaurant de cuisine fusion. Les couleurs principales sont le vert et le doré. Le nom du restaurant est "Saveurs du Monde" et nous aimerions incorporer des éléments qui suggèrent la fusion de différentes cuisines du monde. Le logo doit être simple, mémorable et fonctionner aussi bien en petit format pour les cartes de visite qu\'en grand format pour les enseignes. Nous préférons un style minimaliste mais qui évoque néanmoins la richesse culinaire.',
-  messages: []
+  messages: [],
+  requirements: 'Je voudrais un logo moderne et minimaliste pour mon restaurant de cuisine traditionnelle sénégalaise.',
+  deliveryValidationDeadline: '2023-05-20',
+  deliverables: [
+    {
+      id: 'del-1',
+      name: 'Logo au format PNG',
+      url: 'https://via.placeholder.com/300',
+      createdAt: '2023-05-16'
+    },
+    {
+      id: 'del-2',
+      name: 'Logo au format SVG',
+      url: 'https://via.placeholder.com/300',
+      createdAt: '2023-05-16' 
+    }
+  ],
+  dispute: {
+    id: 'dispute-1',
+    status: 'ouvert',
+    reason: 'Livraison non conforme aux exigences',
+    createdAt: '2023-05-19'
+  }
 };
 
 const OrderDetailsPage: NextPage = () => {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<OrderWithExtras | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSeller, setIsSeller] = useState(true); // À définir dynamiquement en fonction de l'utilisateur
 
@@ -76,7 +108,7 @@ const OrderDetailsPage: NextPage = () => {
         
         // Déterminer si l'utilisateur est le vendeur ou le client
         if (user) {
-          setIsSeller(user.id === MOCK_ORDER.service.provider?.id);
+          setIsSeller(user.id === MOCK_ORDER.providerId);
         }
       } catch (error) {
         console.error('Erreur lors du chargement de la commande:', error);
@@ -92,7 +124,8 @@ const OrderDetailsPage: NextPage = () => {
   }, [id, user]);
 
   // Fonction pour formater une date
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Date inconnue';
     try {
       const date = new Date(dateString);
       return format(date, 'dd MMMM yyyy', { locale: fr });

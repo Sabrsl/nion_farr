@@ -584,5 +584,5 @@ class SecurityService {
   }
 }
 
-// Export l'instance du service
+// Exporter une instance du service
 export const securityService = new SecurityService(); 

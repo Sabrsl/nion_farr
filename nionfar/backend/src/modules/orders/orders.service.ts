@@ -31,7 +31,13 @@ export class OrdersService {
 
   async findOne(id: string) {
     // Implementation will go here
-    return { id };
+    return { 
+      id,
+      client: 'client-id',
+      provider: 'provider-id',
+      orderNumber: `ORD-${id}`,
+      _id: id
+    };
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto) {
@@ -47,5 +53,11 @@ export class OrdersService {
   async getServiceById(serviceId: string) {
     // Implementation will go here
     return { id: serviceId, providerId: 'provider-id' };
+  }
+
+  async updateOrderStatus(orderId: string, status: string) {
+    // Implementation will go here
+    console.log(`Updating order ${orderId} status to ${status}`);
+    return this.update(orderId, { status } as UpdateOrderDto);
   }
 } 

@@ -186,12 +186,12 @@ const EditServicePage: NextPage = () => {
         // Reset the form with the service data
         const formData = {
           title: serviceData.title,
-          category: serviceData.category?.id || '',
-          summary: serviceData.summary || '',
+          category: typeof serviceData.category === 'object' ? serviceData.category?.id || '' : serviceData.category || '',
+          summary: serviceData.shortDescription || '',
           description: serviceData.description || '',
           price: serviceData.price,
           tags: serviceData.tags || [],
-          deliveryTime: serviceData.deliveryTime,
+          deliveryTime: serviceData.deliveryTime || 3,
           revisions: serviceData.revisions || 2,
           images: [], // Can't set File objects directly, will keep using imageUrls
           isActive: serviceData.isActive,
@@ -201,7 +201,7 @@ const EditServicePage: NextPage = () => {
               title: 'Basique',
               description: 'Option de base pour votre service',
               price: serviceData.price,
-              deliveryTime: serviceData.deliveryTime,
+              deliveryTime: serviceData.deliveryTime || 3,
               revisions: serviceData.revisions || 1,
               features: ['Livraison standard', '1 révision']
             },
@@ -209,7 +209,7 @@ const EditServicePage: NextPage = () => {
               title: 'Standard',
               description: 'Option standard avec plus de fonctionnalités',
               price: serviceData.price * 2,
-              deliveryTime: serviceData.deliveryTime + 2,
+              deliveryTime: (serviceData.deliveryTime || 3) + 2,
               revisions: (serviceData.revisions || 1) + 1,
               features: ['Livraison standard', '2 révisions', 'Fichiers sources inclus']
             },
@@ -217,7 +217,7 @@ const EditServicePage: NextPage = () => {
               title: 'Premium',
               description: 'Option premium tout compris',
               price: serviceData.price * 4,
-              deliveryTime: serviceData.deliveryTime + 4,
+              deliveryTime: (serviceData.deliveryTime || 3) + 4,
               revisions: (serviceData.revisions || 1) + 4,
               features: ['Livraison prioritaire', 'Révisions illimitées', 'Fichiers sources inclus', 'Support premium']
             }

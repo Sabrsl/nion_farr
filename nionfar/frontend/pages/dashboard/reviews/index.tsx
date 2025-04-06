@@ -73,7 +73,7 @@ const ReviewsPage = () => {
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       result = result.filter(review => 
-        review.title.toLowerCase().includes(term) || 
+        (review.title?.toLowerCase().includes(term) || '') || 
         review.content.toLowerCase().includes(term)
       );
     }
@@ -319,16 +319,16 @@ const ReviewsPage = () => {
         {/* État vide */}
         {!loading && !error && filteredReviews.length === 0 && (
           <EmptyState
-            title={`Aucun avis ${filter === 'received' ? 'reçu' : 'donné'}`}
+            title="Aucun avis trouvé"
             description={
-              searchTerm || ratingFilter !== 'all'
+              filteredReviews.length === 0 && (searchTerm || ratingFilter !== 'all')
                 ? 'Aucun avis ne correspond à vos critères de recherche. Essayez de modifier vos filtres.'
                 : filter === 'received'
                 ? 'Vous n\'avez pas encore reçu d\'avis. Les avis apparaîtront ici lorsque des clients évalueront vos services.'
                 : 'Vous n\'avez pas encore laissé d\'avis. N\'oubliez pas d\'évaluer les services que vous avez utilisés.'
             }
             actionLabel={filter === 'given' ? 'Consulter vos commandes' : undefined}
-            actionLink={filter === 'given' ? '/dashboard/orders' : undefined}
+            onAction={filter === 'given' ? () => router.push('/dashboard/orders') : undefined}
           />
         )}
 
@@ -363,10 +363,10 @@ const ReviewsPage = () => {
                     <div>
                       <div className="flex items-center mb-2">
                         <div className="font-medium text-gray-800 flex items-center">
-                          {filter === 'received' ? review.reviewer.name : review.recipient.name}
+                          {filter === 'received' ? (review.reviewer?.name || 'Client') : (review.service?.title || 'Service')}
                           {filter === 'received' && review.rating >= 4.5 && (
                             <UserReviewBadge 
-                              user={review.recipient}
+                              user={review.reviewer}
                               averageRating={4.8}
                               completedOrders={25}
                               size="sm"
@@ -385,14 +385,14 @@ const ReviewsPage = () => {
                     <div className="mt-2 sm:mt-0 flex items-center space-x-4">
                       {/* Bouton pour voir les détails de la commande */}
                       <button
-                        onClick={() => router.push(`/dashboard/orders/${review.order.id}`)}
+                        onClick={() => router.push('/dashboard/orders')}
                         className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
                       >
-                        Voir la commande
+                        Voir mes commandes
                       </button>
                       {/* Bouton pour voir le service */}
                       <button
-                        onClick={() => router.push(`/services/${review.service.id}`)}
+                        onClick={() => review.service?.id ? router.push(`/services/${review.service.id}`) : router.push('/services')}
                         className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
                       >
                         Voir le service
@@ -427,7 +427,7 @@ const ReviewsPage = () => {
                         aria-label="J'aime"
                       >
                         <FiThumbsUp className="mr-1" />
-                        <span className="text-sm">{review.likes}</span>
+                        <span className="text-sm">{review.helpfulCount || 0}</span>
                       </button>
                       
                       {/* Bouton Répondre (seulement pour les avis reçus et sans réponse) */}

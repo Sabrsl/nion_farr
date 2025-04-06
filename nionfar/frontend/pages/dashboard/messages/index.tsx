@@ -27,7 +27,7 @@ import {
   FiArrowLeft
 } from 'react-icons/fi';
 import { Conversation, Message } from '../../../types';
-import { mockConversations } from '../../../data/mockMessages';
+import { conversations } from '../../../data/mockMessages';
 
 const MessagesPage: NextPage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -54,19 +54,12 @@ const MessagesPage: NextPage = () => {
 
   useEffect(() => {
     // Simuler le chargement des données
-    const fetchData = async () => {
-      try {
-        // Simulation d'une requête API
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setConversations(mockConversations);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Erreur lors du chargement des conversations:", error);
-        setIsLoading(false);
-      }
-    };
+    const timer = setTimeout(() => {
+      setConversations(conversations);
+      setIsLoading(false);
+    }, 800);
     
-    fetchData();
+    return () => clearTimeout(timer);
   }, []);
 
   // Effet pour fermer le menu contextuel quand on clique ailleurs
@@ -94,8 +87,12 @@ const MessagesPage: NextPage = () => {
       // Filtre par recherche
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const clientName = conversation.participants.find(p => p.id !== 'USR-001')?.username.toLowerCase() || '';
-        const orderTitle = conversation.order?.title.toLowerCase() || '';
+        const participant = conversation.participants.find(p => 
+          typeof p === 'object' && p !== null && (p as Record<string, any>)['id'] !== 'USR-001'
+        );
+        const clientName = participant && typeof participant === 'object' ? 
+          ((participant as Record<string, any>)['username'] as string || '').toLowerCase() : '';
+        const orderTitle = conversation.order?.title?.toLowerCase() || '';
         
         if (!clientName.includes(query) && !orderTitle.includes(query)) {
           return false;
@@ -106,25 +103,26 @@ const MessagesPage: NextPage = () => {
     });
   }, [conversations, selectedFilter, searchQuery]);
 
-  // Format de date pour les messages
-  const formatMessageDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  // Fonction pour formater la date du message
+  const formatMessageDate = (date?: string): string => {
+    if (!date) return 'Date inconnue';
     
-    if (diffDays < 1) {
+    const messageDate = new Date(date);
+    const now = new Date();
+    const diffInDays = Math.floor((now.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) {
       // Aujourd'hui - afficher l'heure
-      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays === 1) {
+      return messageDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInDays === 1) {
       // Hier
       return 'Hier';
-    } else if (diffDays < 7) {
+    } else if (diffInDays < 7) {
       // Cette semaine - afficher le jour
-      return date.toLocaleDateString('fr-FR', { weekday: 'long' });
+      return messageDate.toLocaleDateString('fr-FR', { weekday: 'long' });
     } else {
-      // Plus ancien - afficher la date complète
-      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      // Plus d'une semaine - afficher la date complète
+      return messageDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     }
   };
 
@@ -370,7 +368,9 @@ const MessagesPage: NextPage = () => {
                 <div className="divide-y divide-gray-100 max-h-[calc(100vh-320px)] md:max-h-[calc(100vh-280px)] overflow-y-auto">
                   {filteredConversations.map((conversation) => {
                     // Récupérer l'utilisateur client (non USR-001)
-                    const client = conversation.participants.find(user => user.id !== 'USR-001');
+                    const client = conversation.participants.find(user => 
+                      typeof user === 'object' && user !== null && (user as Record<string, any>)['id'] !== 'USR-001'
+                    );
                     
                     if (!client) return null;
                     
@@ -539,7 +539,9 @@ const MessagesPage: NextPage = () => {
                     
                     {/* Info du client */}
                     {(() => {
-                      const client = selectedConversation.participants.find(user => user.id !== 'USR-001');
+                      const client = selectedConversation.participants.find(user => 
+                        typeof user === 'object' && user !== null && (user as Record<string, any>)['id'] !== 'USR-001'
+                      );
                       if (!client) return null;
                       
                       return (
@@ -617,7 +619,16 @@ const MessagesPage: NextPage = () => {
                     <div className="flex items-start">
                       <div className="flex-shrink-0 mr-3">
                         <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-xs">
-                          {selectedConversation.participants.find(user => user.id !== 'USR-001')?.username.charAt(0)}
+                          {(() => {
+                            const participant = selectedConversation.participants.find(user => 
+                              typeof user === 'object' && user !== null && (user as Record<string, any>)['id'] !== 'USR-001'
+                            );
+                            if (participant && typeof participant === 'object') {
+                              const username = (participant as Record<string, any>)['username'] as string;
+                              return username ? username.charAt(0) : 'U';
+                            }
+                            return 'U';
+                          })()}
                         </div>
                       </div>
                       <div className="flex-1 max-w-[80%]">
@@ -650,7 +661,16 @@ const MessagesPage: NextPage = () => {
                     <div className="flex items-start">
                       <div className="flex-shrink-0 mr-3">
                         <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium text-xs">
-                          {selectedConversation.participants.find(user => user.id !== 'USR-001')?.username.charAt(0)}
+                          {(() => {
+                            const participant = selectedConversation.participants.find(user => 
+                              typeof user === 'object' && user !== null && (user as Record<string, any>)['id'] !== 'USR-001'
+                            );
+                            if (participant && typeof participant === 'object') {
+                              const username = (participant as Record<string, any>)['username'] as string;
+                              return username ? username.charAt(0) : 'U';
+                            }
+                            return 'U';
+                          })()}
                         </div>
                       </div>
                       <div className="flex-1 max-w-[80%]">
@@ -722,7 +742,9 @@ const MessagesPage: NextPage = () => {
                     <h3 className="text-sm font-medium text-gray-500 mb-4">Conversations récentes</h3>
                     <div className="space-y-3">
                       {filteredConversations.slice(0, 3).map((conversation) => {
-                        const client = conversation.participants.find(user => user.id !== 'USR-001');
+                        const client = conversation.participants.find(user => 
+                          typeof user === 'object' && user !== null && (user as Record<string, any>)['id'] !== 'USR-001'
+                        );
                         if (!client) return null;
                         
                         return (

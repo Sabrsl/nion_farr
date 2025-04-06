@@ -2,7 +2,7 @@ import { User as BaseUser, Service as BaseService, Review as BaseReview } from '
 import { ReactNode } from 'react';
 
 // Extension du type User avec les propriétés supplémentaires utilisées dans la page de profil freelancer
-export interface CustomUser extends Partial<BaseUser> {
+export interface CustomUser {
   id: string;
   name: string;
   email: string;
@@ -21,6 +21,7 @@ export interface CustomUser extends Partial<BaseUser> {
   website?: string;
   address?: string;
   responseTime?: string;
+  role?: 'client' | 'provider' | 'admin';
 }
 
 // Extension du type Service avec les propriétés supplémentaires

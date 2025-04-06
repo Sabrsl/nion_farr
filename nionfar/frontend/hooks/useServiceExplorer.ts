@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { getServiceExplorer } from '../services/serviceExplorerService';
 import type { Service } from '../types';
 import { logger } from '../utils/logger.js';
@@ -48,6 +48,7 @@ export function useInfiniteServices(options = {}, queryOptions = {}) {
       ...options,
       page: pageParam,
     }),
+    initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       const { page, pages } = lastPage;
       return page < pages ? page + 1 : undefined;
@@ -104,7 +105,7 @@ export function useSearchServices(query: string, options = {}) {
     queryFn: () => serviceExplorer.searchServices(query, options),
     enabled: query.length > 2, // Seulement rechercher si plus de 2 caractères
     staleTime: 1000 * 60 * 5, // 5 minutes
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -179,7 +180,7 @@ export function useCanOrderService(serviceId: ServiceId | null, userId: UserId |
 export function useRecommendedServices(userId?: UserId, limit = 6, options = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.recommendedServices(userId),
-    queryFn: () => serviceExplorer.getRecommendedServices(userId, limit),
+    queryFn: () => serviceExplorer.getRecommendedServices(userId || 'guest', limit),
     staleTime: 1000 * 60 * 15, // 15 minutes
     ...options
   });
@@ -227,7 +228,7 @@ export function useServiceDetails(serviceIdOrSlug: string, options = {}) {
   const trackServiceView = useTrackServiceView();
   const userId = useMemo(() => {
     // Récupérer l'ID utilisateur du store ou localStorage
-    return null; // Placeholder - À adapter selon la gestion d'authentification
+    return undefined; // Placeholder - À adapter selon la gestion d'authentification
   }, []);
 
   // Requête pour le service

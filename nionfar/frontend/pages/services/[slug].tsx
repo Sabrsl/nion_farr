@@ -663,9 +663,12 @@ export const getServerSideProps: GetServerSideProps<ServicePageProps> = async (c
       // Récupérer les services similaires (même catégorie ou tags similaires)
       const relatedServices = mockServicesList
         .filter(s => {
+          const serviceCategory = typeof serviceData.category === 'object' ? serviceData.category?.id : serviceData.category;
+          const currentCategory = typeof s.category === 'object' ? s.category?.id : s.category;
+          
           return s.id !== serviceData.id && 
             s.isActive && 
-            (s.category?.id === serviceData.category?.id || 
+            (currentCategory === serviceCategory || 
               (s.tags && serviceData.tags && s.tags.some(tag => serviceData.tags?.includes(tag) ?? false)));
         })
         .slice(0, 4);

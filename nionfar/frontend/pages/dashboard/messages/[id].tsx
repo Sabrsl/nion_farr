@@ -28,7 +28,7 @@ import {
   FiMaximize
 } from 'react-icons/fi';
 import { Conversation, Message, Attachment } from '../../../types';
-import { mockConversations, mockMessages, mockUsers } from '../../../data/mockMessages';
+import { conversations, messages, getMessagesByConversationId } from '../../../data/mockMessages';
 
 const ConversationPage: NextPage = () => {
   const router = useRouter();
@@ -49,35 +49,22 @@ const ConversationPage: NextPage = () => {
   useEffect(() => {
     if (!id) return;
 
-    // Simuler le chargement des données
-    const fetchData = async () => {
-      try {
-        // Simulation d'une requête API
-        await new Promise(resolve => setTimeout(resolve, 600));
-        
-        // Trouver la conversation correspondante
-        const foundConversation = mockConversations.find(c => c.id === id);
-        
-        if (foundConversation) {
-          setConversation(foundConversation);
-          // Récupérer les messages associés à cette conversation
-          const conversationMessages = mockMessages.filter(m => m.conversation === id);
-          setMessages(conversationMessages.sort((a, b) => 
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          ));
-        } else {
-          // Gérer le cas où la conversation n'est pas trouvée
-          router.push('/dashboard/messages');
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Erreur lors du chargement de la conversation:", error);
-        setIsLoading(false);
-      }
-    };
+    // Charger la conversation
+    const conversationId = typeof id === 'string' ? id : id[0];
+    const conversation = conversations.find(c => c.id === conversationId);
     
-    fetchData();
+    if (conversation) {
+      setConversation(conversation);
+      
+      // Charger les messages de cette conversation
+      const conversationMessages = getMessagesByConversationId(conversationId);
+      setMessages(conversationMessages);
+    } else {
+      // Gérer le cas où la conversation n'est pas trouvée
+      router.push('/dashboard/messages');
+    }
+    
+    setIsLoading(false);
   }, [id, router]);
 
   useEffect(() => {
@@ -121,7 +108,9 @@ const ConversationPage: NextPage = () => {
     
     if (!conversation) return;
     
-    const client = conversation.participants.find(p => p.id !== 'USR-001');
+    const client = conversation.participants.find(p => 
+      typeof p === 'object' && p !== null && (p as Record<string, any>)['id'] !== 'USR-001'
+    );
     if (!client) return;
     
     // Indiquer que l'envoi est en cours
@@ -157,7 +146,7 @@ const ConversationPage: NextPage = () => {
         const newMessageObj: Message = {
           id: `MSG-${Date.now()}`,
           content: newMessage,
-          sender: mockUsers[0], // Current user (Amadou)
+          sender: conversation.participants[0], // Current user (Amadou)
           receiver: client,
           conversation: conversation.id,
           createdAt: new Date().toISOString(),
@@ -205,11 +194,20 @@ const ConversationPage: NextPage = () => {
     );
   };
 
-  // Formater la taille des fichiers
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB';
+  // Fonction pour formater la taille de fichier
+  const formatFileSize = (sizeInBytes?: number | string): string => {
+    if (sizeInBytes === undefined) return 'Taille inconnue';
+    
+    // Convertir la chaîne en nombre si nécessaire
+    const size = typeof sizeInBytes === 'string' ? parseInt(sizeInBytes, 10) : sizeInBytes;
+    
+    // Si la conversion a échoué ou size est invalide
+    if (isNaN(size) || size === 0) return 'Taille inconnue';
+    
+    if (size < 1024) return size + ' B';
+    if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+    if (size < 1024 * 1024 * 1024) return (size / (1024 * 1024)).toFixed(1) + ' MB';
+    return (size / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
   };
 
   // Obtenir l'icône appropriée pour le type de fichier
@@ -380,7 +378,9 @@ const ConversationPage: NextPage = () => {
   }
 
   // Récupérer l'utilisateur client (non USR-001)
-  const client = conversation.participants.find(user => user.id !== 'USR-001');
+  const client = conversation.participants.find(p => 
+    typeof p === 'object' && p !== null && (p as Record<string, any>)['id'] !== 'USR-001'
+  );
   
   if (!client) {
     return (

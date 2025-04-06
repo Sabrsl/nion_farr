@@ -34,7 +34,7 @@ interface ExtendedOrder extends Order {
 const DisputeDetailPage: NextPage = () => {
   const router = useRouter();
   const { id } = router.query;
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   
   const [dispute, setDispute] = useState<Dispute | null>(null);
   const [order, setOrder] = useState<ExtendedOrder | null>(null);
@@ -89,9 +89,16 @@ const DisputeDetailPage: NextPage = () => {
         const mockOrder: ExtendedOrder = {
           id: 'order-123',
           title: 'Création de logo pour entreprise',
+          serviceId: 'service-1',
+          serviceName: 'Création de logo professionnel',
+          providerId: 'seller-1',
+          providerName: 'Sophie Martin',
+          clientId: 'client-1',
           price: 250,
           deadline: '2023-09-15T23:59:59Z',
           status: 'litige',
+          orderDate: '2023-09-01',
+          expectedDeliveryDate: '2023-09-15',
           client: {
             id: 'client-1',
             name: 'Jean Dupont',
@@ -109,7 +116,7 @@ const DisputeDetailPage: NextPage = () => {
             createdAt: '2023-01-01T00:00:00Z'
           },
           createdAt: '2023-09-01T10:00:00Z',
-          messages: 3,
+          messages: [],
           isPaid: true,
           requirements: 'Création d\'un logo moderne pour une entreprise de services informatiques',
           seller: {
@@ -117,7 +124,8 @@ const DisputeDetailPage: NextPage = () => {
             name: 'Sophie Martin',
             email: 'sophie.martin@example.com',
             createdAt: '2022-11-05T09:30:00Z',
-            role: 'freelancer'
+            role: 'provider',
+            isVerified: true
           }
         };
         
@@ -134,7 +142,8 @@ const DisputeDetailPage: NextPage = () => {
     fetchDisputeDetails();
   }, [id, authLoading]);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Date inconnue';
     try {
       return format(new Date(dateString), 'dd MMMM yyyy à HH:mm', { locale: fr });
     } catch (e) {
@@ -189,10 +198,10 @@ const DisputeDetailPage: NextPage = () => {
           role: 'client' 
         };
       }
-      if (userId === (order as ExtendedOrder).seller?.id) {
+      if (userId === order.seller?.id) {
         return { 
-          name: (order as ExtendedOrder).seller.name, 
-          role: 'vendeur' 
+          name: order.seller.name, 
+          role: order.seller.role === 'provider' ? 'vendeur' : order.seller.role
         };
       }
     }
@@ -206,7 +215,7 @@ const DisputeDetailPage: NextPage = () => {
     // if (dispute.status !== 'ouvert') return false;
     
     return user.id === order.client.id || 
-           (user.id === (order as ExtendedOrder).seller?.id) || 
+           (user.id === order.seller?.id) || 
            user.role === 'admin';
   };
 
@@ -570,9 +579,9 @@ const DisputeDetailPage: NextPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500">{user?.role === 'freelancer' ? 'Client' : 'Vendeur'}</h3>
+                    <h3 className="text-sm font-medium text-gray-500">{user?.role === 'provider' ? 'Client' : 'Vendeur'}</h3>
                     <p className="mt-1 text-sm text-gray-900">
-                      {user?.role === 'freelancer' ? order.client.name : ((order as ExtendedOrder).seller ? (order as ExtendedOrder).seller.name : 'N/A')}
+                      {user?.role === 'provider' ? order.client.name : (order.seller ? order.seller.name : 'N/A')}
                     </p>
                   </div>
                 </div>

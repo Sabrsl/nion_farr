@@ -13,6 +13,12 @@ const MOCK_ORDERS: Order[] = [
   {
     id: '1',
     title: 'Création logo pour startup tech',
+    serviceId: 'service1',
+    serviceName: 'Logo professionnel',
+    providerId: 'seller1',
+    providerName: 'Marie Martin',
+    clientId: 'client1',
+    orderDate: '2023-09-15',
     client: {
       id: 'client1',
       name: 'Jean Dupont',
@@ -44,6 +50,12 @@ const MOCK_ORDERS: Order[] = [
   {
     id: '2',
     title: 'Rédaction contenu site web e-commerce',
+    serviceId: 'service2',
+    serviceName: 'Rédaction de contenu web optimisé SEO',
+    providerId: 'seller1',
+    providerName: 'Marie Martin',
+    clientId: 'client2',
+    orderDate: '2023-08-20',
     client: {
       id: 'client2',
       name: 'Sophie Bernard',
@@ -75,6 +87,12 @@ const MOCK_ORDERS: Order[] = [
   {
     id: '3',
     title: 'Traduction site web français-anglais',
+    serviceId: 'service3',
+    serviceName: 'Traduction professionnelle français-anglais',
+    providerId: 'seller1',
+    providerName: 'Marie Martin',
+    clientId: 'client3',
+    orderDate: '2023-09-18',
     client: {
       id: 'client3',
       name: 'Pierre Martin',
@@ -106,6 +124,12 @@ const MOCK_ORDERS: Order[] = [
   {
     id: '4',
     title: 'Montage vidéo promotionnelle',
+    serviceId: 'service4',
+    serviceName: 'Montage vidéo professionnel pour promotions',
+    providerId: 'seller1',
+    providerName: 'Marie Martin',
+    clientId: 'client1',
+    orderDate: '2023-08-10',
     client: {
       id: 'client1',
       name: 'Jean Dupont',
@@ -137,6 +161,12 @@ const MOCK_ORDERS: Order[] = [
   {
     id: '5',
     title: 'Correction d\'article scientifique',
+    serviceId: 'service5',
+    serviceName: 'Correction et relecture de documents scientifiques',
+    providerId: 'seller1',
+    providerName: 'Marie Martin',
+    clientId: 'client3',
+    orderDate: '2023-09-12',
     client: {
       id: 'client3',
       name: 'Pierre Martin',
@@ -168,7 +198,7 @@ const MOCK_ORDERS: Order[] = [
 ];
 
 const OrdersPage: NextPage = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSeller, setIsSeller] = useState(true);

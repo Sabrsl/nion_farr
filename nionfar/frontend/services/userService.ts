@@ -22,6 +22,8 @@ class UserService {
         username: 'johndoe',
         email: 'john@example.com',
         createdAt: new Date().toISOString(),
+        role: 'client',
+        isVerified: true,
         // Add other user properties as needed
       };
     } catch (error) {
@@ -48,6 +50,8 @@ class UserService {
         username: username,
         email: 'john@example.com',
         createdAt: new Date().toISOString(),
+        role: 'client',
+        isVerified: true,
         // Add other user properties as needed
       };
     } catch (error) {
@@ -81,6 +85,8 @@ class UserService {
         username: userData.username || 'johndoe',
         email: userData.email || 'john@example.com',
         createdAt: new Date().toISOString(),
+        role: userData.role || 'client',
+        isVerified: userData.isVerified || true,
         // Add other user properties as needed
         ...userData,
       };
