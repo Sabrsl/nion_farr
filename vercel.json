@@ -1,15 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "cd nionfar/frontend && npm install --legacy-peer-deps && npm run build",
-  "outputDirectory": "nionfar/frontend/.next",
-  "framework": "nextjs",
-  "installCommand": "cd nionfar/frontend && npm install --legacy-peer-deps",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/nionfar/frontend/$1" }
-  ],
-  "build": {
-    "env": {
-      "NODE_ENV": "production"
-    }
-  }
+  "projectSettings": {
+    "framework": "nextjs",
+    "buildCommand": "npm run build",
+    "devCommand": "npm run dev",
+    "outputDirectory": ".next",
+    "rootDirectory": "nionfar/frontend"
+  },
+  "routes": [
+    { "src": "/(.*)", "destination": "/nionfar/frontend/$1" }
+  ]
 } 
