@@ -43,11 +43,15 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   /**
    * Rafraîchit l'état d'authentification en récupérant les données utilisateur du localStorage
    */
   const refreshAuthState = useCallback(() => {
+    // Seulement exécuter côté client
+    if (!isMounted) return;
+    
     try {
       const storedUser = localStorage.getItem(USER_STORAGE_KEY);
       
@@ -68,10 +72,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [isMounted, user]);
+
+  // Marquer le composant comme monté (côté client uniquement)
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
 
   // Initialisation du contexte au montage et gestion des changements de localStorage
   useEffect(() => {
+    // Ne rien faire pendant le rendu serveur
+    if (!isMounted) return;
+    
     // Vérifier l'état initial
     refreshAuthState();
     
@@ -86,15 +99,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
     
-    if (typeof window !== 'undefined') {
-      // Écouter les changements de localStorage (pour les autres onglets)
-      window.addEventListener('storage', handleStorageChange);
-      
-      return () => {
-        window.removeEventListener('storage', handleStorageChange);
-      };
-    }
-  }, [refreshAuthState]);
+    // Écouter les changements de localStorage (pour les autres onglets)
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [refreshAuthState, isMounted]);
 
   /**
    * Authentifie un utilisateur avec son email et mot de passe

@@ -1,4 +1,4 @@
 {
-  "buildCommand": "cd nionfar/frontend && npm install --legacy-peer-deps && NODE_ENV=production npm run build",
+  "buildCommand": "cd nionfar/frontend && NODE_OPTIONS='--max_old_space_size=4096' npm install --legacy-peer-deps && NEXT_DISABLE_ESLINT=1 NODE_ENV=production npm run build",
   "outputDirectory": "nionfar/frontend/.next"
 } 

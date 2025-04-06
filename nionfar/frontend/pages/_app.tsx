@@ -4,12 +4,14 @@ import Head from 'next/head';
 import { AuthProvider } from '../contexts/AuthContext';
 import 'tailwindcss/tailwind.css';
 import '../styles/globals.css';
+import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify';
 
-// Fonction pour éviter les erreurs avec les hooks React en SSR
+// Composant amélioré pour éviter les erreurs d'hydratation
 const SafeHydrate = ({ children }) => {
   return (
-    <div suppressHydrationWarning>
-      {typeof window === 'undefined' ? null : children}
+    <div suppressHydrationWarning style={{ display: 'contents' }}>
+      {children}
     </div>
   );
 };
@@ -35,6 +37,17 @@ export default function App({ Component, pageProps }: AppProps) {
           <meta name="viewport" content="width=device-width, initial-scale=1" />
         </Head>
         <Component {...pageProps} />
+        <ToastContainer 
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
       </AuthProvider>
     </SafeHydrate>
   );

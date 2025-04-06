@@ -9,8 +9,8 @@ const LOG_LEVELS = {
   DEBUG: 'debug',
 };
 
-// Set default log level based on environment
-const DEFAULT_LEVEL = process.env.NODE_ENV === 'production' ? LOG_LEVELS.ERROR : LOG_LEVELS.DEBUG;
+// Variable utilisée pour déterminer le niveau de log par défaut
+const getDefaultLevel = () => process.env.NODE_ENV === 'production' ? LOG_LEVELS.ERROR : LOG_LEVELS.DEBUG;
 
 export const logger = {
   error: (message, ...args) => {
@@ -37,7 +37,10 @@ export const logger = {
   
   // Log with explicit level
   log: (level, message, ...args) => {
-    switch (level) {
+    // Utilise le niveau par défaut si aucun n'est spécifié
+    const logLevel = level || getDefaultLevel();
+    
+    switch (logLevel) {
       case LOG_LEVELS.ERROR:
         logger.error(message, ...args);
         break;

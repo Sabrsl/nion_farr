@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "NionFar.sn - Plateforme de services freelance au Sénégal",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "docker-compose up",
     "dev:build": "docker-compose up --build",
@@ -10,7 +11,7 @@
     "frontend": "cd frontend && npm run dev",
     "backend": "cd backend && npm run start:dev",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "lint": "eslint . --ext .ts,.tsx"
+    "lint": "eslint \"**/*.{js,jsx,ts,tsx}\""
   },
   "author": "NionFar Team",
   "license": "UNLICENSED",
@@ -24,6 +25,9 @@
     "recharts": "^2.15.2"
   },
   "devDependencies": {
+    "@rushstack/eslint-patch": "^1.8.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
     "eslint": "^9.24.0",
     "eslint-config-next": "^15.2.4",
     "typescript": "^5.5.3"

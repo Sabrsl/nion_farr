@@ -17,13 +17,11 @@ export function NoSSR({ children, fallback = null }: NoSSRProps) {
     setIsClient(true);
   }, []);
 
-  // Pendant le rendu serveur ou l'hydratation, renvoyer le fallback
-  if (!isClient) {
-    return <>{fallback}</>;
-  }
-
-  // Une fois l'hydratation terminée et que nous sommes côté client, rendre les enfants
-  return <>{children}</>;
+  return (
+    <div suppressHydrationWarning style={{ display: 'contents' }}>
+      {isClient ? children : fallback}
+    </div>
+  );
 }
 
 export default NoSSR; 

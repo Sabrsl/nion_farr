@@ -18,11 +18,11 @@ export function ClientOnly({ children, fallback = <div style={{ display: 'none' 
     setIsMounted(true);
   }, []);
 
-  if (!isMounted) {
-    return <>{fallback}</>;
-  }
-
-  return <>{children}</>;
+  return (
+    <div suppressHydrationWarning style={{ display: 'contents' }}>
+      {isMounted ? children : fallback}
+    </div>
+  );
 }
 
 export default ClientOnly; 
