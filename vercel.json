@@ -1,5 +1,4 @@
 {
-  "buildCommand": "cd nionfar/frontend && npm install --no-audit --no-fund --legacy-peer-deps && npm run build:force",
-  "outputDirectory": "nionfar/frontend/.next",
-  "installCommand": "cd nionfar/frontend && npm install --no-audit --no-fund --legacy-peer-deps"
+  "buildCommand": "cd nionfar/frontend && npm install --legacy-peer-deps && NODE_ENV=production npm run build",
+  "outputDirectory": "nionfar/frontend/.next"
 } 

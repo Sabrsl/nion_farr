@@ -31,6 +31,9 @@ const nextConfig = {
     removeConsole: {
       exclude: ['error', 'warn'],
     },
+    // Configuration explicite du JSX runtime
+    reactRemoveProperties: true,
+    styledComponents: true,
   },
   
   // Utilisation de SWC pour la minification (plus rapide)
@@ -58,10 +61,10 @@ const nextConfig = {
   skipTrailingSlashRedirect: true,
   skipMiddlewareUrlNormalize: true,
   
-  // Configurations expérimentales pour résoudre les problèmes de SSR
+  // Forcer l'utilisation du runtime React
   experimental: {
     esmExternals: 'loose',
-    serverComponentsExternalPackages: ['react-dom']
+    serverComponentsExternalPackages: []
   }
 }
 

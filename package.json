@@ -1,38 +1,31 @@
 {
   "name": "nionfar",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "description": "NionFar.sn - Plateforme de services freelance au Sénégal",
   "private": true,
   "scripts": {
-    "dev": "cd nionfar/frontend && npm run dev",
-    "build": "cd nionfar/frontend && npm run build",
-    "start": "cd nionfar/frontend && npm run start",
-    "lint": "cd nionfar/frontend && npm run lint"
+    "dev": "docker-compose up",
+    "dev:build": "docker-compose up --build",
+    "stop": "docker-compose down",
+    "frontend": "cd frontend && npm run dev",
+    "backend": "cd backend && npm run start:dev",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "lint": "eslint . --ext .ts,.tsx"
   },
+  "author": "NionFar Team",
+  "license": "UNLICENSED",
   "dependencies": {
-    "@headlessui/react": "^2.2.1",
-    "@radix-ui/react-tooltip": "^1.1.8",
-    "@tinymce/tinymce-react": "^6.1.0",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.1",
-    "class-variance-authority": "^0.7.1",
-    "classnames": "^2.5.1",
-    "framer-motion": "^12.6.3",
-    "react-dropzone": "^14.3.8",
-    "react-hook-form": "^7.55.0",
-    "react-icons": "^5.5.0",
-    "react-intersection-observer": "^9.16.0",
-    "react-toastify": "^11.0.5",
-    "swr": "^2.3.3",
-    "tinymce": "^7.7.2"
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.0.1",
+    "@mui/material": "^7.0.1",
+    "@mui/x-date-pickers": "^7.28.3",
+    "date-fns": "^4.1.0",
+    "recharts": "^2.15.2"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.24.0",
-    "@next/eslint-plugin-next": "^15.2.4",
-    "@types/classnames": "^2.3.0",
-    "eslint": "^8.54.0",
+    "eslint": "^9.24.0",
     "eslint-config-next": "^15.2.4",
-    "next": "^15.2.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.5.3"
   }
 }
