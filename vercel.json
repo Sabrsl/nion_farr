@@ -1,26 +1,13 @@
 {
   "version": 2,
-  "projectSettings": {
-    "framework": "nextjs",
-    "buildCommand": "cd nionfar/frontend && npm install --legacy-peer-deps && npm run build:force",
-    "devCommand": "cd nionfar/frontend && npm run dev",
-    "outputDirectory": "nionfar/frontend/.next",
-    "rootDirectory": "nionfar/frontend"
-  },
+  "outputDirectory": "nionfar/frontend/.next",
+  "buildCommand": "cd nionfar/frontend && npm install --legacy-peer-deps && npm run build:force",
   "installCommand": "cd nionfar/frontend && npm install --legacy-peer-deps",
-  "builds": [
-    {
-      "src": "nionfar/frontend/next.config.mjs",
-      "use": "@vercel/next"
-    }
-  ],
+  "framework": "nextjs",
   "env": {
     "NODE_ENV": "production",
     "NEXT_TELEMETRY_DISABLED": "1",
     "NEXT_DISABLE_ESLINT": "1",
     "NEXT_DISABLE_TYPE_CHECKS": "1"
-  },
-  "routes": [
-    { "src": "/(.*)", "destination": "/nionfar/frontend/$1" }
-  ]
+  }
 } 
