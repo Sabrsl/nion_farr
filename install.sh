@@ -11,7 +11,7 @@ fi
 
 # Install global dependencies
 echo "Installing global dependencies..."
-npm install -g rimraf
+npm install -g rimraf @nestjs/cli
 
 # Navigate to backend directory
 echo "Installing backend dependencies..."
