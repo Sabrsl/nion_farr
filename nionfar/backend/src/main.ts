@@ -154,17 +154,12 @@ async function bootstrap() {
       );
     }
     
-    // Utilisation du port fourni par l'environnement (important pour Render)
+    // Démarrer l'application
     const port = process.env.PORT || configService.get<number>('PORT') || 3001;
-    console.log(`Starting server on port ${port}...`);
-    
-    // Démarrage du serveur
-    await app.listen(port);
-    console.log(`Server is running on: http://localhost:${port}/${apiPrefix}`);
-    
-    if (environment !== 'production') {
-      console.log(`Swagger documentation available at: http://localhost:${port}/docs`);
-    }
+    await app.listen(port, '0.0.0.0');
+    console.log(`🚀 Application is running on: ${await app.getUrl()}`);
+    console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
+    console.log(`📚 Swagger docs: ${await app.getUrl()}/${configService.get('API_PREFIX')}/docs`);
   } catch (error) {
     console.error('Failed to start application:', error);
     process.exit(1);
