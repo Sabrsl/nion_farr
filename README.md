@@ -41,11 +41,22 @@ Le projet est divisé en deux parties principales :
 2. Configurez le déploiement comme suit :
    - **Framework Preset** : Next.js
    - **Root Directory** : nionfar/frontend
-   - **Build Command** : `cd nionfar/frontend && NODE_OPTIONS='--max_old_space_size=4096' npm install --legacy-peer-deps && npm install @mui/icons-material react-toastify react-dropzone @headlessui/react classnames resend mongodb bcryptjs msw --save && NEXT_DISABLE_ESLINT=1 NODE_ENV=production npm run build`
+   - **Build Command** : `cd nionfar/frontend && NODE_OPTIONS='--max_old_space_size=4096' npm install --legacy-peer-deps && NEXT_DISABLE_ESLINT=1 NODE_ENV=production npm run build`
    - **Output Directory** : nionfar/frontend/.next
    - **Install Command** : `npm install`
 
-3. Ajoutez les variables d'environnement suivantes :
+3. Créez un fichier `package.json` à la racine du projet (si nécessaire) avec :
+   ```json
+   {
+     "name": "nionfar-monorepo",
+     "private": true,
+     "scripts": {
+       "postinstall": "npm install @mui/icons-material react-toastify react-dropzone @headlessui/react classnames resend mongodb bcryptjs msw --prefix nionfar/frontend"
+     }
+   }
+   ```
+
+4. Ajoutez les variables d'environnement suivantes :
    - NEXT_PUBLIC_API_URL=https://nionfar-backend.onrender.com/api
    - NEXT_PUBLIC_APP_URL=https://nionfar.vercel.app
    - NEXT_PUBLIC_ENVIRONMENT=production
@@ -54,7 +65,7 @@ Le projet est divisé en deux parties principales :
    
    Note: Vous pouvez coller le contenu d'un fichier .env pour pré-remplir automatiquement les variables.
 
-4. Cliquez sur "Deploy"
+5. Cliquez sur "Deploy"
 
 ### URLs des services déployés
 
