@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   
   // Définir le mode de rendu sur "standalone" pour que tout soit généré à la demande
-  output: 'standalone',
+  output: undefined,
 
   // Désactiver l'optimisation statique
   images: {

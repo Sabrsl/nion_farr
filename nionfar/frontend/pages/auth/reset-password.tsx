@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Typography, Paper, TextField, Button, Box, CircularProgress, Alert } from '@mui/material';
-import LockResetIcon from '@mui/icons-material/LockReset.js';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline.js';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline.js';
 import PasswordStrengthMeter from '../../components/auth/PasswordStrengthMeter';
 
 // Page de réinitialisation de mot de passe
@@ -101,7 +98,6 @@ export default function ResetPasswordPage() {
     return (
       <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
         <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-          <ErrorOutlineIcon color="error" sx={{ fontSize: 60, mb: 2 }} />
           <Typography variant="h5" component="h1" gutterBottom>
             Lien invalide
           </Typography>
@@ -126,7 +122,6 @@ export default function ResetPasswordPage() {
         {status === 'form' && (
           <>
             <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <LockResetIcon color="primary" sx={{ fontSize: 48, mb: 1 }} />
               <Typography variant="h4" component="h1" gutterBottom>
                 Réinitialisation du mot de passe
               </Typography>
@@ -194,7 +189,6 @@ export default function ResetPasswordPage() {
         
         {status === 'success' && (
           <Box sx={{ textAlign: 'center', my: 4 }}>
-            <CheckCircleOutlineIcon color="success" sx={{ fontSize: 60, mb: 2 }} />
             <Typography variant="h5" component="h1" gutterBottom>
               Mot de passe réinitialisé
             </Typography>
@@ -216,7 +210,6 @@ export default function ResetPasswordPage() {
         
         {status === 'error' && (
           <Box sx={{ textAlign: 'center', my: 4 }}>
-            <ErrorOutlineIcon color="error" sx={{ fontSize: 60, mb: 2 }} />
             <Typography variant="h5" component="h1" gutterBottom>
               Échec de la réinitialisation
             </Typography>
