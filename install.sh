@@ -9,6 +9,10 @@ if [ ! -d "nionfar" ]; then
   exit 1
 fi
 
+# Install global dependencies
+echo "Installing global dependencies..."
+npm install -g rimraf
+
 # Navigate to backend directory
 echo "Installing backend dependencies..."
 cd nionfar/backend
