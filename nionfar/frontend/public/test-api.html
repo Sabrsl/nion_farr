@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test API Nionfar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .test-case {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .success {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+    .failure {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+    button {
+      padding: 8px 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0069d9;
+    }
+    pre {
+      background-color: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .result-panel {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test de l'API Nionfar</h1>
+  <p>Cette page teste la communication entre le frontend et le backend (ou les mocks).</p>
+  
+  <div class="test-case">
+    <h3>Test 1: Identifiants du mock</h3>
+    <div>
+      <label>Email: <input type="text" id="email1" value="jean.dupont@example.com"></label>
+      <label>Mot de passe: <input type="password" id="password1" value="password123"></label>
+      <button onclick="runTest(1)">Tester</button>
+    </div>
+    <div class="result-panel" id="result1">
+      <p>En attente du test...</p>
+    </div>
+  </div>
+  
+  <div class="test-case">
+    <h3>Test 2: Identifiant contenant "test"</h3>
+    <div>
+      <label>Email: <input type="text" id="email2" value="test@example.com"></label>
+      <label>Mot de passe: <input type="password" id="password2" value="password123"></label>
+      <button onclick="runTest(2)">Tester</button>
+    </div>
+    <div class="result-panel" id="result2">
+      <p>En attente du test...</p>
+    </div>
+  </div>
+  
+  <div class="test-case">
+    <h3>Test 3: Identifiants invalides</h3>
+    <div>
+      <label>Email: <input type="text" id="email3" value="invalide@example.com"></label>
+      <label>Mot de passe: <input type="password" id="password3" value="mauvaismdp"></label>
+      <button onclick="runTest(3)">Tester</button>
+    </div>
+    <div class="result-panel" id="result3">
+      <p>En attente du test...</p>
+    </div>
+  </div>
+  
+  <script>
+    async function runTest(testId) {
+      const resultElem = document.getElementById('result' + testId);
+      resultElem.innerHTML = '<p>Test en cours...</p>';
+      
+      try {
+        const email = document.getElementById('email' + testId).value;
+        const password = document.getElementById('password' + testId).value;
+        
+        console.log(`Test ${testId}: Tentative de connexion avec ${email} / ${password}`);
+        
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+        
+        console.log(`Test ${testId}: Statut de la réponse: ${response.status}`);
+        
+        const data = await response.json();
+        console.log(`Test ${testId}: Données:`, data);
+        
+        let resultHTML = '';
+        if (response.ok && data.success) {
+          resultHTML = `
+            <div class="success">
+              <p><strong>Test réussi!</strong> Connecté avec succès.</p>
+              <pre>${JSON.stringify(data, null, 2)}</pre>
+            </div>
+          `;
+        } else {
+          resultHTML = `
+            <div class="failure">
+              <p><strong>Test échoué!</strong> Échec de connexion.</p>
+              <pre>${JSON.stringify(data, null, 2)}</pre>
+            </div>
+          `;
+        }
+        
+        resultElem.innerHTML = resultHTML;
+      } catch (error) {
+        console.error(`Test ${testId}: Erreur:`, error);
+        resultElem.innerHTML = `
+          <div class="failure">
+            <p><strong>Erreur lors du test!</strong></p>
+            <pre>${error.message}</pre>
+          </div>
+        `;
+      }
+    }
+    
+    // Exécuter tous les tests automatiquement après chargement de la page
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        console.log('Exécution automatique des tests...');
+        runTest(1);
+        setTimeout(() => runTest(2), 1000);
+        setTimeout(() => runTest(3), 2000);
+      }, 1000);
+    });
+  </script>
+</body>
+</html> 

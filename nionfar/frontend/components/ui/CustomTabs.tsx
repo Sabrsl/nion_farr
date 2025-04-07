@@ -140,37 +140,47 @@ export const CustomTabsTrigger = memo<CustomTabsTriggerProps>(({
   const tabId = `${baseId}-tab-${value}`;
   const panelId = `${baseId}-panel-${value}`;
   
-  // Function to get variant-specific styles from parent TabsList
-  const getTabStyles = () => {
-    const tabsList = document.getElementById(tabId)?.closest('.tabs-list');
-    if (!tabsList) return '';
-    
-    const variant = tabsList.classList.contains('bg-gray-100') ? 'pills' : 
-                   tabsList.classList.contains('bg-white') ? 'contained' : 'underline';
-                   
-    if (variant === 'pills') {
-      return classNames(
-        'px-3 py-2 rounded-md transition-colors',
-        isSelected ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-700 hover:text-gray-900',
-        disabled && 'opacity-50 cursor-not-allowed'
-      );
+  // Déterminer les styles en fonction de la variante (pills, contained, underline) sans accéder au DOM
+  const [tabStyle, setTabStyle] = useState('');
+  
+  useEffect(() => {
+    // Accéder au DOM uniquement côté client
+    if (typeof document !== 'undefined') {
+      const tabsList = document.getElementById(tabId)?.closest('.tabs-list');
+      if (!tabsList) return;
+      
+      const variant = tabsList.classList.contains('bg-gray-100') ? 'pills' : 
+                     tabsList.classList.contains('bg-white') ? 'contained' : 'underline';
+                     
+      if (variant === 'pills') {
+        setTabStyle(classNames(
+          'px-3 py-2 rounded-md transition-colors',
+          isSelected ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-700 hover:text-gray-900',
+          disabled && 'opacity-50 cursor-not-allowed'
+        ));
+      } else if (variant === 'contained') {
+        setTabStyle(classNames(
+          'px-4 py-2 transition-colors',
+          isSelected ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50',
+          disabled && 'opacity-50 cursor-not-allowed'
+        ));
+      } else {
+        // Default to underline variant
+        setTabStyle(classNames(
+          'px-4 py-2 border-b-2 transition-colors',
+          isSelected ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+          disabled && 'opacity-50 cursor-not-allowed'
+        ));
+      }
     }
-    
-    if (variant === 'contained') {
-      return classNames(
-        'px-4 py-2 transition-colors',
-        isSelected ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50',
-        disabled && 'opacity-50 cursor-not-allowed'
-      );
-    }
-    
-    // Default to underline variant
-    return classNames(
-      'px-4 py-2 border-b-2 transition-colors',
-      isSelected ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-      disabled && 'opacity-50 cursor-not-allowed'
-    );
-  };
+  }, [tabId, isSelected, disabled]);
+  
+  // Styles par défaut lorsque tabStyle n'est pas encore déterminé (côté serveur)
+  const defaultStyles = classNames(
+    'px-4 py-2 border-b-2 transition-colors',
+    isSelected ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+    disabled && 'opacity-50 cursor-not-allowed'
+  );
   
   return (
     <button
@@ -184,7 +194,7 @@ export const CustomTabsTrigger = memo<CustomTabsTriggerProps>(({
       className={classNames(
         'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
         'text-sm font-medium',
-        getTabStyles(),
+        tabStyle || defaultStyles,
         className
       )}
       data-state={isSelected ? 'active' : 'inactive'}

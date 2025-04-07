@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { DisputesService } from './disputes.service';
 import { DisputesController } from './disputes.controller';
 import { Dispute, DisputeSchema } from './schemas/dispute.schema';
-import { OrdersModule } from '../orders/orders.module';
+// import { OrdersModule } from '../orders/orders.module'; // Commenté temporairement
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
@@ -12,7 +12,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     MongooseModule.forFeature([
       { name: Dispute.name, schema: DisputeSchema }
     ]),
-    OrdersModule,
+    // OrdersModule, // Commenté temporairement pour éviter les dépendances circulaires
     UsersModule,
     NotificationsModule
   ],

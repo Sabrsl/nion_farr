@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Typography, Paper, Box, Button, Alert, AlertTitle } from '@mui/material';
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import EmailIcon from '@mui/icons-material/Email';
+import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead.js';
+import EmailIcon from '@mui/icons-material/Email.js';
 import Link from 'next/link';
 
 export default function VerificationPendingPage() {

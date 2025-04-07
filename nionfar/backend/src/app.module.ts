@@ -37,7 +37,7 @@ import { DisputesModule } from './modules/disputes/disputes.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
+        type: configService.get<string>('DB_TYPE') as any || 'sqlite',
         host: configService.get<string>('DB_HOST'),
         port: configService.get<number>('DB_PORT'),
         username: configService.get<string>('DB_USERNAME'),

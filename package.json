@@ -21,7 +21,9 @@
     "@mui/icons-material": "^7.0.1",
     "@mui/material": "^7.0.1",
     "@mui/x-date-pickers": "^7.28.3",
+    "axios": "^1.8.4",
     "date-fns": "^4.1.0",
+    "node-fetch": "^3.3.2",
     "recharts": "^2.15.2"
   },
   "devDependencies": {

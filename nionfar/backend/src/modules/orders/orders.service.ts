@@ -1,17 +1,26 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Order } from './entities/order.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrdersService {
+  constructor(
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
+  ) {}
+
   async create(createOrderDto: CreateOrderDto) {
     // Implementation will go here
     return { id: 'order-id', ...createOrderDto };
   }
 
-  async findAll(query: any) {
-    // Implementation will go here
-    return { orders: [] };
+  async findAll(query?: any) {
+    return this.orderRepository.find({
+      relations: ['client', 'freelancer', 'service']
+    });
   }
 
   async findAllByUser(userId: string) {
@@ -29,15 +38,11 @@ export class OrdersService {
     return { orders: [] };
   }
 
-  async findOne(id: string) {
-    // Implementation will go here
-    return { 
-      id,
-      client: 'client-id',
-      provider: 'provider-id',
-      orderNumber: `ORD-${id}`,
-      _id: id
-    };
+  async findOne(id: string): Promise<Order> {
+    return this.orderRepository.findOne({ 
+      where: { id },
+      relations: ['client', 'freelancer', 'service'] 
+    });
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto) {

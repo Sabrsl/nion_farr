@@ -17,7 +17,7 @@ import {
   FiCheckCircle
 } from 'react-icons/fi';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import fr from 'date-fns/locale/fr/index.js';
 import { toast } from 'react-toastify';
 
 interface OrderWithExtras extends Order {

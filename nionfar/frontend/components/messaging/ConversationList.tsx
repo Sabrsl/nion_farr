@@ -14,7 +14,7 @@ import {
 } from 'react-icons/fi';
 import { Conversation } from '../../types';
 import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import fr from 'date-fns/locale/fr/index.js';
 
 interface ConversationListProps {
   conversations: Conversation[];

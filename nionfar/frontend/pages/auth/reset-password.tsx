@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Typography, Paper, TextField, Button, Box, CircularProgress, Alert } from '@mui/material';
-import LockResetIcon from '@mui/icons-material/LockReset';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import LockResetIcon from '@mui/icons-material/LockReset.js';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline.js';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline.js';
 import PasswordStrengthMeter from '../../components/auth/PasswordStrengthMeter';
 
 // Page de réinitialisation de mot de passe

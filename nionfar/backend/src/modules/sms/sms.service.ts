@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Twilio } from 'twilio';
+// import * as twilio from 'twilio';
 
 interface SmsOptions {
   to: string;
@@ -9,17 +9,29 @@ interface SmsOptions {
 
 @Injectable()
 export class SmsService {
-  private client: Twilio;
+  // private client: twilio.Twilio;
 
   constructor(private configService: ConfigService) {
-    const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
-    const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
-    this.client = new Twilio(accountSid, authToken);
+    /*
+    this.client = twilio(
+      this.configService.get<string>('TWILIO_ACCOUNT_SID'),
+      this.configService.get<string>('TWILIO_AUTH_TOKEN')
+    );
+    */
+    console.log('Service SMS initialisé en mode simulation');
   }
 
   async sendSms(options: SmsOptions): Promise<void>;
   async sendSms(to: string, body: string): Promise<void>;
   async sendSms(toOrOptions: string | SmsOptions, body?: string): Promise<void> {
+    // Simulation d'envoi de SMS
+    if (typeof toOrOptions === 'string') {
+      console.log(`[SMS Simulation] Envoi à ${toOrOptions}: ${body}`);
+    } else {
+      console.log(`[SMS Simulation] Envoi à ${toOrOptions.to}: ${toOrOptions.message}`);
+    }
+    
+    /*
     try {
       if (typeof toOrOptions === 'string') {
         // Legacy format
@@ -38,9 +50,10 @@ export class SmsService {
         });
       }
     } catch (error) {
-      console.error('Error sending SMS:', error);
-      throw new Error('Failed to send SMS');
+      console.error('Erreur lors de l\'envoi du SMS:', error);
+      throw error;
     }
+    */
   }
 
   async sendVerificationCode(to: string, code: string): Promise<void> {

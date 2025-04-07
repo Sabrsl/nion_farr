@@ -1,6 +1,6 @@
 import React from 'react';
 import { format, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import fr from 'date-fns/locale/fr/index.js';
 import { RevenueData } from './RevenueChart';
 
 interface RevenueChartClientProps {

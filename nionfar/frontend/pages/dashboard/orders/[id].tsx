@@ -10,7 +10,7 @@ import { toast } from 'react-toastify';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import fr from 'date-fns/locale/fr/index.js';
 
 // Définir le type OrderWithExtras pour correspondre à celui attendu par le composant OrderDetails
 interface OrderWithExtras extends Order {

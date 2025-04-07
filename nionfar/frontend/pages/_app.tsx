@@ -17,6 +17,20 @@ const SafeHydrate = ({ children }) => {
 };
 
 function MyApp({ Component, pageProps }: AppProps) {
+  // Initialiser MSW uniquement côté client et en développement
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const initMockApi = async () => {
+        const initMSW = (await import('../src/msw-init')).default;
+        await initMSW();
+      };
+      
+      initMockApi().catch(err => 
+        console.error('Erreur lors de l\'initialisation des mocks:', err)
+      );
+    }
+  }, []);
+  
   // Mettre à jour le titre de la page uniquement côté client
   useEffect(() => {
     if (typeof window !== 'undefined') {

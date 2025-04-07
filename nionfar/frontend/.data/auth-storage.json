@@ -11,7 +11,13 @@
       "passwordLastChanged": "2025-04-06T09:09:42.099Z"
     }
   },
-  "verificationCodes": {},
+  "verificationCodes": {
+    "nouveau@example.com": {
+      "email": "nouveau@example.com",
+      "code": "877933",
+      "expiresAt": "2025-04-08T05:00:43.279Z"
+    }
+  },
   "passwordResetTokens": {},
-  "lastUpdated": "2025-04-06T09:09:42.100Z"
+  "lastUpdated": "2025-04-07T05:00:43.279Z"
 }

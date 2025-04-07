@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Container, Typography, Paper, CircularProgress, Button, Box, Alert } from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline.js';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline.js';
 
 export default function VerifyPage() {
   const router = useRouter();

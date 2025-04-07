@@ -19,7 +19,7 @@ import {
 } from 'react-icons/fi';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import fr from 'date-fns/locale/fr/index.js';
 import { motion } from 'framer-motion';
 import Head from 'next/head';
 import DisputeList from '../../../components/dashboard/DisputeList';

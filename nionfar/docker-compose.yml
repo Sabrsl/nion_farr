@@ -30,6 +30,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - mongodb
     environment:
       - NODE_ENV=development
       - PORT=3001
@@ -43,6 +44,8 @@ services:
       - DB_PASSWORD=postgres
       - DB_DATABASE=nionfar
       - DB_SYNC=true
+      # MongoDB
+      - MONGODB_URI=mongodb://mongodb:27017/nionfar
       # JWT
       - JWT_SECRET=your_jwt_secret_key_here
       - JWT_EXPIRES_IN=1d
@@ -51,6 +54,17 @@ services:
       # Redis
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+
+  # Service MongoDB
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=nionfar
+    restart: always
 
   # Service PostgreSQL
   postgres:
@@ -85,6 +99,20 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
+  # Service Mongo Express pour gérer MongoDB via une interface web
+  mongo-express:
+    image: mongo-express
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    restart: always
+
   # Service Mailhog pour le développement d'emails
   mailhog:
     image: mailhog/mailhog
@@ -95,4 +123,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  pgadmin_data: 
+  pgadmin_data:
+  mongodb_data: 
