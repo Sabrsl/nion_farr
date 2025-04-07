@@ -15,10 +15,11 @@ Le projet est divisé en deux parties principales :
 
 1. Connectez-vous à votre compte Render et créez un nouveau Web Service
 2. Connectez votre dépôt GitHub ou importez le code
-3. Configurez le service comme suit :
+3. Configurez le service manuellement comme suit :
    - **Nom** : nionfar-backend
    - **Root Directory** : nionfar/backend
-   - **Build Command** : `npm install && npm run build`
+   - **Runtime** : Node
+   - **Build Command** : `./render-build.sh`
    - **Start Command** : `npm run start:prod`
 
 4. Ajoutez les variables d'environnement suivantes (ou importez-les depuis le fichier .env.production) :
