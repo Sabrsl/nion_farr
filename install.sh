@@ -18,4 +18,8 @@ echo "Installing backend dependencies..."
 cd nionfar/backend
 npm install
 
+# Double-check NestJS CLI is installed
+echo "Ensuring NestJS CLI is available..."
+npm list @nestjs/cli || npm install @nestjs/cli
+
 echo "Backend dependencies installed successfully!" 
