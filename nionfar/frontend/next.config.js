@@ -3,11 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
   
   // Définir le mode de rendu sur "standalone" pour que tout soit généré à la demande
-  output: undefined,
+  output: 'standalone',
 
   // Désactiver l'optimisation statique
   images: {
-    domains: ['cdn.nionfar.sn', 'api.nionfar.sn'],
+    domains: ['nionfar.vercel.app', 'nionfar-backend.onrender.com', 'localhost'],
     formats: ['image/avif', 'image/webp'],
     unoptimized: true,
   },
@@ -21,10 +21,8 @@ const nextConfig = {
   
   // Configuration du compilateur
   compiler: {
-    // Suppression des console.log en production tout en gardant les erreurs et warnings
-    removeConsole: {
-      exclude: ['error', 'warn'],
-    },
+    // Suppression des console.log en production
+    removeConsole: process.env.NODE_ENV === 'production',
     // Configuration explicite du JSX runtime
     reactRemoveProperties: true,
     styledComponents: true,
@@ -43,12 +41,12 @@ const nextConfig = {
 
   // Désactivation complète des tests
   typescript: {
-    // ⚠️ Ignorer les erreurs TS pendant le build
-    ignoreBuildErrors: true,
+    // Désactiver la vérification TypeScript en production pour accélérer le build
+    ignoreBuildErrors: process.env.NODE_ENV === 'production',
   },
   eslint: {
-    // ⚠️ Ignorer les erreurs ESLint pendant le build
-    ignoreDuringBuilds: true,
+    // Désactiver ESLint en production pour accélérer le build
+    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
   },
   
   // Passer les erreurs de redirection de slash
@@ -56,19 +54,16 @@ const nextConfig = {
   skipMiddlewareUrlNormalize: true,
   
   // Configuration du proxy API pour les requêtes backend
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
-      },
-    ];
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_ENVIRONMENT: process.env.NEXT_PUBLIC_ENVIRONMENT,
   },
 
   // Forcer l'utilisation du runtime React
   experimental: {
     esmExternals: 'loose',
-    serverComponentsExternalPackages: []
+    serverComponentsExternalPackages: ['mongoose']
   },
 
   async headers() {
@@ -101,6 +96,20 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
         ],
+      },
+    ];
+  },
+
+  // Force le port à 3000 même si d'autres ports sont utilisés
+  server: {
+    port: 3000
+  },
+
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL + '/:path*',
       },
     ];
   },

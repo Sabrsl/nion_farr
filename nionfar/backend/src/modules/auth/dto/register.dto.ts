@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength, Matches, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsString, MinLength, Matches, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import { UserRole } from '../../users/enums/user-role.enum';
 
 export class RegisterDto {
   @ApiProperty({
@@ -60,4 +61,22 @@ export class RegisterDto {
   })
   @IsNotEmpty({ message: 'Vous devez accepter les conditions d\'utilisation' })
   termsAccepted: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Rôle de l\'utilisateur',
+    enum: UserRole,
+    default: UserRole.CLIENT,
+  })
+  @IsEnum(UserRole)
+  @IsOptional()
+  role?: UserRole;
+
+  @ApiPropertyOptional({
+    description: 'Indique si l\'utilisateur souhaite devenir freelance',
+    example: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isFreelancer?: boolean;
 } 

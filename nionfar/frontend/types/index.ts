@@ -23,20 +23,27 @@ export type NavItem = {
 
 export interface User {
   id: string;
-  name: string;
+  username?: string;
   email: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   avatar?: string;
-  phone?: string;
-  role: 'client' | 'provider' | 'admin';
-  isVerified: boolean;
+  role: 'client' | 'freelance' | 'provider' | 'admin';
+  isVerified?: boolean;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  isFreelancer?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
+  lastActivityAt?: string;
   bio?: string;
   location?: string;
   website?: string;
   languages?: string[];
   skills?: string[];
   joinedAt?: string;
-  createdAt?: string;
-  username?: string;
   rating?: number;
   level?: string;
   memberSince?: Date;

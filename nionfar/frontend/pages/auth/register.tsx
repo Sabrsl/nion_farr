@@ -3,8 +3,28 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { FiAlertCircle, FiCheckCircle, FiUser, FiBriefcase, FiMail, FiPhone, FiLock } from 'react-icons/fi';
 import { authService } from '../../services/authService';
+import { toast } from 'react-toastify';
 
 type UserRole = 'client' | 'freelance';
+
+// Fonction de validation de mot de passe
+function validatePassword(password: string): { valid: boolean; message?: string } {
+  if (!password) return { valid: false, message: 'Le mot de passe est requis' };
+  if (password.length < 8) return { valid: false, message: 'Le mot de passe doit contenir au moins 8 caractères' };
+  
+  // Vérifier les critères de complexité
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(password);
+  
+  if (!hasUpperCase) return { valid: false, message: 'Le mot de passe doit contenir au moins une lettre majuscule' };
+  if (!hasLowerCase) return { valid: false, message: 'Le mot de passe doit contenir au moins une lettre minuscule' };
+  if (!hasDigit) return { valid: false, message: 'Le mot de passe doit contenir au moins un chiffre' };
+  if (!hasSpecialChar) return { valid: false, message: 'Le mot de passe doit contenir au moins un caractère spécial' };
+  
+  return { valid: true };
+}
 
 const Register: React.FC = () => {
   const router = useRouter();
@@ -50,8 +70,19 @@ const Register: React.FC = () => {
     }
 
     // Validation du mot de passe
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.');
+    if (password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères.');
+      return false;
+    }
+    
+    // Validation des critères de complexité du mot de passe
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /[0-9]/.test(password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+    
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+      setError('Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.');
       return false;
     }
 
@@ -70,20 +101,85 @@ const Register: React.FC = () => {
     return true;
   }, [email, phone, password, confirmPassword, username, fullName, acceptTerms]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  // Gestionnaire d'erreurs amélioré
+  const handleApiError = (errorMessage: string) => {
+    console.error("📛 Erreur d'API traitée:", errorMessage);
+    
+    // Traiter les erreurs de réseau de manière spécifique
+    if (errorMessage.includes('impossible de communiquer') || 
+        errorMessage.includes('failed to fetch') || 
+        errorMessage.includes('network error') ||
+        errorMessage.toLowerCase().includes('cors')) {
+      
+      const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      setError(`Impossible de se connecter au serveur (${serverUrl}). Vérifiez que votre serveur backend est démarré.`);
+      console.error("🌐 URL backend configurée:", serverUrl);
+      
+      return;
+    }
+    
+    // Erreur CSRF
+    if (errorMessage.toLowerCase().includes('csrf')) {
+      setError("Erreur de sécurité (CSRF). Rafraîchissez la page et réessayez.");
+      return;
+    }
+    
+    // Erreur d'authentification 
+    if (errorMessage.toLowerCase().includes('unauthorized') || 
+        errorMessage.toLowerCase().includes('non autorisé')) {
+      setError("Authentification non autorisée. Veuillez réessayer.");
+      return;
+    }
+    
+    // Erreur par défaut
+    setError(errorMessage || "Une erreur inattendue est survenue");
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
     setError('');
-    setSuccess('');
-
-    // Valider le formulaire
-    if (!validateForm()) {
+    
+    console.log("Soumission du formulaire d'inscription avec:", {
+      username,
+      email: email || undefined,
+      phone: phone || undefined,
+      password: password ? "***" : undefined,
+      fullName,
+      acceptTerms,
+      role: userType
+    });
+    
+    // Vérifier les conditions d'inscription
+    if (!username || !password || !fullName) {
+      setError('Veuillez remplir tous les champs obligatoires');
       setIsLoading(false);
       return;
     }
 
+    if (!email && !phone) {
+      setError('Veuillez fournir un email ou un numéro de téléphone');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!acceptTerms) {
+      setError('Vous devez accepter les conditions d\'utilisation');
+      setIsLoading(false);
+      return;
+    }
+
+    // Vérifier la complexité du mot de passe
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      setError(passwordValidation.message || 'Mot de passe invalide');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      const response = await authService.register({
+      console.log("Tentative d'inscription via authService...");
+      const result = await authService.register({
         username,
         email: email || undefined,
         phone: phone || undefined,
@@ -92,33 +188,33 @@ const Register: React.FC = () => {
         acceptTerms,
         role: userType
       });
-
-      if (response.success) {
-        setSuccess('Inscription réussie!');
+      
+      if (result.success) {
+        console.log("✅ Inscription réussie:", result);
+        setIsLoading(false);
+        setSuccess('Inscription réussie ! Redirection...');
+        setError('');
         
-        if (phone) {
-          // Si un numéro de téléphone est fourni, redirection vers la page de vérification OTP
-          setTimeout(() => {
-            router.push({
-              pathname: '/auth/verify-otp',
-              query: { phone }
-            });
-          }, 1000);
-        } else {
-          // Redirection vers le tableau de bord après un court délai
-          setTimeout(() => {
-            const redirectPath = userType === 'client' ? '/dashboard/client' : '/dashboard/freelance';
-            router.push(redirectPath);
-          }, 1000);
-        }
+        toast.success('Inscription réussie ! Redirection...');
+        
+        // La redirection est gérée par authService
       } else {
-        setError(response.message || 'Une erreur est survenue lors de l\'inscription.');
+        console.error("❌ Échec de l'inscription:", result.error);
+        setIsLoading(false);
+        setSuccess('');
+        
+        // Afficher le message d'erreur
+        handleApiError(result.error || 'Une erreur est survenue lors de l\'inscription');
       }
-    } catch (error: any) {
-      console.error('Erreur d\'inscription:', error);
-      setError(error.message || 'Une erreur inattendue est survenue. Veuillez réessayer.');
-    } finally {
+    } catch (error) {
+      console.error("🔥 Exception lors de l'inscription:", error);
       setIsLoading(false);
+      setSuccess('');
+      
+      // Afficher le message d'exception
+      const errorMessage = error instanceof Error ? error.message : 'Une erreur inattendue est survenue';
+      handleApiError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -174,36 +270,35 @@ const Register: React.FC = () => {
         )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
-          {/* Type d'utilisateur */}
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => setUserType('client')}
-              className={`relative py-3 px-4 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                userType === 'client'
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center justify-center">
-                <FiUser className="h-5 w-5 mr-2" />
-                <span>Client</span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserType('freelance')}
-              className={`relative py-3 px-4 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                userType === 'freelance'
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center justify-center">
-                <FiBriefcase className="h-5 w-5 mr-2" />
-                <span>Freelance</span>
-              </div>
-            </button>
+          {/* Sélection du type d'utilisateur */}
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-medium mb-2">Je m'inscris en tant que</label>
+            <div className="flex space-x-4">
+              <button
+                type="button"
+                onClick={() => setUserType('client')}
+                className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-colors ${
+                  userType === 'client'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <FiUser className="text-2xl mb-2" />
+                <span className="text-sm font-medium">Client</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType('freelance')}
+                className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-colors ${
+                  userType === 'freelance'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <FiBriefcase className="text-2xl mb-2" />
+                <span className="text-sm font-medium">Freelance</span>
+              </button>
+            </div>
           </div>
 
           {/* Nom complet */}

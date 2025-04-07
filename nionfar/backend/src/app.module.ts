@@ -26,6 +26,7 @@ import { SmsModule } from './modules/sms/sms.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
 import { AppService } from './app.service';
 import { SecurityModule } from './security/security.module';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -116,6 +117,10 @@ import { SecurityModule } from './security/security.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
     },
   ],
 })

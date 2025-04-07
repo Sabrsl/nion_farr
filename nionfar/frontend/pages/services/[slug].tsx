@@ -36,7 +36,7 @@ import { RelatedServices } from '../../components/services/RelatedServices';
 import { CommanderButton } from '../../components/services/buttons';
 
 // Services
-import { serviceExplorerService } from '../../services/serviceExplorerService';
+import { serviceExplorer } from '../../services/serviceExplorerService';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Types
@@ -78,9 +78,6 @@ interface Service {
   updatedAt: string;
   queuedOrders?: number;
 }
-
-// Mock data for development
-import { mockServices } from '../../data/services';
 
 // Props type
 interface ServicePageProps {
@@ -144,7 +141,7 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
       // Vérification via le service dédié
       try {
         console.log('[ServicePage] Appel du service de vérification');
-        const result = await serviceExplorerService.canOrderService(service.id, user.id);
+        const result = await serviceExplorer.canOrderService(service.id, user.id);
         console.log('[ServicePage] Résultat vérification:', result);
         setCanOrder(result.canOrder);
         setCannotOrderReason(result.canOrder ? null : (result.message ?? null));
@@ -623,20 +620,12 @@ export const getServerSideProps: GetServerSideProps<ServicePageProps> = async (c
   
   console.log('[ServicePage][SSR] Récupération du service avec slug:', slug);
   
-  // En production, récupérer les données depuis l'API
-  // Ici, nous simulons avec des données mock
-  let service: Service | null = null;
-  const mockServicesList = [...mockServices] as unknown as Service[];
-  
   if (typeof slug === 'string') {
     try {
-      // Rechercher par slug
-      service = mockServicesList.find(s => s.slug === slug) || null;
+      // Récupérer le service depuis l'API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/services/${slug}`);
       
-      console.log('[ServicePage][SSR] Service trouvé:', !!service);
-      
-      // Si aucun service n'est trouvé, rediriger vers la page service-unavailable
-      if (!service) {
+      if (!response.ok) {
         console.log('[ServicePage][SSR] Service non trouvé, redirection vers service-unavailable');
         return {
           redirect: {
@@ -646,9 +635,12 @@ export const getServerSideProps: GetServerSideProps<ServicePageProps> = async (c
         };
       }
       
+      const data = await response.json();
+      const service = data.service;
+      
       // Vérifier que le service est actif
-      if (!service.isActive) {
-        console.log('[ServicePage][SSR] Service inactif, redirection vers service-unavailable');
+      if (!service || !service.isActive) {
+        console.log('[ServicePage][SSR] Service inactif ou non trouvé, redirection vers service-unavailable');
         return {
           redirect: {
             destination: '/service-unavailable?reason=inactive',
@@ -657,21 +649,18 @@ export const getServerSideProps: GetServerSideProps<ServicePageProps> = async (c
         };
       }
       
-      // À ce stade, le service n'est plus null (nous avons fait un return si c'était le cas)
-      const serviceData = service; // Variable non-null pour la référence dans le filtre
+      console.log('[ServicePage][SSR] Service trouvé:', !!service);
       
-      // Récupérer les services similaires (même catégorie ou tags similaires)
-      const relatedServices = mockServicesList
-        .filter(s => {
-          const serviceCategory = typeof serviceData.category === 'object' ? serviceData.category?.id : serviceData.category;
-          const currentCategory = typeof s.category === 'object' ? s.category?.id : s.category;
-          
-          return s.id !== serviceData.id && 
-            s.isActive && 
-            (currentCategory === serviceCategory || 
-              (s.tags && serviceData.tags && s.tags.some(tag => serviceData.tags?.includes(tag) ?? false)));
-        })
-        .slice(0, 4);
+      // Récupérer les services similaires via l'API
+      const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/services/related?categoryId=${
+        typeof service.category === 'object' ? service.category?.id : service.category
+      }&exclude=${service.id}&limit=4`);
+      
+      let relatedServices = [];
+      if (relatedResponse.ok) {
+        const relatedData = await relatedResponse.json();
+        relatedServices = relatedData.services || [];
+      }
       
       console.log('[ServicePage][SSR] Nombre de services liés trouvés:', relatedServices.length);
       

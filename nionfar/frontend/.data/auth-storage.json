@@ -16,8 +16,13 @@
       "email": "nouveau@example.com",
       "code": "877933",
       "expiresAt": "2025-04-08T05:00:43.279Z"
+    },
+    "badzagueye@gmail.com": {
+      "email": "badzagueye@gmail.com",
+      "code": "741195",
+      "expiresAt": "2025-04-08T14:20:24.998Z"
     }
   },
   "passwordResetTokens": {},
-  "lastUpdated": "2025-04-07T05:00:43.279Z"
+  "lastUpdated": "2025-04-07T14:20:24.998Z"
 }

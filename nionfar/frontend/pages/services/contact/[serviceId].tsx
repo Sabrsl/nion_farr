@@ -183,18 +183,34 @@ const ServiceContactPage: NextPage<ContactPageProps> = ({ service }) => {
         has_attachment: !!data.attachFile
       });
       
-      // Send message to the freelancer
-      // In a real app, you would call your API here
-      // await messageService.sendMessage({
-      //   recipientId: freelancer.id,
-      //   subject: data.subject,
-      //   message: data.message,
-      //   serviceId: data.serviceRelated ? service.id : undefined,
-      //   attachments: data.attachFile ? [data.attachFile] : undefined
-      // });
+      // Send message to the freelancer via API
+      const formData = new FormData();
+      formData.append('recipientId', freelancer.id);
+      formData.append('subject', data.subject);
+      formData.append('message', data.message);
       
-      // Simulate API call with delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (data.serviceRelated) {
+        formData.append('serviceId', service.id);
+      }
+      
+      if (data.phoneNumber) {
+        formData.append('phoneNumber', data.phoneNumber);
+      }
+      
+      if (data.attachFile && data.attachFile.length > 0) {
+        formData.append('attachment', data.attachFile[0]);
+      }
+      
+      // Appel API pour envoyer le message
+      const response = await fetch('/api/messages/send', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de l\'envoi du message');
+      }
       
       // Success handling
       setSubmitSuccess(true);
@@ -216,36 +232,6 @@ const ServiceContactPage: NextPage<ContactPageProps> = ({ service }) => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // For demonstration purposes
-  const mockService = {
-    id: '123',
-    slug: 'creation-site-web',
-    title: 'Création de site web professionnel',
-    description: 'Je crée des sites web modernes et responsive pour votre entreprise.',
-    price: 150000,
-    image: '/images/services/web-design.jpg',
-    rating: 4.7,
-    totalReviews: 48,
-    deliveryTime: 7,
-    category: 'Design & Développement',
-    providerId: '456'
-  };
-
-  const mockFreelancer = {
-    id: '456',
-    username: 'amadou-dev',
-    name: 'Amadou Diallo',
-    avatar: '/images/freelancers/amadou.jpg',
-    specialty: 'Développeur Web Full Stack',
-    rating: 4.8,
-    totalReviews: 72,
-    address: 'Dakar, Sénégal',
-    memberSince: '2022-03-15',
-    responseTime: 'environ 1 heure',
-    completedOrders: 64,
-    languages: ['Français', 'Anglais', 'Wolof']
   };
 
   if (isAuthLoading || !service || !freelancer) {
@@ -782,39 +768,38 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
   
   try {
-    // In a real app, fetch the service data from your API
-    // const response = await api.get(`/services/${serviceId}`);
-    // const service = response.data;
+    // Récupérer le service depuis l'API
+    const serviceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/services/${serviceId}`);
     
-    // For demo purposes, create a mock service
-    const service = {
-      id: serviceId,
-      title: "Création de site web professionnel sur mesure",
-      slug: "creation-site-web-professionnel",
-      image: "/images/services/website-design.jpg",
-      description: "Je crée des sites web professionnels responsive et optimisés SEO qui correspondent parfaitement à l'image de votre entreprise.",
-      price: 150000,
-      deliveryTime: 7,
-      rating: 4.8,
-      totalReviews: 42,
-      seller: {
-        id: "1",
-        name: "Samba Diallo",
-        username: "sambadiallo",
-        avatar: "/images/avatars/avatar-1.jpg",
-        specialty: "Développeur Web & Designer UI/UX",
-        rating: 4.9,
-        totalReviews: 57,
-        completedOrders: 124,
-        memberSince: "2021-05-15T10:00:00Z",
-        responseTime: "~2h",
-        address: "Dakar, Sénégal"
-      }
+    if (!serviceResponse.ok) {
+      return { notFound: true };
+    }
+    
+    const serviceData = await serviceResponse.json();
+    const service = serviceData.service;
+    
+    // Récupérer les informations détaillées sur le vendeur
+    const sellerResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/users/${service.provider?.id}`);
+    let seller = service.provider;
+    
+    if (sellerResponse.ok) {
+      const sellerData = await sellerResponse.json();
+      seller = {
+        ...seller,
+        ...sellerData.user,
+        responseTime: "~2h", // Valeur par défaut si non fournie par l'API
+      };
+    }
+    
+    // Construire l'objet service avec les informations du vendeur
+    const extendedService = {
+      ...service,
+      seller
     };
     
     return {
       props: {
-        service
+        service: extendedService
       }
     };
   } catch (error) {

@@ -20,10 +20,100 @@ import {
   FiX
 } from 'react-icons/fi';
 import Layout from '../components/Layout';
+import axios from 'axios';
+
+// Service pour récupérer les statistiques de la plateforme
+const useStatsData = () => {
+  const [stats, setStats] = useState({
+    activeClients: 0,
+    paymentsToFreelancers: 0,
+    satisfactionRate: 98 // Valeur fixe comme demandé
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Fonction pour récupérer les statistiques
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        // Appel à l'API pour récupérer les statistiques de la plateforme
+        const response = await axios.get('/api/admin/stats/platform');
+        
+        if (response.data && response.data.stats) {
+          const { visitors, payments, satisfaction } = response.data.stats;
+          
+          // Mettre à jour les statistiques
+          setStats({
+            activeClients: visitors || 0,
+            paymentsToFreelancers: payments || 0,
+            satisfactionRate: satisfaction || 98 // Valeur par défaut de 98% si non disponible
+          });
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des statistiques:", error);
+        // En cas d'erreur, essayer de récupérer les statistiques individuellement
+        fetchStatsFallback();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Fonction de fallback qui fait des appels API séparés pour chaque stat
+    const fetchStatsFallback = async () => {
+      try {
+        // Récupérer les visiteurs
+        let activeClients = 0;
+        try {
+          const visitorsResponse = await axios.get('/api/admin/stats/visitors');
+          if (visitorsResponse.data && typeof visitorsResponse.data.count === 'number') {
+            activeClients = visitorsResponse.data.count;
+          }
+        } catch (err) {
+          console.error("Erreur lors de la récupération du nombre de visiteurs:", err);
+        }
+        
+        // Récupérer les paiements
+        let paymentsToFreelancers = 0;
+        try {
+          const paymentsResponse = await axios.get('/api/admin/stats/payments');
+          if (paymentsResponse.data && typeof paymentsResponse.data.total === 'number') {
+            paymentsToFreelancers = paymentsResponse.data.total;
+          }
+        } catch (err) {
+          console.error("Erreur lors de la récupération des paiements:", err);
+        }
+        
+        // Mettre à jour les statistiques avec les données récupérées
+        setStats({
+          activeClients,
+          paymentsToFreelancers,
+          satisfactionRate: 98 // Valeur fixe comme demandé
+        });
+      } catch (error) {
+        console.error("Erreur lors du fallback de statistiques:", error);
+      }
+    };
+    
+    fetchStats();
+  }, []);
+  
+  return { stats, isLoading };
+};
 
 const DevenirFreelance: NextPage = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { stats, isLoading } = useStatsData();
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString() + "+ FCFA";
+  };
+
+  // Format number with plus sign
+  const formatNumber = (num: number) => {
+    return num.toLocaleString() + "+";
+  };
 
   // Handle scroll for header transparency
   useEffect(() => {
@@ -130,7 +220,11 @@ const DevenirFreelance: NextPage = () => {
                     <FiUsers className="w-8 h-8" />
                   </div>
                   <p className="text-4xl font-bold text-indigo-600 mb-2 flex items-center">
-                    5000+
+                    {isLoading ? (
+                      <span className="inline-block w-20 h-8 bg-indigo-100 animate-pulse rounded"></span>
+                    ) : (
+                      formatNumber(stats.activeClients)
+                    )}
                     <span className="ml-2 text-base font-normal text-indigo-400">chaque mois</span>
                   </p>
                   <p className="text-gray-600">Clients actifs sur la plateforme</p>
@@ -149,7 +243,11 @@ const DevenirFreelance: NextPage = () => {
                     <FiDollarSign className="w-8 h-8" />
                   </div>
                   <p className="text-4xl font-bold text-indigo-600 mb-2 flex items-center">
-                    10M+
+                    {isLoading ? (
+                      <span className="inline-block w-20 h-8 bg-indigo-100 animate-pulse rounded"></span>
+                    ) : (
+                      formatCurrency(stats.paymentsToFreelancers)
+                    )}
                     <span className="ml-2 text-base font-normal text-indigo-400">FCFA</span>
                   </p>
                   <p className="text-gray-600">Payés aux freelances en 2023</p>
@@ -168,7 +266,11 @@ const DevenirFreelance: NextPage = () => {
                     <FiAward className="w-8 h-8" />
                   </div>
                   <p className="text-4xl font-bold text-indigo-600 mb-2 flex items-center">
-                    98%
+                    {isLoading ? (
+                      <span className="inline-block w-12 h-8 bg-indigo-100 animate-pulse rounded"></span>
+                    ) : (
+                      `${stats.satisfactionRate}%`
+                    )}
                     <span className="ml-2 text-base font-normal text-indigo-400">de satisfaction</span>
                   </p>
                   <p className="text-gray-600">Clients satisfaits de leurs freelances</p>

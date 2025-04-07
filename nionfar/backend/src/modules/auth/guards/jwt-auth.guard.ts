@@ -38,9 +38,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       }
     }
     
-    // Logging pour suivi de sécurité
-    console.log(`[AUTH] Utilisateur ${user.email} (${user.role}) a accédé à ${context.getClass().name}/${context.getHandler().name}`);
-    
     return user;
   }
 } 

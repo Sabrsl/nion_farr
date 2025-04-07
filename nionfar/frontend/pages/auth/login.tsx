@@ -49,60 +49,19 @@ const LoginPage: NextPage = () => {
       // Connexion via le service d'authentification
       const response = await authService.login(
         { emailOrPhone: email, password, rememberMe },
-        false, // Désactiver la redirection automatique
-        redirectUrl
+        true // Activer la redirection automatique
       );
 
       if (response.success) {
-        setMessage('Connexion réussie!');
-        
-        if (response.requiresOtp) {
-          // Rediriger vers la vérification OTP si nécessaire
-          router.push({
-            pathname: '/auth/verify-otp',
-            query: { phone: email, redirectUrl }
-          });
-          return;
-        }
-
-        // Stockage de l'utilisateur et redirection
-        if (typeof window !== 'undefined' && response.user) {
-          // Stocker l'utilisateur dans localStorage
-          localStorage.setItem('nionfarUser', JSON.stringify(response.user));
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[LoginPage] Utilisateur stocké dans localStorage:', {
-              id: response.user.id,
-              role: response.user.role,
-              redirectUrl
-            });
-          }
-
-          // Redirection après un court délai
-          setTimeout(() => {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[LoginPage] Redirection vers:', redirectUrl);
-            }
-            window.location.href = redirectUrl;
-          }, REDIRECT_DELAY);
-        } else {
-          // Fallback à la redirection via le router Next.js
-          router.push(redirectUrl);
-        }
+        // Authentification réussie - la redirection est gérée par le service
+        setMessage('Connexion réussie! Redirection en cours...');
       } else {
-        // Gestion des erreurs de connexion
-        setError(response.message || 'Identifiants incorrects');
-        
-        if (response.requiresOtp) {
-          router.push({
-            pathname: '/auth/verify-otp',
-            query: { phone: email, redirectUrl }
-          });
-        }
+        // Erreur d'authentification
+        setError(response.error || 'Identifiants incorrects');
       }
-    } catch (error: any) {
-      console.error('[LoginPage] Erreur lors de la connexion:', error);
-      setError(error.message || 'Une erreur est survenue lors de la connexion');
+    } catch (error) {
+      console.error('Erreur de connexion:', error);
+      setError('Une erreur est survenue lors de la connexion');
     } finally {
       setLoading(false);
     }

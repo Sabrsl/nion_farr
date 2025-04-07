@@ -107,21 +107,72 @@ export class AuthService {
   }
 
   async register(registerDto: any) {
-    // TODO: Implémenter l'enregistrement avec la base de données
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    const verificationToken = uuidv4();
-    
-    const user = {
-      id: uuidv4(),
-      email: registerDto.email,
-      password: hashedPassword,
-      emailVerificationToken: verificationToken,
-      isEmailVerified: false,
-    };
-    
-    await this.emailService.sendVerificationEmail(user.email, verificationToken);
-    
-    return { message: 'Inscription réussie. Veuillez vérifier votre email.' };
+    try {
+      this.logger.log(`Inscription d'un nouvel utilisateur: ${registerDto.email}`);
+      
+      // Vérifier si l'utilisateur existe déjà
+      const existingUser = await this.usersRepository.findOne({ 
+        where: { email: registerDto.email } 
+      });
+      
+      if (existingUser) {
+        throw new ConflictException('Cet email est déjà utilisé');
+      }
+      
+      // Hasher le mot de passe
+      const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+      const verificationToken = uuidv4();
+      
+      // Créer une nouvelle entité utilisateur avec les données fournies
+      const newUser = new User({
+        email: registerDto.email,
+        username: registerDto.username,
+        firstName: registerDto.firstName,
+        lastName: registerDto.lastName,
+        password: hashedPassword,
+        emailVerificationToken: verificationToken,
+        isEmailVerified: false,
+        role: registerDto.role?.toLowerCase() || 'client',
+        isFreelancer: registerDto.isFreelancer || registerDto.role?.toLowerCase() === 'freelancer'
+      });
+      
+      // Sauvegarder l'utilisateur dans la base de données
+      const savedUser = await this.usersRepository.save(newUser);
+      this.logger.log(`Utilisateur créé avec succès: ${savedUser.id}`);
+      
+      // Essayer d'envoyer un email de vérification
+      try {
+        await this.emailService.sendVerificationEmail(savedUser.email, verificationToken);
+        this.logger.log(`Email de vérification envoyé à: ${savedUser.email}`);
+      } catch (emailError) {
+        this.logger.error(`Erreur lors de l'envoi de l'email: ${emailError.message}`);
+        // On continue malgré l'erreur d'email
+      }
+      
+      // Générer un token pour l'utilisateur
+      const payload = { 
+        sub: savedUser.id, 
+        email: savedUser.email,
+        role: savedUser.role
+      };
+      
+      const token = this.jwtService.sign(payload);
+      
+      // Préparer la réponse sans données sensibles
+      const { password, emailVerificationToken, ...userResponse } = savedUser;
+      
+      return { 
+        message: 'Inscription réussie',
+        user: userResponse,
+        token
+      };
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'inscription: ${error.message}`);
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new BadRequestException(error.message || "Une erreur est survenue lors de l'inscription");
+    }
   }
 
   async verifyEmail(token: string) {

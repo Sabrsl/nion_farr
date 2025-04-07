@@ -15,10 +15,26 @@ import {
   FiX 
 } from 'react-icons/fi';
 import Layout from '../components/Layout';
+import { categories } from '../data/categories';
+import axios from 'axios';
+
+interface CategoryWithCount {
+  id: string;
+  name: string;
+  slug: string;
+  count: number;
+  icon?: string;
+  image?: string;
+  description?: string;
+}
 
 const Home: NextPage = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [categoriesWithCount, setCategoriesWithCount] = useState<CategoryWithCount[]>(
+    categories.map(cat => ({ ...cat, count: 0 }))
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,6 +43,68 @@ const Home: NextPage = () => {
     
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Récupérer le nombre de services par catégorie depuis l'API
+  useEffect(() => {
+    const fetchCategoriesCount = async () => {
+      try {
+        setIsLoading(true);
+        // Appel à l'API pour récupérer le nombre de services par catégorie
+        const response = await axios.get('/api/services/categories/count');
+        
+        if (response.data && response.data.categories) {
+          // Mettre à jour les catégories avec les comptages
+          const updatedCategories = categories.map(category => {
+            const categoryData = response.data.categories.find(
+              (c: any) => c.id === category.id || c.slug === category.slug
+            );
+            
+            return {
+              ...category,
+              count: categoryData ? categoryData.count : 0
+            };
+          });
+          
+          setCategoriesWithCount(updatedCategories);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération du nombre de services par catégorie:", error);
+        // En cas d'erreur, essayer de faire un comptage côté client
+        fetchCategoryCountsFallback();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Fonction de fallback qui fait un appel API pour chaque catégorie
+    const fetchCategoryCountsFallback = async () => {
+      try {
+        const updatedCategories = [...categories];
+        
+        // Pour chaque catégorie, faire un appel API séparé
+        for (let i = 0; i < categories.length; i++) {
+          const category = categories[i];
+          try {
+            const response = await axios.get(`/api/services/category/${category.id}?countOnly=true`);
+            if (response.data && typeof response.data.count === 'number') {
+              updatedCategories[i] = {
+                ...category,
+                count: response.data.count
+              };
+            }
+          } catch (err) {
+            console.error(`Erreur lors de la récupération du nombre pour la catégorie ${category.name}:`, err);
+          }
+        }
+        
+        setCategoriesWithCount(updatedCategories);
+      } catch (error) {
+        console.error("Erreur lors du fallback de comptage:", error);
+      }
+    };
+    
+    fetchCategoriesCount();
   }, []);
 
   return (
@@ -236,7 +314,7 @@ const Home: NextPage = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 px-4 sm:px-0"
           >
-            {categories.map((category, index) => (
+            {categoriesWithCount.map((category, index) => (
               <motion.div
                 key={category.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -267,7 +345,13 @@ const Home: NextPage = () => {
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1">
                       {category.name}
                     </h3>
-                    <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">{category.count || '100+'}+ services</p>
+                    <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
+                      {isLoading ? (
+                        <span className="inline-block w-8 h-4 bg-gray-200 animate-pulse rounded"></span>
+                      ) : (
+                        `${category.count || 0}+ services`
+                      )}
+                    </p>
                     <div className="flex items-center text-indigo-600 text-xs sm:text-sm font-medium">
                       Voir les services <FiArrowRight className="ml-1 sm:ml-2 group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -640,17 +724,5 @@ const Home: NextPage = () => {
     </Layout>
   );
 };
-
-// Sample categories data
-const categories = [
-  { id: 1, name: 'Design graphique', slug: 'design-graphique', count: 250, icon: '🎨', image: '/img/categories/placeholder0.jpg' },
-  { id: 2, name: 'Développement web', slug: 'developpement-web', count: 320, icon: '💻', image: '/img/categories/placeholder1.jpg' },
-  { id: 3, name: 'Rédaction & traduction', slug: 'redaction', count: 180, icon: '✍️', image: '/img/categories/placeholder2.jpg' },
-  { id: 4, name: 'Marketing digital', slug: 'marketing-digital', count: 210, icon: '📱', image: '/img/categories/placeholder3.jpg' },
-  { id: 5, name: 'Montage vidéo', slug: 'montage-video', count: 150, icon: '🎬', image: '/img/categories/placeholder4.jpg' },
-  { id: 6, name: 'Voix off', slug: 'voix-off', count: 90, icon: '🎤', image: '/img/categories/placeholder5.jpg' },
-  { id: 7, name: 'SEO', slug: 'seo', count: 120, icon: '🔍', image: '/img/categories/placeholder6.jpg' },
-  { id: 8, name: 'Coaching', slug: 'coaching', count: 80, icon: '🏆', image: '/img/categories/placeholder7.jpg' },
-];
 
 export default Home; 

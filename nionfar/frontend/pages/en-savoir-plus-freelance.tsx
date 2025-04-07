@@ -21,6 +21,7 @@ import {
   FiX,
   FiMenu
 } from 'react-icons/fi';
+import axios from 'axios';
 
 // Définition des types
 interface Advantage {
@@ -38,6 +39,7 @@ interface Tip {
 const EnSavoirPlusFreelance = () => {
   const [scrollY, setScrollY] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [freelancerCount, setFreelancerCount] = useState(0);
 
   // Liste des avantages
   const advantages: Advantage[] = [
@@ -136,6 +138,22 @@ const EnSavoirPlusFreelance = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
+  }, []);
+
+  useEffect(() => {
+    // Fonction pour récupérer le nombre de freelances depuis l'API
+    const fetchFreelancerCount = async () => {
+      try {
+        const response = await axios.get('/api/users/stats/count?role=provider');
+        if (response.data && response.data.count) {
+          setFreelancerCount(response.data.count);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération du nombre de freelances:', error);
+      }
+    };
+
+    fetchFreelancerCount();
   }, []);
 
   return (
@@ -654,7 +672,7 @@ const EnSavoirPlusFreelance = () => {
               >
                 <div className="flex items-center text-indigo-200">
                   <FiUsers className="mr-2" />
-                  <span>+10 000 freelances</span>
+                  <span>{freelancerCount > 0 ? `+${freelancerCount}` : 'Des milliers de'} freelances</span>
                 </div>
                 <div className="flex items-center text-indigo-200">
                   <FiShield className="mr-2" />

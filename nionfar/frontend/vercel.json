@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "buildCommand": "cd nionfar/frontend && NODE_OPTIONS='--max_old_space_size=4096' npm install --legacy-peer-deps && npm install @mui/icons-material react-toastify react-dropzone @headlessui/react classnames resend mongodb bcryptjs msw --save && NEXT_DISABLE_ESLINT=1 NODE_ENV=production npm run build",
+  "outputDirectory": "nionfar/frontend/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://nionfar-backend.onrender.com/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://nionfar-backend.onrender.com/api",
+    "NEXT_PUBLIC_APP_URL": "https://nionfar.vercel.app",
+    "NEXT_PUBLIC_ENVIRONMENT": "production",
+    "NEXT_DISABLE_ESLINT": "1",
+    "NODE_ENV": "production"
+  }
+} 

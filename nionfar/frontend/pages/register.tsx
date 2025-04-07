@@ -105,6 +105,18 @@ const Register: NextPage = () => {
       setIsLoading(false);
       return;
     }
+    
+    // Validation des critères de complexité du mot de passe
+    const hasUpperCase = /[A-Z]/.test(formData.password);
+    const hasLowerCase = /[a-z]/.test(formData.password);
+    const hasNumbers = /[0-9]/.test(formData.password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(formData.password);
+    
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+      setErrorMessage('Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // Préparation des données pour l'inscription en adaptant au format attendu par le backend
@@ -133,26 +145,10 @@ const Register: NextPage = () => {
       });
 
       if (response.success) {
-        if (registrationData.phoneNumber) {
-          // Si un numéro de téléphone est fourni, redirection vers la page de vérification OTP
-          router.push({
-            pathname: '/auth/verify-otp',
-            query: { phone: registrationData.phoneNumber }
-          });
-        } else {
-          // Afficher un message de succès avant la redirection
-          setSuccessMessage(response.message || 'Inscription réussie! Vous allez être redirigé...');
-          
-          // Définir un délai pour la redirection pour que l'utilisateur voie le message
-          setTimeout(() => {
-            // Redirection vers le tableau de bord approprié
-            const dashboardPath = formData.accountType === 'client' ? '/dashboard/client' : '/dashboard';
-            console.log('Redirection vers:', dashboardPath);
-            router.push(dashboardPath);
-          }, 2000);
-        }
+        setSuccessMessage('Inscription réussie! Vous allez être redirigé...');
+        // L'utilisateur sera redirigé automatiquement par le service d'auth
       } else {
-        setErrorMessage(response.message || 'Une erreur est survenue lors de l\'inscription.');
+        setErrorMessage(response.error || 'Une erreur est survenue lors de l\'inscription');
       }
     } catch (error: any) {
       console.error('Erreur d\'inscription:', error);

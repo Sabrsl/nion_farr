@@ -19,14 +19,16 @@ import { Button } from '../../components/ui/Button';
 import { Avatar } from '../../components/ui/Avatar';
 
 // Services
-import { serviceExplorerService } from '../../services/serviceExplorerService';
+import { serviceExplorer } from '../../services/serviceExplorerService';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Types
-import { Service } from '../../types';
+import { Service, User } from '../../types';
 
-// Mock data for development
-import { mockServices } from '../../data/services';
+// Type personnalisé pour étendre User avec phone
+interface ExtendedUser extends User {
+  phone?: string;
+}
 
 // Constants
 const PAYMENT_METHODS = [
@@ -43,7 +45,8 @@ interface CheckoutPageProps {
 
 const CheckoutPage: NextPage<CheckoutPageProps> = ({ service }) => {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth();
+  const user = authUser as ExtendedUser | null;
   
   // États du checkout
   const [isLoading, setIsLoading] = useState(true);
@@ -107,7 +110,7 @@ const CheckoutPage: NextPage<CheckoutPageProps> = ({ service }) => {
 
       // Vérification via le service dédié
       try {
-        const result = await serviceExplorerService.canOrderService(service.id, user.id);
+        const result = await serviceExplorer.canOrderService(service.id, user.id);
         setCanOrder(result.canOrder);
         setCannotOrderReason(result.canOrder ? null : (result.message ?? null));
       } catch (error) {
@@ -158,35 +161,43 @@ const CheckoutPage: NextPage<CheckoutPageProps> = ({ service }) => {
     
     setIsProcessing(true);
     
-    // Simule un paiement pour la démo
     try {
-      // Log de débogage
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Traitement du paiement', {
+      // Appel à l'API pour traiter le paiement
+      const response = await fetch('/api/payments/process-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           serviceId: service?.id,
           userId: user?.id,
-          amount: service?.price,
           paymentMethod,
           phoneNumber,
-          specialRequirements
-        });
+          specialRequirements,
+          price: service?.price,
+          serviceName: service?.title,
+          providerId: service?.provider?.id,
+          providerName: service?.provider?.name || 'Prestataire',
+          deliveryTime: service?.deliveryTime || 3
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors du traitement du paiement');
       }
       
-      // Simule un traitement de paiement
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const data = await response.json();
       
-      // Génère un ID de commande (dans une vraie app, ce serait fait côté serveur)
-      const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      
-      // Redirige vers la page de succès après paiement
-      window.location.href = `/order/${orderId}?status=success`;
+      // Rediriger vers la page de succès avec l'ID de commande retourné par l'API
+      window.location.href = `/order/${data.orderId}?status=success`;
       
     } catch (error) {
       console.error("Erreur lors du traitement du paiement:", error);
       setIsProcessing(false);
       alert("Une erreur est survenue lors du traitement du paiement. Veuillez réessayer.");
     }
-  }, [isProcessing, canOrder, validatePhoneNumber, phoneNumber, service, user, paymentMethod, specialRequirements]);
+  }, [isProcessing, canOrder, validatePhoneNumber, phoneNumber, service, paymentMethod, specialRequirements, user]);
 
   // Rendu pour le cas où le service n'existe pas
   if (!service) {
@@ -539,14 +550,12 @@ const OrderSummary: React.FC<{ service: Service }> = ({ service }) => {
 export const getServerSideProps: GetServerSideProps<CheckoutPageProps> = async (context) => {
   const { serviceId } = context.params || {};
   
-  // En production, récupérer les données depuis l'API
-  // Ici, nous simulons avec des données mock
+  // Récupérer les données depuis l'API
   let service: Service | null = null;
-  const mockServicesList = [...mockServices];
   
   if (typeof serviceId === 'string') {
     // Rechercher par ID
-    service = mockServicesList.find(s => s.id === serviceId) || null;
+    service = await serviceExplorer.getServiceById(serviceId);
   }
   
   return {

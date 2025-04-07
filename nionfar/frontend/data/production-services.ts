@@ -1,3 +1,9 @@
+/**
+ * @deprecated Ce fichier est obsolète et ne doit plus être utilisé.
+ * Toutes les données de services doivent désormais provenir de l'API via serviceExplorer.
+ * Voir /services/serviceExplorerService.ts pour les méthodes à utiliser.
+ */
+
 import { Service } from '../types';
 import { categories } from './categories';
 

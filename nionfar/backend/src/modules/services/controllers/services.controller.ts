@@ -67,4 +67,16 @@ export class ServicesController {
   findByCategory(@Param('category') category: string) {
     return this.servicesService.findByCategory(category);
   }
+
+  @Get('categories/count')
+  @Public()
+  async getCategoriesCount() {
+    return this.servicesService.getCategoriesCount();
+  }
+
+  @Get('stats')
+  @Public()
+  async getServiceStats() {
+    return this.servicesService.getServiceStats();
+  }
 } 

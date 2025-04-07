@@ -24,14 +24,15 @@ import Link from 'next/link';
 import Layout from '../components/layout/Layout';
 import { FilterSidebar } from '../components/explorer/FilterSidebar';
 import { ServiceGrid } from '../components/explorer/ServiceGrid';
-import { serviceExplorerService } from '../services/serviceExplorerService';
+import { serviceExplorer } from '../services/serviceExplorerService';
+import axios from 'axios';
+import { BiSearch } from 'react-icons/bi';
 
 // Types
 import { Category, Service, FilterOptions } from '../types';
 
-// Mock data for development
+// Categories data as fallback
 import { categories } from '../data/categories';
-import { mockServices } from '../data/services';
 
 // Vérifier si la catégorie d'un service est un objet ou une chaîne de caractères
 const getCategoryId = (category: any): string => {
@@ -60,49 +61,159 @@ const Explorer: NextPage = () => {
   const [sortBy, setSortBy] = useState<'popular' | 'newest' | 'price-low' | 'price-high'>('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statsData, setStatsData] = useState({
+    avgRating: 0,
+    monthlyOrders: '0',
+    avgDelivery: '0 jours',
+    avgPrice: '0 FCFA',
+    freelancersCount: '0',
+    clientsCount: '0',
+    totalPayments: '0'
+  });
 
   // Stats memoization pour éviter des recalculs inutiles
   const stats = useMemo(() => {
     return {
-      avgRating: 4.8,
-      monthlyOrders: '2500+',
-      avgDelivery: '3 jours',
-      avgPrice: '22 000 FCFA',
-      totalServices: filteredServices.length
+      ...statsData,
+      totalServices: totalCount || filteredServices.length
     };
-  }, [filteredServices.length]);
+  }, [filteredServices.length, totalCount, statsData]);
 
+  // Fetch initial data
   useEffect(() => {
-    let isMounted = true;
-    const fetchServices = async () => {
+    fetchServices();
+    fetchCategories();
+    fetchStats();
+  }, []);
+
+  // Fetch services
+  const fetchServices = async () => {
+    try {
       setIsLoading(true);
+      // Use the new API for fetching services
+      const response = await axios.get('/api/services', {
+        params: {
+          ...filters,
+          search: searchQuery,
+          category: selectedCategory,
+          sort: sortBy
+        }
+      });
+
+      if (response.data && response.data.services) {
+        setServices(response.data.services);
+        setFilteredServices(response.data.services);
+        setTotalCount(response.data.total || response.data.services.length);
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      setServices([]);
+      setFilteredServices([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get('/api/services/categories');
+      if (response.data && response.data.categories) {
+        setFeaturedCategories(response.data.categories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Fallback to local categories if API fails
+      setFeaturedCategories(categories);
+    }
+  };
+
+  // Fetch statistics
+  const fetchStats = async () => {
+    try {
+      // Récupérer les statistiques des services
+      const response = await axios.get('/api/services/stats');
+      
+      // Récupérer les statistiques de la plateforme
+      let platformStats = {};
       try {
-        // En production, utiliser serviceExplorerService.getAllPublicServices()
-        // Pour la démo, filtrer les services mock
-        const publicServices = mockServices.filter(service => service.isActive);
-        
-        // Vérifiez si le composant est toujours monté avant de mettre à jour l'état
-        if (isMounted) {
-          setServices(publicServices);
-          setFilteredServices(publicServices);
-          setFeaturedCategories(categories.slice(0, 4));
-          setIsLoading(false);
+        const platformResponse = await axios.get('/api/admin/stats/platform');
+        if (platformResponse.data && platformResponse.data.stats) {
+          platformStats = {
+            freelancersCount: platformResponse.data.stats.freelancersCount ? 
+              `${platformResponse.data.stats.freelancersCount.toLocaleString()}+` : '0',
+            clientsCount: platformResponse.data.stats.clientsCount ?
+              `${platformResponse.data.stats.clientsCount.toLocaleString()}+` : '0',
+            totalPayments: platformResponse.data.stats.payments ? 
+              `${Math.round(platformResponse.data.stats.payments / 1000).toLocaleString()}M+ FCFA` : '0 FCFA'
+          };
         }
       } catch (error) {
-        console.error('Erreur lors de la récupération des services:', error);
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        console.error('Error fetching platform stats:', error);
+        // Fallback pour les stats de plateforme
+        platformStats = {
+          freelancersCount: '0',
+          clientsCount: '0',
+          totalPayments: '0 FCFA'
+        };
       }
-    };
+      
+      if (response.data && response.data.stats) {
+        const { avgRating, monthlyOrders, avgDeliveryTime, avgPrice } = response.data.stats;
+        setStatsData({
+          avgRating: avgRating || 0,
+          monthlyOrders: (monthlyOrders || 0) + '+',
+          avgDelivery: `${avgDeliveryTime || 0} jours`,
+          avgPrice: `${(avgPrice || 0).toLocaleString()} FCFA`,
+          // Utiliser les valeurs de platformStats ou les valeurs par défaut
+          freelancersCount: (platformStats as any)?.freelancersCount || '0',
+          clientsCount: (platformStats as any)?.clientsCount || '0',
+          totalPayments: (platformStats as any)?.totalPayments || '0 FCFA'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      // En cas d'erreur, garder les valeurs par défaut
+    }
+  };
 
+  // Récupérer le nombre de clients
+  const fetchClientsCount = async (): Promise<string> => {
+    try {
+      const response = await axios.get('/api/users/stats/count?role=client');
+      if (response.data && response.data.count) {
+        return `${response.data.count.toLocaleString()}+`;
+      }
+      return '0';
+    } catch (error) {
+      console.error('Error fetching client count:', error);
+      return '0';
+    }
+  };
+
+  // Refresh data
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      fetchServices(),
+      fetchStats()
+    ]);
+    setIsRefreshing(false);
+  };
+
+  // Apply filters
+  useEffect(() => {
+    if (services.length > 0) {
+      fetchServices(); // Re-fetch when filters change
+    }
+  }, [filters, sortBy, selectedCategory, searchQuery]);
+
+  // Handle search
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
     fetchServices();
-    
-    // Nettoyer pour éviter les mises à jour d'état sur un composant démonté
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Dépendance vide = s'exécute uniquement au montage
+  };
 
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
@@ -188,29 +299,6 @@ const Explorer: NextPage = () => {
     handleFilterChange(newFilters);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Simulation de la recherche
-    setIsLoading(true);
-    setTimeout(() => {
-      if (searchQuery.trim() === '') {
-        setFilteredServices(services);
-      } else {
-        const query = searchQuery.toLowerCase();
-        const filtered = services.filter(service => {
-          const categoryName = getCategoryName(service.category);
-            
-          return service.title.toLowerCase().includes(query) || 
-            (service.description?.toLowerCase() || '').includes(query) ||
-            categoryName.toLowerCase().includes(query);
-        });
-        setFilteredServices(filtered);
-      }
-      setIsLoading(false);
-    }, 500);
-  };
-
   const handleSort = (sort: 'popular' | 'newest' | 'price-low' | 'price-high') => {
     setSortBy(sort);
     
@@ -222,17 +310,6 @@ const Explorer: NextPage = () => {
       setFilteredServices(sorted);
       setIsLoading(false);
     }, 300);
-  };
-
-  const refreshData = () => {
-    setIsRefreshing(true);
-    setIsLoading(true);
-    
-    // Simulation d'un rafraîchissement des données
-    setTimeout(() => {
-      setIsRefreshing(false);
-      setIsLoading(false);
-    }, 1000);
   };
 
   const clearFilters = () => {
@@ -280,7 +357,7 @@ const Explorer: NextPage = () => {
             className="text-center max-w-3xl mx-auto pt-8 md:pt-12"
           >
             <span className="inline-block px-3 py-1 text-xs font-medium bg-white/20 rounded-full backdrop-blur-sm mb-4">
-              +10 000 services disponibles
+              {stats.totalServices > 0 ? `+${stats.totalServices}` : "Des"} services disponibles
             </span>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 leading-tight">
               Trouvez le service idéal
@@ -832,15 +909,15 @@ const Explorer: NextPage = () => {
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 text-white">
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <div className="text-3xl font-bold mb-1">10K+</div>
+                <div className="text-3xl font-bold mb-1">{stats.freelancersCount}</div>
                 <p className="text-indigo-100">Freelances actifs</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <div className="text-3xl font-bold mb-1">25K+</div>
+                <div className="text-3xl font-bold mb-1">{stats.clientsCount}</div>
                 <p className="text-indigo-100">Clients satisfaits</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                <div className="text-3xl font-bold mb-1">450M+</div>
+                <div className="text-3xl font-bold mb-1">{stats.totalPayments}</div>
                 <p className="text-indigo-100">FCFA distribués</p>
               </div>
             </div>

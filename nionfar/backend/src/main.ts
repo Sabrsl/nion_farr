@@ -36,9 +36,7 @@ async function bootstrap() {
     const configService = app.get(ConfigService);
     
     // Variables d'environnement
-    const port = configService.get<number>('PORT') || 3001;
     const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
-    const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const environment = configService.get<string>('NODE_ENV') || 'development';
     
     console.log(`Environment: ${environment}`);
@@ -75,11 +73,29 @@ async function bootstrap() {
       }),
     );
     
-    // CORS
+    // CORS - Configuration pour la production et le développement
+    const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const allowedOrigins = [frontendUrl];
+    
+    // Ajouter d'autres origines depuis les variables d'environnement si nécessaires
+    const additionalOrigins = configService.get<string>('ADDITIONAL_CORS_ORIGINS');
+    if (additionalOrigins) {
+      allowedOrigins.push(...additionalOrigins.split(','));
+    }
+    
+    if (environment === 'development') {
+      // En développement, être plus permissif
+      allowedOrigins.push('*');
+      console.log('Mode développement: CORS configuré pour les origines:', allowedOrigins);
+    } else {
+      console.log('Mode production: CORS configuré pour les origines spécifiques:', allowedOrigins);
+    }
+    
     app.enableCors({
-      origin: [frontendUrl],
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      credentials: true,
+      origin: allowedOrigins,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+      credentials: true
     });
     
     // Préfixe global pour toutes les routes
@@ -132,12 +148,14 @@ async function bootstrap() {
             scriptSrc: ["'self'", "'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", 'data:', 'https:'],
-            connectSrc: ["'self'", 'https://api.nionfar.sn'],
+            connectSrc: ["'self'", 'https://nionfar-backend.onrender.com', 'https://nionfar.vercel.app', 'https://*.vercel.app'],
           },
         }),
       );
     }
     
+    // Utilisation du port fourni par l'environnement (important pour Render)
+    const port = process.env.PORT || configService.get<number>('PORT') || 3001;
     console.log(`Starting server on port ${port}...`);
     
     // Démarrage du serveur

@@ -1,0 +1,74 @@
+# Next.js
+.next/
+out/
+
+# Environnement
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+
+# Dépendances
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Fichiers de build
+/build/
+/dist/
+/.next/
+/out/
+
+# Cache
+.cache/
+.npm/
+.eslintcache
+.stylelintcache
+.vercel
+.now
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fichiers temporaires
+*.tmp
+*.bak
+*.backup
+temp/
+.tmp/
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Certificats et clés
+*.pem
+*.key
+*.crt
+
+# Fichiers de test
+/coverage/
+.nyc_output/
+
+# Fichiers de déploiement
+.vercel
+.serverless/
+
+# Fichiers spécifiques au projet
+/public/uploads/
+/public/sitemap*.xml
+/public/robots.txt
+middleware/.generated/
+.nionfar-cache/ 

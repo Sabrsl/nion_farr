@@ -6,4 +6,12 @@ export enum UserRole {
   // Garder les anciennes valeurs pour compatibilité
   USER = 'user',
   FREELANCER = 'freelancer',
+}
+
+export enum UserStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  PENDING_VERIFICATION = 'pending_verification',
+  SUSPENDED = 'suspended',
+  BANNED = 'banned',
 } 

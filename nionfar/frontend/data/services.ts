@@ -1,12 +1,25 @@
 import { Service } from '../types';
-import { productionServices, getServicesByCategory, getServiceById, getServiceBySlug } from './production-services';
+import { serviceExplorer } from '../services/serviceExplorerService';
 
-// Pour la compatibilité avec le code existant, nous exposons également les mock services
-// mais en utilisant les services de production
-export const mockServices: Service[] = productionServices;
+// OBSOLÈTE : Cette exportation est maintenue temporairement pour compatibilité
+// mais l'application devrait utiliser serviceExplorer directement
+// Vous obtiendrez un tableau vide si vous utilisez cette variable
+export const mockServices: Service[] = [];
 
-// Export des fonctions utilitaires
-export { getServicesByCategory, getServiceById, getServiceBySlug };
+// Ces fonctions sont maintenues pour la compatibilité mais utilisent l'API
+// Il est fortement recommandé d'utiliser serviceExplorer directement
+export const getServicesByCategory = async (categoryId: string) => {
+  const result = await serviceExplorer.getServicesByCategory(categoryId);
+  return result.services || [];
+};
 
-// Export par défaut des services de production
-export default productionServices; 
+export const getServiceById = async (id: string) => {
+  return await serviceExplorer.getServiceById(id);
+};
+
+export const getServiceBySlug = async (slug: string) => {
+  return await serviceExplorer.getServiceBySlug(slug);
+};
+
+// Export par défaut vide pour compatibilité
+export default []; 

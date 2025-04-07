@@ -2,6 +2,10 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { NextRouter } from 'next/router';
 
+// Constantes pour le stockage des données d'authentification
+const AUTH_TOKEN_KEY = 'nionfarToken';
+const USER_STORAGE_KEY = 'nionfarUser';
+
 interface LoginCredentials {
   emailOrPhone: string;
   password: string;
@@ -30,6 +34,7 @@ interface LoginResponse {
   user?: User;
   requiresOtp?: boolean;
   temporaryToken?: string;
+  error?: string;
 }
 
 interface User {
@@ -60,7 +65,16 @@ class AuthService {
   private BLOCK_DURATION_MINUTES = 30;
 
   constructor() {
-    this.apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+    // Initialiser l'URL de l'API en fonction de l'environnement
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nionfar.vercel.app';
+    
+    console.log("🔧 Configuration AuthService:", { 
+      apiUrl, 
+      environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'production' 
+    });
+    
+    this.apiUrl = apiUrl;
     this.token = null;
     this.user = null;
     this.failedAttempts = {};
@@ -80,320 +94,265 @@ class AuthService {
     }
   }
 
-  async register(data: RegisterData): Promise<{ success: boolean; message?: string; user?: User }> {
+  async register(userData: RegisterData): Promise<{ success: boolean, user?: User, error?: string }> {
+    console.log("📝 Tentative d'inscription avec:", { ...userData, password: '***' });
+    
+    // Vérifier que l'email ou le téléphone est fourni
+    if (!userData.email && !userData.phone) {
+      return { success: false, error: "Email ou numéro de téléphone requis" };
+    }
+
     try {
-      // Vérifier que l'email ou le téléphone est fourni
-      if (!data.email && !data.phone) {
-        return { 
-          success: false, 
-          message: 'Veuillez fournir un email ou un numéro de téléphone' 
-        };
-      }
+      // Construire l'URL spécifique
+      const url = `${this.apiUrl}/auth/register`;
+      console.log("🌐 URL d'inscription complète:", url);
       
-      console.log('Envoi des données d\'inscription à l\'API:', `${this.apiUrl}/auth/register`);
-      
-      // Mode développement - simulation backend pour tests
-      if (process.env.NODE_ENV === 'development' && (this.apiUrl.includes('localhost') || this.apiUrl === '/api')) {
-        console.log('Mode développement: Simulation d\'une inscription réussie');
-        
-        // Créer un utilisateur simulé
-        const mockUser: User = {
-          id: 'mock-user-id-' + Date.now(),
-          username: data.username,
-          email: data.email || 'mock@example.com',
-          phone: data.phone,
-          role: data.role,
-          isVerified: true,
-          emailVerified: true,
-          phoneVerified: !!data.phone,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        
-        // Créer un token simulé
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        
-        // Stocker les données simulées
-        this.token = mockToken;
-        this.user = mockUser;
-        this.saveToStorage();
-        
-        // Pour les tests de OTP
-        if (data.phone) {
-          return { 
-            success: true, 
-            message: 'Veuillez vérifier votre numéro de téléphone avec le code OTP (pour les tests, utilisez 123456)',
-            user: mockUser
-          };
-        }
-        
-        // Retourner succès sans redirection
-        return {
-          success: true,
-          message: 'Inscription simulée réussie en mode développement',
-          user: mockUser
-        };
-      }
-      
-      // Code normal pour la production
-      // Adapter le format des données si nécessaire pour la compatibilité avec le backend
+      // Préparer les données pour l'API backend
       const apiData = {
-        email: data.email,
-        firstName: data.fullName.split(' ')[0],
-        lastName: data.fullName.split(' ').slice(1).join(' '),
-        phoneNumber: data.phone,
-        password: data.password,
-        passwordConfirm: data.password, // Le backend attend une confirmation
-        termsAccepted: data.acceptTerms,
-        role: data.role
+        username: userData.username,
+        email: userData.email,
+        phoneNumber: userData.phone,
+        password: userData.password,
+        passwordConfirm: userData.password,
+        firstName: userData.fullName.split(' ')[0],
+        lastName: userData.fullName.split(' ').slice(1).join(' '),
+        fullName: userData.fullName,
+        termsAccepted: userData.acceptTerms,
+        role: userData.role.toUpperCase(),
+        isFreelancer: userData.role === 'freelance'
       };
 
-      // Appel à l'API pour enregistrer l'utilisateur
-      const response = await axios.post(`${this.apiUrl}/auth/register`, apiData);
-      const result = response.data;
-      
-      // Gérer le cas où le backend renvoie juste un message sans token/user
-      if (!result.token && !result.user) {
-        return {
-          success: true,
-          message: result.message || 'Inscription réussie. Veuillez vérifier votre email.'
-        };
-      }
-      
-      // Authentifier l'utilisateur automatiquement après l'inscription
-      if (result.token && result.user) {
-        this.setAuthData(result);
-      }
-      
-      // Rediriger vers la vérification OTP si phone est fourni
-      if (data.phone) {
+      console.log("📦 Données formatées:", { ...apiData, password: '***', passwordConfirm: '***' });
+
+      // Vérification de l'URL du backend
+      if (!this.apiUrl || this.apiUrl === '/api') {
+        console.error("❌ URL de l'API non configurée correctement:", this.apiUrl);
         return { 
-          success: true, 
-          message: 'Veuillez vérifier votre numéro de téléphone avec le code OTP envoyé',
-          user: result.user
+          success: false,
+          error: "Configuration du serveur incorrecte. L'URL de l'API n'est pas définie."
         };
       }
-      
-      // Pas de redirection automatique vers le tableau de bord
-      // La redirection sera gérée par le composant appelant
-      
-      return { 
-        success: true, 
-        message: result.message || 'Inscription réussie', 
-        user: result.user
-      };
-    } catch (error: any) {
-      console.error('Erreur d\'inscription:', error);
-      
-      // Mode développement - gestion d'erreur spécifique
-      if (process.env.NODE_ENV === 'development' && (error.message.includes('Network Error') || error.message.includes('ECONNREFUSED'))) {
-        console.warn('Backend inaccessible en mode développement. Création d\'un compte simulé.');
-        
-        // Créer un utilisateur simulé
-        const mockUser: User = {
-          id: 'mock-user-id-' + Date.now(),
-          username: data.username,
-          email: data.email || 'mock@example.com',
-          phone: data.phone,
-          role: data.role,
-          isVerified: true,
-          emailVerified: true,
-          phoneVerified: !!data.phone,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        
-        // Créer un token simulé
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        
-        // Stocker les données simulées
-        this.token = mockToken;
-        this.user = mockUser;
-        this.saveToStorage();
-        
-        return {
-          success: true,
-          message: 'Inscription simulée réussie (backend non disponible)',
-          user: mockUser
-        };
-      }
-      
-      // Améliorer le message d'erreur avec les détails du backend
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          'Une erreur est survenue lors de l\'inscription';
-      
-      // Journaliser plus de détails pour le débogage
-      if (error.response) {
-        console.error('Détails de l\'erreur:', {
-          status: error.response.status,
-          headers: error.response.headers,
-          data: error.response.data
+
+      // Utiliser fetch avec option credentials omit - pour éviter les problèmes CSRF
+      try {
+        console.log("🔍 Tentative d'inscription avec fetch...");
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(apiData),
+          mode: 'cors',
+          credentials: 'omit' // Ne pas envoyer de cookies pour éviter les problèmes CSRF
         });
-      } else if (error.request) {
-        console.error('Erreur de requête (pas de réponse):', error.request);
+        
+        // Obtenir la réponse complète du serveur
+        const responseText = await response.text();
+        console.log(`📥 Réponse serveur (${response.status}):`, responseText);
+        
+        let responseData;
+        try {
+          responseData = responseText ? JSON.parse(responseText) : {};
+        } catch (e) {
+          console.error("❌ Erreur parsing JSON:", e);
+          responseData = { message: responseText || "Réponse non-JSON du serveur" };
+        }
+        
+        if (response.ok) {
+          console.log("✅ Inscription réussie avec fetch:", responseData);
+          
+          // Stocker le token si présent
+          if (responseData.token) {
+            localStorage.setItem(AUTH_TOKEN_KEY, responseData.token);
+          }
+          
+          // Stocker les données utilisateur si présentes
+          if (responseData.user) {
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(responseData.user));
+            
+            // Redirection automatique vers la page appropriée selon le rôle
+            const redirectUrl = responseData.user.isFreelancer ? '/dashboard' : '/';
+            
+            console.log("✅ Inscription réussie! Redirection vers:", redirectUrl);
+            
+            // Forcer la redirection avec un léger délai pour permettre l'affichage du message de succès
+            setTimeout(() => {
+              console.log("🔄 Exécution de la redirection...");
+              window.location.href = redirectUrl;
+            }, 1500);
+          }
+          
+          return { success: true, user: responseData.user };
+        } else {
+          // Gestion des erreurs spécifiques
+          let errorMessage;
+          
+          if (response.status === 409) {
+            errorMessage = "Cet email est déjà utilisé";
+          } else if (responseData.message && responseData.message.includes("mot de passe")) {
+            errorMessage = responseData.message;
+          } else {
+            errorMessage = responseData.message || `Erreur ${response.status}: Une erreur est survenue lors de l'inscription`;
+          }
+          
+          console.error("❌ Échec de l'inscription avec fetch:", errorMessage);
+          return { success: false, error: errorMessage };
+        }
+      } catch (fetchError) {
+        // Si fetch échoue, utiliser XMLHttpRequest comme fallback
+        console.error("❌ Erreur fetch:", fetchError);
+        console.log("⚠️ Retour au fallback XMLHttpRequest...");
+        
+        return new Promise((resolve) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', url, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+          xhr.withCredentials = false; // Désactiver l'envoi des cookies pour éviter les problèmes CSRF
+          xhr.timeout = 15000;
+          
+          xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+              console.log("📋 Headers XHR reçus:", xhr.getAllResponseHeaders());
+            }
+          };
+          
+          xhr.onload = function() {
+            console.log(`📥 Réponse XHR reçue (${xhr.status}):`, xhr.responseText);
+            
+            try {
+              const response = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+              
+              if (xhr.status >= 200 && xhr.status < 300) {
+                console.log("✅ Inscription réussie avec XHR:", response);
+                
+                // Stocker le token si présent
+                if (response.token) {
+                  localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+                }
+                
+                // Stocker les données utilisateur
+                if (response.user) {
+                  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
+                  
+                  const redirectUrl = response.user.isFreelancer ? '/dashboard' : '/';
+                  setTimeout(() => {
+                    window.location.href = redirectUrl;
+                  }, 1500);
+                }
+                
+                resolve({ success: true, user: response.user });
+              } else {
+                // Gestion erreurs
+                console.error("❌ Erreur serveur XHR:", response);
+                let errorMessage;
+                
+                if (xhr.status === 409) {
+                  errorMessage = "Cet email est déjà utilisé";
+                } else if (response.message && response.message.includes("mot de passe")) {
+                  errorMessage = response.message;
+                } else {
+                  errorMessage = response.message || `Erreur ${xhr.status}: Une erreur est survenue lors de l'inscription`;
+                }
+                
+                resolve({ success: false, error: errorMessage });
+              }
+            } catch (parseError) {
+              console.error("❌ Erreur parsing XHR:", parseError);
+              resolve({ success: false, error: "Réponse invalide du serveur" });
+            }
+          };
+          
+          xhr.onerror = function() {
+            console.error("❌ Erreur réseau XHR");
+            resolve({ 
+              success: false, 
+              error: "Impossible de communiquer avec le serveur. Vérifiez votre connexion internet et que le serveur est bien démarré."
+            });
+          };
+          
+          xhr.ontimeout = function() {
+            console.error("❌ Timeout XHR");
+            resolve({ 
+              success: false, 
+              error: "Le serveur met trop de temps à répondre. Veuillez réessayer plus tard."
+            });
+          };
+          
+          xhr.send(JSON.stringify(apiData));
+        });
       }
-      
+    } catch (error) {
+      console.error("🔥 Erreur lors de l'inscription:", error);
       return { 
         success: false, 
-        message: errorMessage
+        error: error instanceof Error ? error.message : "Une erreur inattendue est survenue" 
       };
     }
   }
 
-  async login(data: LoginCredentials, autoRedirect: boolean = false, customUrl?: string): Promise<LoginResponse> {
-    const identifier = data.emailOrPhone;
-
-    // Vérifier si l'utilisateur est temporairement bloqué
-    if (this.isBlocked(identifier)) {
-      const remainingTime = this.getRemainingBlockTime(identifier);
-      return { 
-        success: false, 
-        message: `Compte temporairement bloqué. Réessayez dans ${remainingTime} minutes.` 
-      };
-    }
-
+  async login(credentials: LoginCredentials, autoRedirect = true, redirectUrl?: string): Promise<LoginResponse> {
+    console.log("🔐 Tentative de connexion avec:", {
+      ...credentials,
+      password: '***',
+      autoRedirect,
+      redirectUrl
+    });
+    
     try {
-      // Dans le mode développement/démo, simuler une connexion réussie
-      if (process.env.NODE_ENV === 'development' && (this.apiUrl.includes('localhost') || this.apiUrl === '/api')) {
-        console.log('Mode développement: Simulation d\'une connexion réussie');
-        
-        // Pour la démonstration, vérifier si l'email contient "test"
-        if (data.emailOrPhone.includes('test')) {
-          // Créer un utilisateur simulé
-          const mockUser: User = {
-            id: 'mock-user-id-' + Date.now(),
-            username: data.emailOrPhone.split('@')[0],
-            email: data.emailOrPhone,
-            role: 'client', // Par défaut client
-            isVerified: true,
-            emailVerified: true,
-            phoneVerified: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          
-          // Créer un token simulé
-          const mockToken = 'mock-jwt-token-' + Date.now();
-          
-          // Stocker les données simulées
-          this.token = mockToken;
-          this.user = mockUser;
-          
-          // Force une mise à jour immédiate du localStorage pour garantir sa disponibilité
-          try {
-            console.log('Stockage immédiat des données utilisateur dans localStorage');
-            localStorage.setItem('nionfarToken', mockToken);
-            localStorage.setItem('nionfarUser', JSON.stringify(mockUser));
-            
-            // Signal pour indiquer une connexion réussie (utilisé par les composants)
-            localStorage.setItem('lastAuthSuccess', Date.now().toString());
-            
-            // Déclencher un événement global pour forcer la mise à jour des composants
-            if (typeof window !== 'undefined') {
-              // Pour les autres onglets/fenêtres
-              window.dispatchEvent(new StorageEvent('storage', {
-                key: 'nionfarUser',
-                newValue: JSON.stringify(mockUser)
-              }));
-              
-              // Pour l'onglet actuel
-              window.dispatchEvent(new CustomEvent('authStateChanged', {
-                detail: { user: mockUser, isAuthenticated: true }
-              }));
-            }
-          } catch (storageError) {
-            console.error('Erreur lors du stockage des données utilisateur:', storageError);
-          }
-          
-          this.saveToStorage();
-          
-          // Réinitialiser le compteur de tentatives échouées
-          this.resetFailedAttempts(identifier);
-          
-          console.log('Connexion simulée réussie, utilisateur:', mockUser.username);
-          
-          return {
-            success: true,
-            token: mockToken,
-            user: mockUser
-          };
-        } else {
-          // Échec de connexion simulé
-          console.log('Échec de connexion simulée: identifiants invalides');
-          this.incrementFailedAttempts(identifier);
-          
-          return {
-            success: false,
-            message: 'Identifiants invalides'
-          };
-        }
-      }
-
-      // Code pour la production - appel API réel
-      const response = await axios.post(`${this.apiUrl}/auth/login`, data);
-      const dataResponse = response.data;
-
-      // Réinitialiser le compteur de tentatives échouées en cas de succès
-      this.resetFailedAttempts(identifier);
-
-      // Si le téléphone n'est pas vérifié et qu'une vérification OTP est requise
-      if (dataResponse.requiresOtp) {
-        return {
-          success: false,
-          message: 'Vérification par téléphone requise',
-          requiresOtp: true,
-          temporaryToken: dataResponse.temporaryToken
-        };
-      }
-
-      // Connexion réussie
-      if (dataResponse.token) {
-        this.setToken(dataResponse.token);
-        
-        // Forcer une mise à jour immédiate du localStorage
-        if (dataResponse.user && typeof window !== 'undefined') {
-          localStorage.setItem('nionfarUser', JSON.stringify(dataResponse.user));
-          localStorage.setItem('lastAuthSuccess', Date.now().toString());
-          
-          // Déclencher un événement global de changement d'état
-          window.dispatchEvent(new StorageEvent('storage', {
-            key: 'nionfarUser',
-            newValue: JSON.stringify(dataResponse.user)
-          }));
-          
-          window.dispatchEvent(new CustomEvent('authStateChanged', {
-            detail: { user: dataResponse.user, isAuthenticated: true }
-          }));
-        }
-        
-        this.setAuthData(dataResponse);
-        this.updateLastLogin();
-        
-        return {
-          success: true,
-          token: dataResponse.token,
-          user: dataResponse.user
-        };
-      }
-
-      return { success: false, message: 'Échec de connexion' };
-    } catch (error: any) {
-      // Incrémenter le compteur de tentatives échouées
-      this.incrementFailedAttempts(identifier);
-
-      // Vérifier si l'utilisateur doit être bloqué
-      if (this.getFailedAttempts(identifier) >= this.MAX_FAILED_ATTEMPTS) {
-        this.blockUser(identifier);
+      // Construction de l'URL
+      const url = `${this.apiUrl}/auth/login`;
+      
+      // Requête de connexion
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          emailOrPhone: credentials.emailOrPhone,
+          password: credentials.password,
+          rememberMe: credentials.rememberMe
+        })
+      });
+      
+      // Traiter la réponse
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error("❌ Erreur de connexion:", data);
         return { 
           success: false, 
-          message: `Trop de tentatives échouées. Compte bloqué pour ${this.BLOCK_DURATION_MINUTES} minutes.` 
+          error: data.message || "Identifiants incorrects" 
         };
       }
-
+      
+      console.log("✅ Connexion réussie:", data);
+      
+      // Stocker le token si présent
+      if (data.token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      }
+      
+      // Stocker les données utilisateur si présentes
+      if (data.user) {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        
+        // Redirection automatique si activée
+        if (autoRedirect) {
+          // Rediriger vers la page appropriée selon le rôle
+          const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+          this.forceRedirectAfterLogin(targetUrl);
+        }
+      }
+      
+      return { success: true, user: data.user, token: data.token };
+    } catch (error) {
+      console.error("🔥 Erreur lors de la connexion:", error);
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Identifiants invalides' 
+        error: error instanceof Error ? error.message : "Une erreur inattendue est survenue" 
       };
     }
   }
@@ -848,17 +807,18 @@ class AuthService {
   }
 
   // Nouvelle méthode pour vérifier la disponibilité du serveur backend
-  private async checkServerAvailability(): Promise<void> {
-    try {
-      await axios.get(`${this.apiUrl}/health`, { timeout: 5000 });
-      console.log('🟢 Serveur backend disponible');
-    } catch (error) {
-      console.warn('🔴 Serveur backend inaccessible - les fonctionnalités d\'authentification peuvent ne pas fonctionner correctement');
-      console.warn(`URL du serveur: ${this.apiUrl}`);
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Assurez-vous que le serveur backend est en cours d\'exécution');
+  private checkServerAvailability(): Promise<boolean> {
+    return new Promise(async (resolve) => {
+      try {
+        await axios.get(`${this.apiUrl}/health`, { timeout: 5000 });
+        console.log('🟢 Serveur backend disponible à', this.apiUrl);
+        resolve(true);
+      } catch (error) {
+        console.error('🔴 Serveur backend inaccessible :', this.apiUrl);
+        console.error('Détail de l\'erreur:', error);
+        resolve(false);
       }
-    }
+    });
   }
 
   forceRedirectAfterLogin(redirectUrl: string): void {

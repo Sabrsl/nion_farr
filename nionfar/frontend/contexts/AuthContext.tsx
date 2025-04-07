@@ -13,6 +13,8 @@ export interface AuthContextType {
   register: (userData: Partial<User> & { password: string }) => Promise<boolean>;
   updateUser: (userData: Partial<User>) => Promise<boolean>;
   refreshAuthState: () => void;
+  isFreelancer: () => boolean;
+  getDashboardPath: () => string;
 }
 
 const defaultAuthContext: AuthContextType = {
@@ -23,7 +25,9 @@ const defaultAuthContext: AuthContextType = {
   logout: async () => {},
   register: async () => false,
   updateUser: async () => false,
-  refreshAuthState: () => {}
+  refreshAuthState: () => {},
+  isFreelancer: () => false,
+  getDashboardPath: () => '/auth/login'
 };
 
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
@@ -251,9 +255,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const data = await response.json();
         
         if (data.user) {
+          // Mettre à jour l'objet utilisateur avec les nouvelles données
           const updatedUser = { ...user, ...data.user };
           setUser(updatedUser);
           localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+          
+          // Notifier les autres onglets/fenêtres
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: USER_STORAGE_KEY,
+            newValue: JSON.stringify(updatedUser)
+          }));
+          
           return true;
         }
         
@@ -270,6 +282,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  /**
+   * Détermine si l'utilisateur est un freelancer
+   */
+  const isFreelancer = useCallback(() => {
+    return !!(user && (user.isFreelancer || user.role === 'freelance' || user.role === 'provider'));
+  }, [user]);
+
+  /**
+   * Détermine la page de tableau de bord appropriée pour l'utilisateur
+   */
+  const getDashboardPath = useCallback(() => {
+    if (!user) return '/auth/login';
+    
+    return isFreelancer() ? '/dashboard/freelance' : '/dashboard/client';
+  }, [user, isFreelancer]);
+
   // Valeur du contexte à fournir aux composants enfants
   const value: AuthContextType = {
     user,
@@ -279,7 +307,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     register,
     updateUser,
-    refreshAuthState
+    refreshAuthState,
+    isFreelancer,
+    getDashboardPath
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

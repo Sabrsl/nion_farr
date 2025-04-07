@@ -110,4 +110,35 @@ export class UsersService {
       }
     });
   }
+
+  /**
+   * Compte le nombre d'utilisateurs par rôle
+   * @param role Rôle optionnel pour filtrer les utilisateurs
+   * @returns Nombre d'utilisateurs
+   */
+  async countByRole(role?: string) {
+    try {
+      const query: any = {
+        isActive: true // Compter seulement les utilisateurs actifs
+      };
+      
+      // Si un rôle est spécifié, filtrer par ce rôle
+      if (role) {
+        if (role === 'provider' || role === 'freelancer') {
+          query.isFreelancer = true;
+        } else if (role === 'client') {
+          query.role = UserRole.CLIENT;
+        } else {
+          query.role = role;
+        }
+      }
+      
+      const count = await this.usersRepository.count({ where: query });
+      
+      return { count };
+    } catch (error) {
+      console.error('Error counting users by role:', error);
+      return { count: 0 };
+    }
+  }
 } 
