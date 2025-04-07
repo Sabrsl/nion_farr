@@ -8,261 +8,238 @@ type CategoryId = string;
 type ServiceId = string;
 type ServiceQuery = any;
 
-// Gestion des erreurs d'API
-function handleApiError(error: any, message: string, context: any = {}) {
-  console.error(`[API Error] ${message}:`, error, context);
-  
-  // Informations par défaut en cas d'erreur
-  return {
-    services: [],
-    total: 0,
-    pages: 0
-  };
+// Types
+interface SearchParams {
+  search?: string;
+  category?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  priceMin?: number;
+  priceMax?: number;
+  rating?: number;
+  isActive?: boolean;
 }
 
-class ServiceExplorerService {
-  private readonly api;
-  private readonly endpoints = {
-    all: '/api/services',
-    search: '/api/services/search',
-    category: '/api/services/category',
-    related: '/api/services/related',
-    popular: '/api/services/popular',
-    trending: '/api/services/trending',
-    service: '/api/services'
-  };
-
-  constructor() {
-    this.api = axios.create({
-      baseURL: '',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+// Fonction pour gérer les erreurs API
+const handleApiError = (error: any) => {
+  console.error('API Error:', error);
+  if (error.response) {
+    console.error('Response data:', error.response.data);
+    console.error('Response status:', error.response.status);
   }
+  throw error;
+};
 
-  /**
-   * Récupère tous les services publics
-   * @param {Object} options - Options de pagination et de filtrage
-   * @returns {Promise<{services: Service[], total: number, pages: number}>} Services avec métadonnées
-   */
-  async getAllServices({
-    page = 1,
-    limit = 20,
-    sort = 'recent',
-    filter = {}
-  } = {}) {
+// API Service Explorer
+const serviceExplorer = {
+  // Get all services
+  getAllServices: async (params: SearchParams = {}): Promise<{ services: Service[]; total: number }> => {
     try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        sort,
-        isActive: 'true',
-        ...filter
-      });
-
-      const { data } = await this.api.get(`${this.endpoints.all}?${params}`);
-      return data;
+      const queryParams = new URLSearchParams();
+      
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.sort) queryParams.append('sort', params.sort);
+      if (params.search) queryParams.append('search', params.search);
+      if (params.category) queryParams.append('category', params.category);
+      if (params.priceMin) queryParams.append('priceMin', params.priceMin.toString());
+      if (params.priceMax) queryParams.append('priceMax', params.priceMax.toString());
+      if (params.rating) queryParams.append('rating', params.rating.toString());
+      if (params.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
+      
+      const url = `/api/services?${queryParams.toString()}`;
+      const response = await axios.get(url);
+      
+      return {
+        services: response.data.services || [],
+        total: response.data.total || 0
+      };
     } catch (error) {
-      return handleApiError(error, 'Failed to fetch services', { page, limit, sort, filter });
+      handleApiError(error);
+      return { services: [], total: 0 };
     }
-  }
+  },
 
-  /**
-   * Récupère les services par catégorie
-   * @param {CategoryId} categoryId - ID de la catégorie
-   * @param {Object} options - Options de pagination et de filtrage
-   * @returns {Promise<{services: Service[], total: number, pages: number}>} Services de la catégorie avec métadonnées
-   */
-  async getServicesByCategory(categoryId: CategoryId, {
+  // Get services by category
+  getServicesByCategory: async (
+    category: string,
     page = 1,
-    limit = 20,
-    sort = 'recent',
-    filter = {}
-  } = {}) {
+    limit = 10,
+    sort = 'createdAt',
+    isActive = true
+  ): Promise<{ services: Service[]; total: number }> => {
     try {
-      // Utiliser toujours les données de l'API, même en développement
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        sort,
-        isActive: 'true',
-        ...filter
-      });
-
-      const { data } = await this.api.get(`${this.endpoints.category}/${categoryId}?${params}`);
-      return data;
+      const queryParams = new URLSearchParams();
+      queryParams.append('category', category);
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', limit.toString());
+      queryParams.append('sort', sort);
+      queryParams.append('isActive', isActive.toString());
+      
+      const url = `/api/services?${queryParams.toString()}`;
+      const response = await axios.get(url);
+      
+      return {
+        services: response.data.services || [],
+        total: response.data.total || 0
+      };
     } catch (error) {
-      return handleApiError(error, `Failed to fetch services for category ${categoryId}`, { categoryId, page, limit, filter });
+      handleApiError(error);
+      return { services: [], total: 0 };
     }
-  }
+  },
 
-  /**
-   * Recherche des services selon les termes fournis
-   * @param {string} query - Termes de recherche
-   * @param {Object} options - Options de pagination et de filtrage
-   * @returns {Promise<{services: Service[], total: number, pages: number}>} Résultats de recherche avec métadonnées
-   */
-  async searchServices(query: string, {
+  // Search services
+  searchServices: async (
+    searchTerm: string,
     page = 1,
-    limit = 20,
-    filter = {}
-  } = {}) {
+    limit = 10
+  ): Promise<{ services: Service[]; total: number }> => {
     try {
-      const params = new URLSearchParams({
-        q: query,
-        page: String(page),
-        limit: String(limit),
-        isActive: 'true',
-        ...filter
-      });
-
-      const { data } = await this.api.get(`${this.endpoints.search}?${params}`);
-      return data;
+      const queryParams = new URLSearchParams();
+      queryParams.append('search', searchTerm);
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', limit.toString());
+      
+      const url = `/api/services/search?${queryParams.toString()}`;
+      const response = await axios.get(url);
+      
+      return {
+        services: response.data.services || [],
+        total: response.data.total || 0
+      };
     } catch (error) {
-      return handleApiError(error, `Failed to search services with query "${query}"`, { query, page, limit, filter });
+      handleApiError(error);
+      return { services: [], total: 0 };
     }
-  }
+  },
 
-  /**
-   * Filtre les services selon plusieurs critères
-   * @param {ServiceQuery} query - Critères de filtrage
-   * @param {Object} options - Options de pagination
-   * @returns {Promise<{services: Service[], total: number, pages: number}>} Services filtrés avec métadonnées
-   */
-  async filterServices(query: ServiceQuery, {
-    page = 1,
-    limit = 20,
-    sort = 'recent'
-  } = {}) {
+  // Get service by ID
+  getServiceById: async (id: string): Promise<Service | null> => {
     try {
-      const filterParams = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        sort,
-        isActive: 'true',
-        ...query
-      });
-
-      const { data } = await this.api.get(`${this.endpoints.all}?${filterParams}`);
-      return data;
+      const response = await axios.get(`/api/services/${id}`);
+      return response.data;
     } catch (error) {
-      return handleApiError(error, 'Failed to filter services', { query, page, limit, sort });
-    }
-  }
-
-  /**
-   * Récupère les détails d'un service par son slug
-   * @param {string} slug - Slug du service
-   * @returns {Promise<Service | null>} Service trouvé ou null
-   */
-  async getServiceBySlug(slug: string) {
-    try {
-      const { data } = await this.api.get(`${this.endpoints.service}/${slug}`);
-      return data.service;
-    } catch (error) {
-      console.error(`[API Error] Failed to fetch service with slug "${slug}":`, error);
+      handleApiError(error);
       return null;
     }
-  }
+  },
 
-  /**
-   * Récupère les détails d'un service par son ID
-   * @param {ServiceId} id - ID du service
-   * @returns {Promise<Service | null>} Service trouvé ou null
-   */
-  async getServiceById(id: ServiceId) {
+  // Get service by slug
+  getServiceBySlug: async (slug: string): Promise<Service | null> => {
     try {
-      const { data } = await this.api.get(`${this.endpoints.service}/${id}`);
-      return data.service;
+      const response = await axios.get(`/api/services/slug/${slug}`);
+      return response.data;
     } catch (error) {
-      console.error(`[API Error] Failed to fetch service with ID "${id}":`, error);
+      handleApiError(error);
       return null;
     }
-  }
+  },
 
-  /**
-   * Récupère les services liés à une catégorie (pour les suggestions)
-   * @param {CategoryId} categoryId - L'ID de la catégorie
-   * @param {ServiceId} currentServiceId - L'ID du service actuel à exclure
-   * @param {number} limit - Nombre maximum de services à retourner
-   * @returns {Promise<Service[]>} Liste des services liés
-   */
-  async getRelatedServices(categoryId: CategoryId, currentServiceId: ServiceId, limit = 4) {
+  // Get related services
+  getRelatedServices: async (serviceId: string, limit = 4): Promise<Service[]> => {
     try {
-      const params = new URLSearchParams({
-        categoryId: String(categoryId),
-        exclude: String(currentServiceId),
-        limit: String(limit),
-        isActive: 'true'
-      });
-
-      const { data } = await this.api.get(`${this.endpoints.related}?${params}`);
-      return data.services || [];
+      const response = await axios.get(`/api/services/${serviceId}/related?limit=${limit}`);
+      return response.data || [];
     } catch (error) {
-      console.error(`[API Error] Failed to fetch related services for category "${categoryId}"`, error);
+      handleApiError(error);
       return [];
     }
-  }
+  },
 
-  /**
-   * Récupère les services les plus populaires
-   * @param {number} limit - Nombre maximum de services à retourner
-   * @returns {Promise<Service[]>} Liste des services populaires
-   */
-  async getPopularServices(limit = 8) {
+  // Get featured services
+  getFeaturedServices: async (limit = 6): Promise<Service[]> => {
     try {
-      const params = new URLSearchParams({
-        limit: String(limit),
-        isActive: 'true'
-      });
-
-      const { data } = await this.api.get(`${this.endpoints.popular}?${params}`);
-      return data.services || [];
+      const response = await axios.get(`/api/services/featured?limit=${limit}`);
+      return response.data || [];
     } catch (error) {
-      console.error('[API Error] Failed to fetch popular services:', error);
+      handleApiError(error);
       return [];
     }
-  }
+  },
 
-  /**
-   * Récupère les services tendance (forte croissance récente)
-   * @param {number} limit - Nombre maximum de services à retourner
-   * @returns {Promise<Service[]>} Liste des services tendance
-   */
-  async getTrendingServices(limit = 8) {
+  // Get services by user
+  getServicesByUser: async (userId: string): Promise<Service[]> => {
     try {
-      const params = new URLSearchParams({
-        limit: String(limit),
-        isActive: 'true'
-      });
-
-      const { data } = await this.api.get(`${this.endpoints.trending}?${params}`);
-      return data.services || [];
+      const response = await axios.get(`/api/services/user/${userId}`);
+      return response.data || [];
     } catch (error) {
-      console.error('[API Error] Failed to fetch trending services:', error);
+      handleApiError(error);
       return [];
     }
-  }
+  },
 
-  /**
-   * Vérifie si un utilisateur peut commander un service
-   * @param {ServiceId} serviceId - ID du service
-   * @param {string} userId - ID de l'utilisateur
-   * @returns {Promise<{canOrder: boolean, message?: string}>} Résultat de la vérification
-   */
-  async canOrderService(serviceId: ServiceId, userId: string) {
+  // Create service
+  createService: async (serviceData: Partial<Service>): Promise<Service> => {
     try {
-      const { data } = await this.api.get(`${this.endpoints.service}/${serviceId}/can-order`, {
-        params: { userId }
-      });
-      return data;
+      const response = await axios.post('/api/services', serviceData);
+      return response.data;
     } catch (error) {
-      console.error(`[API Error] Failed to check order permission for service ${serviceId}:`, error);
-      return { canOrder: false, message: "Erreur lors de la vérification des permissions" };
+      handleApiError(error);
+      throw error;
+    }
+  },
+
+  // Update service
+  updateService: async (id: string, serviceData: Partial<Service>): Promise<Service> => {
+    try {
+      const response = await axios.put(`/api/services/${id}`, serviceData);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+      throw error;
+    }
+  },
+
+  // Delete service
+  deleteService: async (id: string): Promise<boolean> => {
+    try {
+      await axios.delete(`/api/services/${id}`);
+      return true;
+    } catch (error) {
+      handleApiError(error);
+      return false;
+    }
+  },
+
+  // Filter services
+  filterServices: async (
+    filters: {
+      category?: string;
+      priceMin?: number;
+      priceMax?: number;
+      rating?: number;
+    },
+    page = 1,
+    limit = 10
+  ): Promise<{ services: Service[]; total: number }> => {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (filters.category) queryParams.append('category', filters.category);
+      if (filters.priceMin) queryParams.append('priceMin', filters.priceMin.toString());
+      if (filters.priceMax) queryParams.append('priceMax', filters.priceMax.toString());
+      if (filters.rating) queryParams.append('rating', filters.rating.toString());
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', limit.toString());
+      
+      const url = `/api/services/filter?${queryParams.toString()}`;
+      const response = await axios.get(url);
+      
+      return {
+        services: response.data.services || [],
+        total: response.data.total || 0
+      };
+    } catch (error) {
+      handleApiError(error);
+      return { services: [], total: 0 };
     }
   }
-}
+};
 
-// Exporter une instance unique du service
-export const serviceExplorer = new ServiceExplorerService();
+// Export pour la compatibilité avec le code existant
+export const serviceExplorerService = serviceExplorer;
+// Export le service
+export { serviceExplorer };
+export default serviceExplorer;
