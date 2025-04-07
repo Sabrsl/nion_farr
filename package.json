@@ -12,7 +12,9 @@
     "backend": "cd backend && npm run start:dev",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "lint": "eslint \"**/*.{js,jsx,ts,tsx}\"",
-    "postinstall": "npm install @mui/icons-material react-toastify react-dropzone @headlessui/react classnames resend mongodb bcryptjs msw --prefix nionfar/frontend"
+    "postinstall": "cd nionfar/backend && npm install",
+    "build": "cd nionfar/backend && npm run build",
+    "start": "cd nionfar/backend && npm run start:prod"
   },
   "author": "NionFar Team",
   "license": "UNLICENSED",
