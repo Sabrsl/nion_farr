@@ -5,9 +5,9 @@ const nextConfig = {
   // Définir le mode de rendu sur "standalone" pour que tout soit généré à la demande
   output: 'standalone',
 
-  // Désactiver l'optimisation statique
+  // Configuration des images
   images: {
-    domains: ['nionfar.vercel.app', 'nionfar-backend.onrender.com', 'localhost'],
+    domains: ['nionfar.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
     unoptimized: true,
   },
@@ -95,15 +95,27 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nionfar.vercel.app,https://nionfar-backend.onrender.com',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
+          },
         ],
       },
     ];
   },
 
-  // Force le port à 3000 même si d'autres ports sont utilisés
-  server: {
-    port: 3000
-  },
+  // Optimisé pour Vercel - pas besoin de définir le port explicitement
+  // server: {
+  //   port: 3000
+  // },
 
   async rewrites() {
     return [
