@@ -19,7 +19,7 @@ Le projet est divisé en deux parties principales :
    - **Nom** : nionfar-backend
    - **Root Directory** : nionfar/backend
    - **Runtime** : Node
-   - **Build Command** : `./render-build.sh`
+   - **Build Command** : `npm install && npm run build`
    - **Start Command** : `npm run start:prod`
 
 4. Ajoutez les variables d'environnement suivantes (ou importez-les depuis le fichier .env.production) :

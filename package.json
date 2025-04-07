@@ -11,11 +11,7 @@
     "frontend": "cd frontend && npm run dev",
     "backend": "cd backend && npm run start:dev",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "lint": "eslint \"**/*.{js,jsx,ts,tsx}\"",
-    "postinstall": "bash ./install.sh",
-    "build": "bash ./build-render.sh",
-    "start": "bash ./start-render.sh",
-    "start:prod": "cd nionfar/backend && npm run start:prod"
+    "lint": "eslint \"**/*.{js,jsx,ts,tsx}\""
   },
   "author": "NionFar Team",
   "license": "UNLICENSED",
