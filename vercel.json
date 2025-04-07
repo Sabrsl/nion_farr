@@ -3,5 +3,11 @@
   "framework": "nextjs",
   "buildCommand": "cd nionfar/frontend && NODE_OPTIONS='--max_old_space_size=4096' npm install --legacy-peer-deps typescript @types/node @types/react @types/react-dom && NEXT_DISABLE_ESLINT=1 NODE_ENV=production npm run build",
   "outputDirectory": "nionfar/frontend/.next",
-  "installCommand": "cd nionfar/frontend && npm install"
+  "installCommand": "cd nionfar/frontend && npm install",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/nionfar/frontend/$1"
+    }
+  ]
 } 
