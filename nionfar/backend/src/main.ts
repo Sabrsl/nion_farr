@@ -11,6 +11,15 @@ import * as winston from 'winston';
 import * as Sentry from '@sentry/node';
 
 async function bootstrap() {
+  console.log('Starting server...');
+  console.log('Current directory:', process.cwd());
+  console.log('Environment variables:', {
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    API_PREFIX: process.env.API_PREFIX,
+    MONGODB_URI: process.env.MONGODB_URI ? 'Set' : 'Not set'
+  });
+
   try {
     // Configuration du logger
     const logger = WinstonModule.createLogger({
