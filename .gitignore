@@ -102,4 +102,18 @@ next-env.d.ts
 
 # Logs
 logs
-*.log 
+*.log
+
+# Données personnelles et backups
+**/*.bak
+**/*.backup
+**/*.tmp
+**/temp/
+**/.tmp/
+
+# Fichiers spécifiques à Nionfar
+**/.nionfar-cache
+**/uploads/**/*
+!**/uploads/.gitkeep
+**/public/uploads/**/*
+!**/public/uploads/.gitkeep 

@@ -38,7 +38,7 @@ export class OrdersController {
     const service = await this.ordersService.getServiceById(createOrderDto.serviceId);
     createOrderDto.freelancerId = service.providerId;
     
-    return this.ordersService.create(createOrderDto);
+    return this.ordersService.create(createOrderDto, userId);
   }
 
   /**
@@ -105,7 +105,8 @@ export class OrdersController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto, @Req() req: Request) {
-    return this.ordersService.update(id, updateOrderDto);
+    const user = req.user;
+    return this.ordersService.update(id, updateOrderDto, user);
   }
 
   /**

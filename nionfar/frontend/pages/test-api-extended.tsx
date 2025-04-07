@@ -2,11 +2,19 @@ import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
 import { 
   Box, Button, Card, Container, Divider, Grid, Paper, Typography, 
-  Tabs, Tab, TextField, FormControl, InputLabel, Select, MenuItem
+  Tabs, Tab, TextField, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent
 } from '@mui/material';
 
 // Type d'onglet
 type TestTabType = 'auth' | 'services' | 'users' | 'orders' | 'payments' | 'messages';
+
+// Type pour les détails d'endpoint
+interface EndpointDetails {
+  label: string;
+  url: string;
+  method: string;
+  hasBody?: boolean;
+}
 
 // URL par défaut et méthodes pour chaque onglet
 const defaultEndpoints = {
@@ -19,7 +27,7 @@ const defaultEndpoints = {
 };
 
 // Liste des endpoints par catégorie
-const apiEndpoints = {
+const apiEndpoints: Record<TestTabType, EndpointDetails[]> = {
   auth: [
     { label: 'Connexion', url: '/api/auth/login', method: 'POST', hasBody: true },
     { label: 'Inscription', url: '/api/auth/register', method: 'POST', hasBody: true }
@@ -147,8 +155,8 @@ const TestApiExtendedPage = () => {
   };
   
   // Gérer la sélection d'un endpoint
-  const handleEndpointChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-    const value = event.target.value as string;
+  const handleEndpointChange = (event: SelectChangeEvent) => {
+    const value = event.target.value;
     setSelectedEndpoint(prev => ({
       ...prev,
       [activeTab]: value
@@ -183,19 +191,31 @@ const TestApiExtendedPage = () => {
     try {
       let response;
       if (endpoint.method === 'GET') {
-        response = await fetch(currentUrl);
+        response = await fetch(currentUrl, {
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
       } else {
         const body = requestBodies[currentUrl] || {};
         response = await fetch(currentUrl, {
           method: endpoint.method,
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify(body)
         });
       }
       
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        data = { text, _nonJson: true };
+      }
       
       setApiResult({
         loading: false,
@@ -204,16 +224,17 @@ const TestApiExtendedPage = () => {
         status: response.status
       });
     } catch (error) {
+      console.error('API request error:', error);
       setApiResult({
         loading: false,
         result: null,
-        error: error.message
+        error: error.message || 'Une erreur est survenue lors de la requête'
       });
     }
   };
   
   // Récupérer les détails de l'endpoint actuel
-  const getEndpointDetails = () => {
+  const getEndpointDetails = (): EndpointDetails => {
     const endpoints = apiEndpoints[activeTab];
     return endpoints.find(e => e.url === selectedEndpoint[activeTab]) || endpoints[0];
   };

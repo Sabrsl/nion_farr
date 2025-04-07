@@ -44,7 +44,7 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
-          <p>&copy; {new Date().getFullYear()} NionFar. Tous droits réservés.</p>
+          <p>&copy; 2023 NionFar. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

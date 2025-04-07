@@ -9,6 +9,11 @@ import {
   Req,
   Res,
   Patch,
+  Request,
+  UsePipes,
+  UnauthorizedException,
+  Logger,
+  BadRequestException
 } from '@nestjs/common';
 import { Response } from 'express';
 import {
@@ -19,6 +24,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
+import { TwoFactorService } from '../services/two-factor.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
@@ -29,13 +35,33 @@ import { VerifyEmailDto } from '../dto/verify-email.dto';
 import { RequestWithUser } from '../interfaces/request-with-user.interface';
 import { EnableTwoFactorDto } from '../dto/enable-two-factor.dto';
 import { VerifyTwoFactorDto } from '../dto/verify-two-factor.dto';
+import { LocalAuthGuard } from '../guards/local-auth.guard';
+import { RefreshTokenGuard } from '../guards/refresh-token.guard';
+import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import { 
+  loginSchema, 
+  registerSchema, 
+  forgotPasswordSchema, 
+  resetPasswordSchema,
+  verifyEmailSchema,
+  refreshTokenSchema 
+} from '../schemas/auth.schema';
+import { Public } from '../decorators/public.decorator';
 
 @ApiTags('Authentification')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(AuthController.name);
 
+  constructor(
+    private readonly authService: AuthService,
+    private readonly twoFactorService: TwoFactorService,
+  ) {}
+
+  @Public()
   @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  @UsePipes(new ZodValidationPipe(registerSchema))
   @ApiOperation({ summary: 'Inscription d\'un nouvel utilisateur' })
   @ApiResponse({ 
     status: 201, 
@@ -47,11 +73,19 @@ export class AuthController {
   })
   @ApiBody({ type: RegisterDto })
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+    try {
+      return await this.authService.register(registerDto);
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'inscription: ${error.message}`);
+      throw error;
+    }
   }
 
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(LocalAuthGuard)
+  @UsePipes(new ZodValidationPipe(loginSchema))
   @ApiOperation({ summary: 'Connexion d\'un utilisateur' })
   @ApiResponse({ 
     status: 200, 
@@ -62,36 +96,30 @@ export class AuthController {
     description: 'Identifiants invalides.' 
   })
   @ApiBody({ type: LoginDto })
-  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) response: Response) {
-    const { accessToken, refreshToken, user, requiresTwoFactor } = await this.authService.login(loginDto);
-    
-    // Configurer le cookie pour le refresh token
-    response.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
-    });
+  async login(
+    @Req() req: RequestWithUser,
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    try {
+      const { accessToken, refreshToken, user } = await this.authService.login(req.user);
 
-    // Si 2FA est requis, ne pas envoyer le token d'accès
-    if (requiresTwoFactor) {
+      response.cookie('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== 'development',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
+      });
+
       return {
-        message: 'Authentification à deux facteurs requise',
-        requiresTwoFactor: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        },
+        accessToken,
+        user,
+        message: 'Connexion réussie',
       };
+    } catch (error) {
+      this.logger.error(`Erreur lors de la connexion: ${error.message}`);
+      throw error;
     }
-
-    return {
-      accessToken,
-      user,
-      message: 'Connexion réussie',
-    };
   }
 
   @Post('logout')
@@ -104,16 +132,24 @@ export class AuthController {
     description: 'L\'utilisateur est déconnecté avec succès.' 
   })
   async logout(@Req() req: RequestWithUser, @Res({ passthrough: true }) response: Response) {
-    await this.authService.logout(req.user.id);
-    
-    // Supprimer le cookie de refresh token
-    response.clearCookie('refresh_token');
-    
-    return { message: 'Déconnexion réussie' };
+    try {
+      await this.authService.logout(req.user.id);
+      
+      // Supprimer le cookie de refresh token
+      response.clearCookie('refresh_token');
+      
+      return { message: 'Déconnexion réussie' };
+    } catch (error) {
+      this.logger.error(`Erreur lors de la déconnexion: ${error.message}`);
+      throw error;
+    }
   }
 
+  @Public()
   @Post('refresh-token')
+  @UseGuards(RefreshTokenGuard)
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(refreshTokenSchema))
   @ApiOperation({ summary: 'Rafraîchir le token d\'accès' })
   @ApiResponse({ 
     status: 200, 
@@ -123,40 +159,14 @@ export class AuthController {
     status: 401, 
     description: 'Refresh token invalide ou expiré.' 
   })
-  async refreshToken(
-    @Body() refreshTokenDto: RefreshTokenDto,
-    @Req() req,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    // Vérifier si le refresh token est dans les cookies
-    const cookieRefreshToken = req.cookies?.refresh_token;
-    const refreshToken = refreshTokenDto.refreshToken || cookieRefreshToken;
-
-    if (!refreshToken) {
-      throw new Error('Refresh token non fourni');
-    }
-
-    const { accessToken, refreshToken: newRefreshToken, user } = await this.authService.refreshToken(refreshToken);
-
-    // Mettre à jour le cookie de refresh token
-    if (newRefreshToken) {
-      response.cookie('refresh_token', newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
-      });
-    }
-
-    return {
-      accessToken,
-      user,
-      message: 'Token rafraîchi avec succès',
-    };
+  async refreshToken(@Request() req, @Body() refreshTokenDto: any) {
+    return this.authService.refreshToken(req.user.id, refreshTokenDto.refreshToken);
   }
 
+  @Public()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(verifyEmailSchema))
   @ApiOperation({ summary: 'Vérifier l\'adresse email' })
   @ApiResponse({ 
     status: 200, 
@@ -166,7 +176,7 @@ export class AuthController {
     status: 400, 
     description: 'Token invalide ou expiré.' 
   })
-  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+  async verifyEmail(@Body() verifyEmailDto: any) {
     return this.authService.verifyEmail(verifyEmailDto.token);
   }
 
@@ -183,8 +193,10 @@ export class AuthController {
     return this.authService.resendVerificationEmail(req.user.id);
   }
 
+  @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(forgotPasswordSchema))
   @ApiOperation({ summary: 'Demander la réinitialisation du mot de passe' })
   @ApiResponse({ 
     status: 200, 
@@ -194,8 +206,10 @@ export class AuthController {
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
 
+  @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(resetPasswordSchema))
   @ApiOperation({ summary: 'Réinitialiser le mot de passe' })
   @ApiResponse({ 
     status: 200, 
@@ -208,7 +222,7 @@ export class AuthController {
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(
       resetPasswordDto.token,
-      resetPasswordDto.newPassword,
+      resetPasswordDto.newPassword
     );
   }
 
@@ -218,10 +232,15 @@ export class AuthController {
   @ApiOperation({ summary: 'Générer un QR code pour l\'authentification à deux facteurs' })
   @ApiResponse({ 
     status: 200, 
-    description: 'QR code généré avec succès.' 
+    description: 'QR code généré avec succès'
   })
   async generateTwoFactorQrCode(@Req() req: RequestWithUser) {
-    return this.authService.generateTwoFactorQrCode(req.user.id);
+    try {
+      return await this.twoFactorService.generateSecret(req.user.id);
+    } catch (error) {
+      this.logger.error(`Erreur lors de la génération du QR code 2FA: ${error.message}`);
+      throw error;
+    }
   }
 
   @Post('two-factor/enable')
@@ -231,17 +250,31 @@ export class AuthController {
   @ApiOperation({ summary: 'Activer l\'authentification à deux facteurs' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Authentification à deux facteurs activée avec succès.' 
+    description: 'Authentification à deux facteurs activée avec succès'
   })
   @ApiResponse({ 
     status: 400, 
-    description: 'Code invalide.' 
+    description: 'Code invalide'
   })
   async enableTwoFactor(
     @Req() req: RequestWithUser,
     @Body() enableTwoFactorDto: EnableTwoFactorDto,
   ) {
-    return this.authService.enableTwoFactor(req.user.id, enableTwoFactorDto.twoFactorCode);
+    try {
+      const result = await this.twoFactorService.enableTwoFactor(
+        req.user.id,
+        enableTwoFactorDto.twoFactorCode
+      );
+      
+      if (!result) {
+        throw new BadRequestException('Code 2FA invalide');
+      }
+      
+      return { message: 'Authentification à deux facteurs activée avec succès' };
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'activation de la 2FA: ${error.message}`);
+      throw error;
+    }
   }
 
   @Post('two-factor/disable')
@@ -251,48 +284,49 @@ export class AuthController {
   @ApiOperation({ summary: 'Désactiver l\'authentification à deux facteurs' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Authentification à deux facteurs désactivée avec succès.' 
+    description: 'Authentification à deux facteurs désactivée avec succès'
   })
   async disableTwoFactor(@Req() req: RequestWithUser) {
-    return this.authService.disableTwoFactor(req.user.id);
+    try {
+      await this.twoFactorService.disableTwoFactor(req.user.id);
+      return { message: 'Authentification à deux facteurs désactivée avec succès' };
+    } catch (error) {
+      this.logger.error(`Erreur lors de la désactivation de la 2FA: ${error.message}`);
+      throw error;
+    }
   }
 
   @Post('two-factor/verify')
+  @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Vérifier le code d\'authentification à deux facteurs' })
+  @ApiOperation({ summary: 'Vérifier un code d\'authentification à deux facteurs' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Code vérifié avec succès.' 
+    description: 'Code vérifié avec succès'
   })
   @ApiResponse({ 
-    status: 401, 
-    description: 'Code invalide.' 
+    status: 400, 
+    description: 'Code invalide'
   })
-  async verifyTwoFactor(
-    @Body() verifyTwoFactorDto: VerifyTwoFactorDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    const { accessToken, refreshToken, user } = await this.authService.verifyTwoFactor(
-      verifyTwoFactorDto.userId,
-      verifyTwoFactorDto.twoFactorCode,
-    );
-
-    // Configurer le cookie pour le refresh token
-    response.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
-    });
-
-    return {
-      accessToken,
-      user,
-      message: 'Authentification à deux facteurs réussie',
-    };
+  async verifyTwoFactor(@Body() verifyTwoFactorDto: VerifyTwoFactorDto) {
+    try {
+      const isValid = await this.twoFactorService.verifyToken(
+        verifyTwoFactorDto.userId,
+        verifyTwoFactorDto.twoFactorCode
+      );
+      
+      if (!isValid) {
+        throw new UnauthorizedException('Code 2FA invalide');
+      }
+      
+      return { message: 'Code vérifié avec succès' };
+    } catch (error) {
+      this.logger.error(`Erreur lors de la vérification du code 2FA: ${error.message}`);
+      throw error;
+    }
   }
 
-  @Get('me')
+  @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtenir les informations de l\'utilisateur connecté' })

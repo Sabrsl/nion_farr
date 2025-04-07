@@ -1,0 +1,124 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install Backend Dependencies
+      run: |
+        cd nionfar/backend
+        npm ci
+    
+    - name: Run Backend Tests
+      run: |
+        cd nionfar/backend
+        npm run test
+      env:
+        MONGODB_URI: mongodb://localhost:27017/nionfar-test
+        JWT_SECRET: test-secret
+    
+    - name: Install Frontend Dependencies
+      run: |
+        cd nionfar/frontend
+        npm ci
+    
+    - name: Run Frontend Tests
+      run: |
+        cd nionfar/frontend
+        npm run test
+      env:
+        NEXT_PUBLIC_API_URL: http://localhost:3001/api
+    
+    - name: Build Frontend
+      run: |
+        cd nionfar/frontend
+        npm run build
+      env:
+        NEXT_PUBLIC_API_URL: https://api.nionfar.sn
+        NEXT_PUBLIC_SITE_URL: https://nionfar.sn
+  
+  deploy-staging:
+    needs: test
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Deploy Backend to Staging
+      run: |
+        # Ajoutez ici les commandes pour déployer le backend sur votre environnement de staging
+        echo "Deploying backend to staging..."
+      env:
+        MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+        JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
+    
+    - name: Deploy Frontend to Staging
+      run: |
+        # Ajoutez ici les commandes pour déployer le frontend sur votre environnement de staging
+        echo "Deploying frontend to staging..."
+      env:
+        NEXT_PUBLIC_API_URL: https://staging-api.nionfar.sn
+        NEXT_PUBLIC_SITE_URL: https://staging.nionfar.sn
+  
+  deploy-production:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Deploy Backend to Production
+      run: |
+        # Ajoutez ici les commandes pour déployer le backend sur votre environnement de production
+        echo "Deploying backend to production..."
+      env:
+        MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
+        JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+    
+    - name: Deploy Frontend to Production
+      run: |
+        # Ajoutez ici les commandes pour déployer le frontend sur votre environnement de production
+        echo "Deploying frontend to production..."
+      env:
+        NEXT_PUBLIC_API_URL: https://api.nionfar.sn
+        NEXT_PUBLIC_SITE_URL: https://nionfar.sn 

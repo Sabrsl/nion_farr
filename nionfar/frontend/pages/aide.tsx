@@ -170,50 +170,6 @@ const Aide: NextPage = () => {
             </div>
           </div>
         </section>
-
-        {/* Footer */}
-        <footer className="bg-gray-900 text-white py-12 px-4">
-          <div className="container mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div>
-                <h3 className="text-xl font-bold mb-4">NionFar.sn</h3>
-                <p className="text-gray-400">
-                  La plateforme sénégalaise qui connecte les freelances avec des clients cherchant des services de qualité à petit prix.
-                </p>
-              </div>
-              <div>
-                <h4 className="text-lg font-medium mb-4">Catégories</h4>
-                <ul className="space-y-2">
-                  <li><Link href="/categories/graphisme" className="text-gray-400 hover:text-white">Graphisme & Design</Link></li>
-                  <li><Link href="/categories/redaction" className="text-gray-400 hover:text-white">Rédaction & Traduction</Link></li>
-                  <li><Link href="/categories/developpement" className="text-gray-400 hover:text-white">Développement Web</Link></li>
-                  <li><Link href="/categories/marketing" className="text-gray-400 hover:text-white">Marketing Digital</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-lg font-medium mb-4">À propos</h4>
-                <ul className="space-y-2">
-                  <li><Link href="/a-propos" className="text-gray-400 hover:text-white">Qui sommes-nous</Link></li>
-                  <li><Link href="/comment-ca-marche" className="text-gray-400 hover:text-white">Comment ça marche</Link></li>
-                  <li><Link href="/devenir-freelance" className="text-gray-400 hover:text-white">Devenir freelance</Link></li>
-                  <li><Link href="/blog" className="text-gray-400 hover:text-white">Blog</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-lg font-medium mb-4">Support</h4>
-                <ul className="space-y-2">
-                  <li><Link href="/aide" className="text-gray-400 hover:text-white">Centre d'aide</Link></li>
-                  <li><Link href="/contact" className="text-gray-400 hover:text-white">Contactez-nous</Link></li>
-                  <li><Link href="/conditions" className="text-gray-400 hover:text-white">Conditions d'utilisation</Link></li>
-                  <li><Link href="/confidentialite" className="text-gray-400 hover:text-white">Politique de confidentialité</Link></li>
-                </ul>
-              </div>
-            </div>
-            <div className="mt-12 pt-8 border-t border-gray-800 text-center">
-              <p className="text-gray-400">© 2025 NionFar.sn - Tous droits réservés</p>
-            </div>
-          </div>
-        </footer>
       </main>
     </div>
   );

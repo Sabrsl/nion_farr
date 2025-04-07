@@ -21,9 +21,15 @@
     "@mui/icons-material": "^7.0.1",
     "@mui/material": "^7.0.1",
     "@mui/x-date-pickers": "^7.28.3",
+    "@sentry/node": "^9.11.0",
+    "@types/authenticator": "^1.1.4",
+    "@types/nodemailer": "^6.4.17",
+    "authenticator": "^1.1.5",
     "axios": "^1.8.4",
+    "concurrently": "^9.1.2",
     "date-fns": "^4.1.0",
     "node-fetch": "^3.3.2",
+    "nodemailer": "^6.10.0",
     "recharts": "^2.15.2"
   },
   "devDependencies": {

@@ -26,11 +26,11 @@ export class Withdrawal {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 
-  @Column({ type: 'enum', enum: WithdrawalStatus, default: WithdrawalStatus.PENDING })
-  status: WithdrawalStatus;
+  @Column()
+  status: string;
 
-  @Column({ type: 'enum', enum: WithdrawalMethod })
-  method: WithdrawalMethod;
+  @Column()
+  method: string;
 
   @Column({ type: 'json', nullable: false })
   paymentDetails: {
@@ -63,7 +63,7 @@ export class Withdrawal {
 
   @Column({ type: 'json', default: '[]' })
   history: {
-    status: WithdrawalStatus;
+    status: string;
     date: Date;
     notes: string;
     by: string;

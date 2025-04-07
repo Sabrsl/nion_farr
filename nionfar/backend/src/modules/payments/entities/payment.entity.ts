@@ -38,14 +38,14 @@ export class Payment {
   @Column({ type: 'int' })
   amount: number; // Amount in FCFA
 
-  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
-  status: PaymentStatus;
+  @Column()
+  status: string;
 
-  @Column({ type: 'enum', enum: PaymentMethod })
-  method: PaymentMethod;
+  @Column()
+  method: string;
 
-  @Column({ type: 'enum', enum: PaymentType })
-  type: PaymentType;
+  @Column()
+  type: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;

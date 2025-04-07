@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { Review } from './entities/review.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from 'express';
 
 @ApiTags('reviews')
 @Controller('reviews')
@@ -25,7 +26,8 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Créer un nouvel avis' })
-  async create(@Body() reviewData: Partial<Review>): Promise<Review> {
-    return this.reviewsService.create(reviewData);
+  async create(@Body() reviewData: any, @Req() req: Request) {
+    const userId = req.user['id'];
+    return this.reviewsService.create(reviewData, userId);
   }
 } 

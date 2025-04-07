@@ -17,14 +17,14 @@ export class Transaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: TransactionType })
-  type: TransactionType;
+  @Column()
+  type: string;
 
   @Column()
   amount: number;
 
-  @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.PENDING })
-  status: TransactionStatus;
+  @Column()
+  status: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })

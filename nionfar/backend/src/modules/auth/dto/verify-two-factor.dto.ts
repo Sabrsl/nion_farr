@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID, Length, Matches } from 'class-validator';
 
 export class VerifyTwoFactorDto {
   @ApiProperty({
@@ -16,5 +16,7 @@ export class VerifyTwoFactorDto {
   })
   @IsString({ message: 'Le code doit être une chaîne de caractères' })
   @IsNotEmpty({ message: 'Le code est requis' })
+  @Length(6, 6, { message: 'Le code doit contenir exactement 6 caractères' })
+  @Matches(/^[0-9]+$/, { message: 'Le code doit contenir uniquement des chiffres' })
   twoFactorCode: string;
 } 

@@ -7,9 +7,12 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validate } from './config/env.validation';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AuthModule } from './modules/auth/auth.module';
+import { HealthModule } from './health/health.module';
+import { BackupService } from './scripts/backup';
 
 // Modules
-import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ServicesModule } from './modules/services/services.module';
 import { OrdersModule } from './modules/orders/orders.module';
@@ -18,11 +21,11 @@ import { MessagesModule } from './modules/messages/messages.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
-import { DatabaseModule } from '../config/database.module';
-import { UserModule } from '../modules/user.module';
 import { EmailModule } from './modules/email/email.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
+import { AppService } from './app.service';
+import { SecurityModule } from './security/security.module';
 
 @Module({
   imports: [
@@ -32,28 +35,33 @@ import { DisputesModule } from './modules/disputes/disputes.module';
       validate,
     }),
     
-    // Database
+    // Database - TypeORM configuré avec MongoDB
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        type: configService.get<string>('DB_TYPE') as any || 'sqlite',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_DATABASE'),
+        type: 'mongodb',
+        url: configService.get<string>('MONGODB_URI'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get<boolean>('DB_SYNC'),
-        ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
+        synchronize: false,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        retryAttempts: 5,
+        retryDelay: 3000,
       }),
     }),
     
     // Rate limiting
-    ThrottlerModule.forRoot([{
-      ttl: 60,
-      limit: 10,
-    }]),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ([
+        {
+          ttl: configService.get('THROTTLE_TTL', 60) * 1000,
+          limit: configService.get('THROTTLE_LIMIT', 10),
+        },
+      ]),
+    }),
     
     // JWT
     JwtModule.registerAsync({
@@ -67,14 +75,23 @@ import { DisputesModule } from './modules/disputes/disputes.module';
       }),
     }),
     
-    // Connexion à MongoDB
+    // Connexion à MongoDB via Mongoose
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => ({
         uri: config.get<string>('MONGODB_URI'),
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        retryAttempts: 5,
+        retryDelay: 3000,
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 10000,
       }),
     }),
+    
+    // Planification des tâches
+    ScheduleModule.forRoot(),
     
     // Application modules
     AuthModule,
@@ -86,14 +103,16 @@ import { DisputesModule } from './modules/disputes/disputes.module';
     ReviewsModule,
     AdminModule,
     NotificationsModule,
-    DisputesModule,
-    DatabaseModule,
-    UserModule,
     EmailModule,
     SmsModule,
+    DisputesModule,
+    HealthModule,
+    SecurityModule,
   ],
   controllers: [AppController],
   providers: [
+    AppService,
+    BackupService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

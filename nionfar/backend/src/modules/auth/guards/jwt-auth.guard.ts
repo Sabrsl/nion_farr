@@ -1,7 +1,7 @@
-import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { Reflector } from '@nestjs/core';
-import { Observable } from 'rxjs';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
@@ -10,26 +10,37 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    // Vérifier si la route est publique (décorateur @Public())
+  canActivate(context: ExecutionContext) {
+    // Vérifier si la route est marquée comme publique avec @Public()
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
+    // Si la route est publique, autoriser l'accès sans vérification
     if (isPublic) {
       return true;
     }
 
-    // Appeler la méthode canActivate du parent pour vérifier le JWT
+    // Sinon, exécuter la validation JWT standard
     return super.canActivate(context);
   }
 
-  handleRequest(err: any, user: any, info: any) {
-    // Si une erreur est survenue ou si l'utilisateur n'est pas trouvé
+  handleRequest(err, user, info, context) {
+    // Gestion améliorée des erreurs de token
     if (err || !user) {
-      throw err || new UnauthorizedException('Accès non autorisé');
+      if (info instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Token expiré. Veuillez vous reconnecter.');
+      } else if (info instanceof JsonWebTokenError) {
+        throw new UnauthorizedException('Token invalide. Veuillez vous reconnecter.');
+      } else {
+        throw new UnauthorizedException('Non autorisé. Veuillez vous connecter.');
+      }
     }
+    
+    // Logging pour suivi de sécurité
+    console.log(`[AUTH] Utilisateur ${user.email} (${user.role}) a accédé à ${context.getClass().name}/${context.getHandler().name}`);
+    
     return user;
   }
 } 

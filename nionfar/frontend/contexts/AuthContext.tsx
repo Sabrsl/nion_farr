@@ -53,6 +53,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!isMounted) return;
     
     try {
+      // Assurer que ceci fonctionne uniquement côté client
+      if (typeof window === 'undefined') return;
+      
       const storedUser = localStorage.getItem(USER_STORAGE_KEY);
       
       if (storedUser) {
@@ -72,18 +75,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isMounted, user]);
+  }, [isMounted]);
 
   // Marquer le composant comme monté (côté client uniquement)
   useEffect(() => {
     setIsMounted(true);
+    // Initialiser immédiatement le state client après le premier rendu
+    setLoading(false);
     return () => setIsMounted(false);
   }, []);
 
   // Initialisation du contexte au montage et gestion des changements de localStorage
   useEffect(() => {
     // Ne rien faire pendant le rendu serveur
-    if (!isMounted) return;
+    if (!isMounted || typeof window === 'undefined') return;
     
     // Vérifier l'état initial
     refreshAuthState();

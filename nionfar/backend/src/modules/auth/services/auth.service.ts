@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -8,14 +8,23 @@ import { toDataURL } from 'qrcode';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { EmailService } from '../../email/email.service';
 import { SmsService } from '../../sms/sms.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from '../../users/entities/user.entity';
+import { Repository } from 'typeorm';
+import { TokenService } from '../../../auth/token.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
-    private jwtService: JwtService,
-    private configService: ConfigService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     private emailService: EmailService,
     private smsService: SmsService,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    private readonly tokenService: TokenService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -31,62 +40,64 @@ export class AuthService {
     return result;
   }
 
-  async login(user: any) {
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
-
-    // Si l'utilisateur a activé 2FA, ne pas générer de token complet
-    if (user.isTwoFactorEnabled) {
-      return {
-        accessToken: this.jwtService.sign(payload, { expiresIn: '5m' }),
-        refreshToken: '',
-        user: { id: user.id, email: user.email },
-        requiresTwoFactor: true,
-      };
-    }
-
+  async login(user: any, rememberMe?: boolean) {
+    const payload = { sub: user.id, username: user.email };
+    
+    // Générer les tokens
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get('JWT_REFRESH_SECRET') || 'refreshSecret',
+      expiresIn: rememberMe ? '7d' : '24h',
+    });
+    
+    // Stocker le refresh token en base de données
+    await this.storeRefreshToken(user.id, refreshToken);
+    
     return {
-      accessToken: this.jwtService.sign(payload),
-      refreshToken: this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN'),
-      }),
-      user,
-      requiresTwoFactor: false,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isFreelancer: user.isFreelancer,
+        isTwoFactorEnabled: user.isTwoFactorEnabled,
+      },
     };
   }
 
-  async refreshToken(refreshToken: string) {
-    try {
-      // Vérifier si le token est valide
-      const payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      });
-
-      // Créer un nouveau token
-      const newPayload: JwtPayload = {
-        sub: payload.sub,
-        email: payload.email,
-        role: payload.role,
-      };
-
-      // Récupérer l'utilisateur
-      const user = { id: payload.sub, email: payload.email, role: payload.role };
-
-      return {
-        accessToken: this.jwtService.sign(newPayload),
-        refreshToken: this.jwtService.sign(newPayload, {
-          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-          expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN'),
-        }),
-        user,
-      };
-    } catch (error) {
-      throw new UnauthorizedException('Token de rafraîchissement invalide');
+  async refreshToken(userId: string, refreshToken: string) {
+    // Vérifier que le refresh token existe dans la base de données
+    const isRefreshTokenValid = await this.validateRefreshToken(userId, refreshToken);
+    
+    if (!isRefreshTokenValid) {
+      throw new UnauthorizedException('Invalid refresh token');
     }
+    
+    // Récupérer l'utilisateur
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'email', 'role', 'firstName', 'lastName', 'isFreelancer', 'isTwoFactorEnabled'],
+    });
+    
+    // Générer un nouveau token d'accès
+    const payload = { sub: user.id, username: user.email };
+    const accessToken = this.jwtService.sign(payload);
+    
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isFreelancer: user.isFreelancer,
+        isTwoFactorEnabled: user.isTwoFactorEnabled,
+      },
+    };
   }
 
   async logout(userId: string) {
@@ -224,5 +235,38 @@ export class AuthService {
       }),
       user,
     };
+  }
+
+  private async storeRefreshToken(userId: string, refreshToken: string): Promise<void> {
+    try {
+      // Ici, vous pouvez stocker le token dans la base de données
+      // Par exemple, mettre à jour l'utilisateur avec son refresh token actuel
+      await this.usersRepository.update(userId, {
+        refreshToken: refreshToken,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to store refresh token: ${error.message}`);
+      throw new UnauthorizedException('Failed to store refresh token');
+    }
+  }
+
+  private async validateRefreshToken(userId: string, token: string): Promise<boolean> {
+    try {
+      // Récupérer l'utilisateur avec son token de rafraîchissement
+      const user = await this.usersRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'refreshToken'],
+      });
+
+      if (!user || !user.refreshToken) {
+        return false;
+      }
+
+      // Vérifier que le token correspond
+      return user.refreshToken === token;
+    } catch (error) {
+      this.logger.error(`Failed to validate refresh token: ${error.message}`);
+      return false;
+    }
   }
 } 
