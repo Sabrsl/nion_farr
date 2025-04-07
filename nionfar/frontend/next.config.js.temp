@@ -1,0 +1,19 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  
+  // Force le mode standalone pour Vercel
+  output: 'standalone',
+
+  // Configuration des images
+  images: {
+    domains: ['nionfar.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
+    formats: ['image/avif', 'image/webp'],
+    unoptimized: true,
+  },
+  
+  // Autres configurations restent inchangées
+  // ... existing code ...
+}
+
+module.exports = nextConfig 
