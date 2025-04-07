@@ -14,7 +14,8 @@ package-lock.json
 yarn.lock
 
 # Fichiers de build
-/dist/
+# Ne pas ignorer le dossier dist pour Render
+# /dist/
 /build/
 
 # Fichiers de cache
