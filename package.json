@@ -14,7 +14,8 @@
     "lint": "eslint \"**/*.{js,jsx,ts,tsx}\"",
     "postinstall": "bash ./install.sh",
     "build": "bash ./build-render.sh",
-    "start": "bash ./start-render.sh"
+    "start": "bash ./start-render.sh",
+    "start:prod": "cd nionfar/backend && npm run start:prod"
   },
   "author": "NionFar Team",
   "license": "UNLICENSED",
