@@ -1,9 +1,12 @@
 services:
   - type: web
     name: nionfar-backend
-    runtime: node
+    env: node
+    rootDir: nionfar/backend
     buildCommand: npm install && npm run build
     startCommand: npm run start:prod
+    region: frankfurt
+    plan: free
     envVars:
       - key: NODE_ENV
         value: production
