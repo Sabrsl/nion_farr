@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd nionfar/frontend && NODE_OPTIONS='--max_old_space_size=4096' npm install --legacy-peer-deps && npm install @mui/icons-material --save && NEXT_DISABLE_ESLINT=1 NODE_ENV=production npm run build",
+  "buildCommand": "cd nionfar/frontend && NODE_OPTIONS='--max_old_space_size=4096' npm install --legacy-peer-deps && npm install @mui/icons-material react-toastify react-dropzone @headlessui/react classnames resend mongodb bcryptjs msw --save && NEXT_DISABLE_ESLINT=1 NODE_ENV=production npm run build",
   "outputDirectory": "nionfar/frontend/.next",
   "installCommand": "npm install"
 } 
