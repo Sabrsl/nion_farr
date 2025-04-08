@@ -9,6 +9,7 @@ const Header = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [loginPath, setLoginPath] = useState('/auth/login');
   const router = useRouter();
   const { user, isAuthenticated, logout, refreshAuthState } = useAuth();
 
@@ -50,35 +51,28 @@ const Header = () => {
   }, [router.asPath, refreshAuthState]);
 
   // Créer un lien de connexion dynamique qui inclut la page actuelle comme redirect
-  const loginLink = () => {
-    // Ne fonctionne que côté client
-    if (typeof window !== 'undefined') {
+  useEffect(() => {
+    // Ne s'exécute que côté client et après initialisation du router
+    if (typeof window !== 'undefined' && router.isReady) {
       // Capture exacte du chemin actuel via router
       const currentPath = router.asPath;
       
-      console.log('Génération du lien de connexion, chemin actuel:', currentPath);
-      
       // Ne pas ajouter de redirection pour les pages d'authentification
       if (currentPath.includes('/auth/') || currentPath.includes('/logout')) {
-        console.log('Chemin d\'auth détecté, pas de redirection');
-        return '/auth/login';
+        setLoginPath('/auth/login');
+        return;
       }
       
       // Sécurité : vérifier que le chemin n'est pas vide
       if (!currentPath || currentPath === '/') {
-        console.log('Chemin vide ou root, redirection vers l\'accueil');
-        return '/auth/login?redirect=%2F'; // Redirection vers l'accueil si chemin vide
+        setLoginPath('/auth/login?redirect=%2F');
+        return;
       }
       
       // Créer l'URL de connexion avec redirection
-      const redirectUrl = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
-      console.log('URL de redirection générée:', redirectUrl);
-      return redirectUrl;
+      setLoginPath(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
     }
-    
-    // Valeur par défaut côté serveur
-    return '/auth/login?redirect=%2F'; // Valeur par défaut: redirection vers l'accueil
-  };
+  }, [router.asPath, router.isReady]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -157,7 +151,7 @@ const Header = () => {
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4 md:py-6">
-          <a href="/" className="flex items-center">
+          <Link href="/" className="flex items-center">
             <span className={`text-2xl font-bold ${
               scrollPosition > 50 
                 ? 'text-indigo-600' 
@@ -165,11 +159,11 @@ const Header = () => {
             }`}>
               NionFar<span className={`${scrollPosition > 50 ? 'text-violet-500' : 'text-indigo-300'}`}>.sn</span>
             </span>
-          </a>
+          </Link>
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-10">
-            <a 
+            <Link 
               href="/explorer" 
               className={`text-sm font-medium ${
                 isActive('/explorer')
@@ -178,8 +172,8 @@ const Header = () => {
               } hover:text-indigo-500 transition-colors`}
             >
               Explorer
-            </a>
-            <a 
+            </Link>
+            <Link 
               href="/comment-ca-marche" 
               className={`text-sm font-medium ${
                 isActive('/comment-ca-marche')
@@ -188,8 +182,8 @@ const Header = () => {
               } hover:text-indigo-500 transition-colors`}
             >
               Comment ça marche
-            </a>
-            <a 
+            </Link>
+            <Link 
               href="/devenir-freelance" 
               className={`text-sm font-medium ${
                 isActive('/devenir-freelance')
@@ -198,8 +192,8 @@ const Header = () => {
               } hover:text-indigo-500 transition-colors`}
             >
               Devenir freelance
-            </a>
-            <a 
+            </Link>
+            <Link 
               href="/contact" 
               className={`text-sm font-medium ${
                 isActive('/contact')
@@ -208,7 +202,7 @@ const Header = () => {
               } hover:text-indigo-500 transition-colors`}
             >
               Contact
-            </a>
+            </Link>
           </nav>
           
           <div className="hidden md:flex items-center space-x-6 relative z-10">
@@ -220,12 +214,12 @@ const Header = () => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 >
                   <Avatar
-                    src={user.avatar}
-                    alt={user.name || (user as any).username}
+                    src={(user as any).avatar}
+                    alt={(user as any).firstName || (user as any).username || (user.email || 'Utilisateur')}
                     size="sm"
                   />
                   <span className={`text-sm font-medium ${scrollPosition > 50 ? 'text-gray-800' : 'text-white'}`}>
-                    {user.name || (user as any).username}
+                    {(user as any).firstName || (user as any).username || (user.email || 'Utilisateur')}
                   </span>
                 </button>
                 
@@ -236,10 +230,10 @@ const Header = () => {
                     className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
                   >
                     <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">{user.name || (user as any).username}</p>
-                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                      <p className="text-sm font-medium text-gray-900">{(user as any).firstName || (user as any).username || (user.email || 'Utilisateur')}</p>
+                      {user.email && <p className="text-xs text-gray-500 truncate">{user.email}</p>}
                     </div>
-                    {user.role === 'provider' && (
+                    {user.role === 'freelance' && (
                       <Link
                         href="/dashboard/freelance"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 flex items-center"
@@ -284,25 +278,25 @@ const Header = () => {
                       Paramètres
                     </Link>
                     <div className="border-t border-gray-100 my-1"></div>
-                    <a
-                      href="/logout"
+                    <button
+                      onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
                     >
                       <FiLogOut className="mr-2 h-4 w-4" />
                       Déconnexion
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>
             ) : (
               <>
-                <a 
-                  href={loginLink()}
+                <Link 
+                  href={loginPath}
                   className={`text-sm font-medium ${scrollPosition > 50 ? 'text-gray-800' : 'text-white'} hover:text-indigo-500 transition-colors`}
                 >
                   Connexion
-                </a>
-                <a 
+                </Link>
+                <Link 
                   href="/auth/register" 
                   className={`${
                     scrollPosition > 50 
@@ -311,7 +305,7 @@ const Header = () => {
                   } text-sm font-medium px-5 py-2.5 rounded-full hover:bg-indigo-700 hover:text-white transition-all shadow-lg hover:shadow-indigo-500/25 relative z-20`}
                 >
                   Inscription
-                </a>
+                </Link>
               </>
             )}
           </div>
@@ -331,26 +325,51 @@ const Header = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 shadow-xl">
           <div className="px-4 pt-2 pb-4 space-y-1">
-            <a href="/explorer" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+            <Link href="/explorer" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
               Explorer
-            </a>
-            <a href="/comment-ca-marche" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+            </Link>
+            <Link href="/comment-ca-marche" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
               Comment ça marche
-            </a>
-            <a href="/devenir-freelance" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+            </Link>
+            <Link href="/devenir-freelance" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
               Devenir freelance
-            </a>
-            <a href="/contact" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+            </Link>
+            <Link href="/contact" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
               Contact
-            </a>
-            <div className="pt-4 mt-4 border-t border-gray-100">
-              <a href={loginLink()} className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
-                Connexion
-              </a>
-              <a href="/auth/register" className="block px-3 py-2 mt-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg text-center">
-                Inscription
-              </a>
-            </div>
+            </Link>
+            
+            {isAuthenticated && user ? (
+              <div className="pt-4 mt-4 border-t border-gray-100">
+                {user.role === 'freelance' && (
+                  <Link href="/dashboard/freelance" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+                    Tableau de bord
+                  </Link>
+                )}
+                {user.role === 'client' && (
+                  <Link href="/dashboard/client" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+                    Tableau de bord
+                  </Link>
+                )}
+                <Link href="/dashboard/orders" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+                  Mes commandes
+                </Link>
+                <Link href="/dashboard/messages" className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+                  Messages
+                </Link>
+                <button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg">
+                  Déconnexion
+                </button>
+              </div>
+            ) : (
+              <div className="pt-4 mt-4 border-t border-gray-100">
+                <Link href={loginPath} className="block px-3 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg">
+                  Connexion
+                </Link>
+                <Link href="/auth/register" className="block px-3 py-2 mt-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg text-center">
+                  Inscription
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
