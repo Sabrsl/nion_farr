@@ -13,6 +13,7 @@
     "NEXT_PUBLIC_APP_URL": "https://nionfar.vercel.app",
     "NEXT_PUBLIC_ENVIRONMENT": "production",
     "NEXT_DISABLE_ESLINT": "1",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "TAILWIND_MODE": "watch"
   }
 } 
