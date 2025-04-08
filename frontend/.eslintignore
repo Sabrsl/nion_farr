@@ -1,0 +1,11 @@
+# Ignorer les dossiers de dépendances
+node_modules
+**/node_modules/**
+
+# Ignorer les dossiers de build
+.next
+**/.next/**
+dist
+**/dist/**
+build
+**/build/** 
