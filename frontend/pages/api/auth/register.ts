@@ -1,0 +1,202 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { generateVerificationCode, isValidEmail } from '../../../lib/auth/utils';
+import { EmailManager } from '../../../lib/emails/emailManager';
+import { verificationCodes, userStorage } from '../../../lib/auth/storage';
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ 
+      success: false,
+      error: 'Méthode non autorisée' 
+    });
+  }
+
+  try {
+    const { email, name, password, role = 'client' } = req.body;
+
+    // Valider les champs requis
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email requis',
+        details: { email: 'Veuillez fournir une adresse email valide' }
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Mot de passe requis',
+        details: { password: 'Veuillez fournir un mot de passe' }
+      });
+    }
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nom requis',
+        details: { name: 'Veuillez fournir votre nom' }
+      });
+    }
+
+    // Valider le format de l'email
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Format d\'email invalide',
+        details: { email: 'L\'adresse email fournie n\'est pas valide' }
+      });
+    }
+    
+    // Vérifier si l'utilisateur existe déjà
+    let userExists = false;
+    try {
+      userExists = userStorage.exists(email);
+    } catch (storageError) {
+      console.error('Erreur d\'accès au stockage lors de la vérification d\'email:', storageError);
+      // Continuer sans bloquer
+    }
+
+    if (userExists) {
+      // Pour des raisons de sécurité, ne pas révéler que l'email existe
+      return res.status(200).json({
+        success: true,
+        message: 'Si ce compte n\'existe pas déjà, un code de vérification a été envoyé à cette adresse'
+      });
+    }
+
+    // Vérifier si un code existe déjà pour cet email (éviter le spam)
+    let existingCode;
+    try {
+      existingCode = verificationCodes.get(email);
+    } catch (codeError) {
+      console.error('Erreur lors de la récupération du code de vérification:', codeError);
+      // Continuer sans bloquer
+    }
+
+    if (existingCode) {
+      // Si un code existe déjà, ne pas en créer un nouveau tout de suite
+      // Dans une application réelle, on pourrait limiter le nombre de demandes
+      const lastRequest = new Date(existingCode.expiresAt);
+      lastRequest.setTime(lastRequest.getTime() - 24 * 60 * 60 * 1000); // Expiration - 24h
+      const timeSinceLastRequest = Date.now() - lastRequest.getTime();
+      
+      // Si la dernière demande date de moins de 5 minutes, refuser
+      if (timeSinceLastRequest < 5 * 60 * 1000) {
+        return res.status(429).json({
+          success: false,
+          error: 'Trop de demandes',
+          details: {
+            message: 'Veuillez attendre 5 minutes avant de demander un nouveau code',
+            retryAfter: Math.ceil((5 * 60 * 1000 - timeSinceLastRequest) / 1000)
+          }
+        });
+      }
+    }
+
+    // Générer un code de vérification
+    const verificationCode = generateVerificationCode();
+    
+    // Date d'expiration (24 heures)
+    const expirationDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    // Stocker le code de vérification
+    try {
+      verificationCodes.set(email, {
+        email,
+        code: verificationCode,
+        expiresAt: expirationDate.toISOString()
+      });
+    } catch (setCodeError) {
+      console.error('Erreur lors du stockage du code de vérification:', setCodeError);
+      // Continuer sans bloquer car l'email contiendra le code
+    }
+
+    // En mode développement, on peut auto-créer un utilisateur pour faciliter les tests
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        // Créer un nouvel utilisateur avec un ID unique
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        
+        userStorage.create({
+          id: userId,
+          email,
+          name,
+          role: role as 'client' | 'freelancer' | 'admin',
+          password: `hashed_${password}`, // En production, ce serait hashé avec bcrypt
+          isVerified: process.env.AUTO_VERIFY === 'true',
+          createdAt: new Date().toISOString()
+        });
+      } catch (createUserError) {
+        console.error('Erreur lors de la création de l\'utilisateur:', createUserError);
+        // Continuer sans bloquer car l'utilisateur pourra vérifier son email et finaliser l'inscription
+      }
+    }
+
+    let emailSent = false;
+    let emailError = null;
+
+    try {
+      // Initialiser EmailManager pour l'envoi d'email
+      EmailManager.initialize();
+
+      // Vérifier le mode test de Resend
+      const isTestMode = !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.startsWith('re_');
+      const verifiedEmail = process.env.VERIFIED_EMAIL || 'badzagueye@gmail.com'; // Email vérifié pour les tests
+      
+      // En mode test, envoyer l'email à l'adresse vérifiée uniquement
+      const recipientEmail = isTestMode ? verifiedEmail : email;
+
+      // Préparer le lien de vérification
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const verificationLink = `${baseUrl}/auth/verify?email=${encodeURIComponent(email)}&code=${verificationCode}`;
+
+      // Envoyer l'email de vérification
+      const emailResult = await EmailManager.sendAccountVerification(
+        recipientEmail,
+        {
+          userName: name || email.split('@')[0],
+          verificationCode: verificationCode,
+          verificationLink: verificationLink,
+          expirationTime: '24 heures'
+        }
+      );
+
+      emailSent = emailResult.success;
+      if (!emailResult.success) {
+        emailError = emailResult.error;
+        console.error('Échec de l\'envoi de l\'email de vérification:', emailResult.error);
+      }
+    } catch (emailException) {
+      console.error('Exception lors de l\'envoi de l\'email:', emailException);
+      emailError = emailException instanceof Error ? emailException.message : 'Erreur inconnue';
+    }
+
+    // Répondre avec succès, même si l'email n'a pas pu être envoyé
+    // En mode développement, on retourne toujours le code pour faciliter les tests
+    return res.status(200).json({
+      success: true,
+      message: emailSent 
+        ? (process.env.NODE_ENV === 'development' && email !== process.env.VERIFIED_EMAIL
+          ? 'Code de vérification envoyé à l\'adresse de test (mode développement)'
+          : 'Code de vérification envoyé à votre adresse email')
+        : 'Inscription enregistrée, mais problème d\'envoi d\'email. Veuillez contacter le support.',
+      email: email,
+      expiresAt: expirationDate,
+      emailSent,
+      ...(emailError && process.env.NODE_ENV === 'development' ? { emailError } : {}),
+      // En mode développement, inclure le code de vérification pour faciliter les tests
+      ...(process.env.NODE_ENV === 'development' ? { verificationCode } : {})
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'enregistrement:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Une erreur est survenue lors de l\'enregistrement',
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
+    });
+  }
+} 

@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: nionfar-backend
+    env: node
+    plan: free
+    buildCommand: cd nionfar/backend && npm install && npm run build
+    startCommand: cd nionfar/backend && npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: API_PREFIX
+        value: api
+      - key: APP_URL
+        value: https://nionfar-backend.onrender.com
+      - key: FRONTEND_URL
+        value: https://nionfar.vercel.app
+      - key: DB_HOST
+        fromDatabase:
+          name: nionfar-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: nionfar-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: nionfar-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: nionfar-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: nionfar-db
+          property: database
+      - key: DB_SYNC
+        value: false
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: TWO_FACTOR_AUTHENTICATION_APP_NAME
+        value: NionFar
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        sync: false
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+
+databases:
+  - name: nionfar-db
+    plan: free 
