@@ -85,13 +85,19 @@ jobs:
         MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
         JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
     
-    - name: Deploy Frontend to Staging
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+    
+    - name: Deploy Frontend to Staging with Vercel
       run: |
-        # Ajoutez ici les commandes pour déployer le frontend sur votre environnement de staging
-        echo "Deploying frontend to staging..."
+        cd nionfar/frontend
+        vercel deploy --token ${{ secrets.VERCEL_TOKEN }} --prod --scope nionfar --confirm \
+          -e NEXT_PUBLIC_API_URL=https://staging-api.nionfar.sn \
+          -e NEXT_PUBLIC_SITE_URL=https://staging.nionfar.sn \
+          -e NEXT_PUBLIC_ENVIRONMENT=staging
       env:
-        NEXT_PUBLIC_API_URL: https://staging-api.nionfar.sn
-        NEXT_PUBLIC_SITE_URL: https://staging.nionfar.sn
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   
   deploy-production:
     needs: test
@@ -107,18 +113,21 @@ jobs:
         node-version: '18'
         cache: 'npm'
     
-    - name: Deploy Backend to Production
+    - name: Deploy Backend to Production (Render)
       run: |
-        # Ajoutez ici les commandes pour déployer le backend sur votre environnement de production
-        echo "Deploying backend to production..."
-      env:
-        MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
-        JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+        curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+        echo "Deploying backend to production via Render deploy hook..."
     
-    - name: Deploy Frontend to Production
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+    
+    - name: Deploy Frontend to Production with Vercel
       run: |
-        # Ajoutez ici les commandes pour déployer le frontend sur votre environnement de production
-        echo "Deploying frontend to production..."
+        cd nionfar/frontend
+        vercel deploy --token ${{ secrets.VERCEL_TOKEN }} --prod --scope nionfar --confirm \
+          -e NEXT_PUBLIC_API_URL=https://nionfar-backend.onrender.com/api \
+          -e NEXT_PUBLIC_SITE_URL=https://nionfar.vercel.app \
+          -e NEXT_PUBLIC_ENVIRONMENT=production
       env:
-        NEXT_PUBLIC_API_URL: https://api.nionfar.sn
-        NEXT_PUBLIC_SITE_URL: https://nionfar.sn 
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }} 

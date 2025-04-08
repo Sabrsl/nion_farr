@@ -9,17 +9,15 @@ lerna-debug.log*
 .npm/
 .yarn-integrity
 
-# Fichiers d'environnement
+# Fichiers d'environnement - Exceptions pour les exemples
 **/.env
 **/.env.local
 **/.env.development
 **/.env.test
-**/.env.production
-**/.env.production.local
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Permet aux fichiers d'exemple d'être inclus
+!**/.env.example
+# Nous maintenons le fichier de production dans le dépôt pour Vercel
+!**/.env.production
 
 # Fichiers de build
 **/dist/
@@ -31,7 +29,10 @@ lerna-debug.log*
 **/coverage/
 **/.docz/
 **/.serverless/
-**/.vercel/
+
+# Ne pas ignorer le dossier de configuration Vercel
+!.vercel
+!vercel.json
 
 # Cache
 .cache/
@@ -85,13 +86,15 @@ Thumbs.db
 **/uploads/**/*
 !**/uploads/.gitkeep
 **/.data/
-**/.vercel/
-**/.now/
 
 # Spécifique à NionFar
 backend/middleware/.generated/
 frontend/.next/standalone/
 frontend/.next/static/
+
+# Permettre les scripts de build Vercel
+!vercel-build.js
+!vercel-post-build.js
 
 # Testing
 **/coverage
