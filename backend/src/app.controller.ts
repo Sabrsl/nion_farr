@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { Public } from './modules/auth/decorators/public.decorator';
 
 @ApiTags('App')
-@Controller()
+@Controller('api')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
@@ -19,11 +19,11 @@ export class AppController {
   @Get('health')
   @ApiOperation({ summary: 'Vérifier l\'état de santé de l\'API' })
   @ApiResponse({ status: 200, description: 'L\'API est en bon état de fonctionnement' })
-  health() {
+  getHealth() {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development',
+      environment: process.env.NODE_ENV || 'development'
     };
   }
 } 
