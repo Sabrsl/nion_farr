@@ -24,10 +24,15 @@ Pour déployer l'application frontend sur Vercel, suivez ces étapes:
 
    ```
    NEXTAUTH_SECRET=<générer une chaîne aléatoire sécurisée>
-   MONGODB_URI=mongodb+srv://vynalapp:uVmENC9K21dkMfma@clusternionfar.rjuvvf7.mongodb.net/nionfar?retryWrites=true&w=majority&appName=Clusternionfar
+   MONGODB_URI=<votre chaîne de connexion MongoDB>
    STRIPE_SECRET_KEY=<votre clé secrète Stripe>
-   EMAIL_SERVER_PASSWORD=re_a4PMNnRv_AByeDNM1QaHhFqWcHFrB5h2Q
-   CLOUDINARY_API_SECRET=WuT_lBd-Y7sGGBH5mHO0oGhHEXQ
+   EMAIL_SERVER_PASSWORD=<votre clé API d'email>
+   CLOUDINARY_API_SECRET=<votre secret API Cloudinary>
+   ```
+   
+   Pour générer une chaîne sécurisée pour NEXTAUTH_SECRET, utilisez la commande:
+   ```bash
+   node -e "console.log(crypto.randomBytes(32).toString('hex'))"
    ```
 
 4. **Domaine personnalisé** (Optionnel):
@@ -60,3 +65,10 @@ Après le déploiement, testez les fonctionnalités suivantes:
 - Upload d'images
 - Connexion API avec le backend
 - Formulaires et soumissions de données 
+
+### Sécurité
+
+- Ne stockez jamais de secrets, clés API ou tokens dans le code source
+- Utilisez exclusivement les variables d'environnement de Vercel pour les informations sensibles
+- Activez l'authentification à deux facteurs pour votre compte Vercel
+- Vérifiez régulièrement les journaux d'accès et d'activité 

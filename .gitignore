@@ -312,4 +312,103 @@ backups/
 
 # Env files we want to keep
 !.env.example
-!.env.production 
+!.env.production
+
+# Fichiers de clés et secrets supplémentaires
+**/*.keystore
+**/*.jks
+**/*.p8
+**/*.der
+**/*.cer
+**/*.ca
+**/*.gpg
+**/*.asc
+**/*.ovpn
+**/*.auth
+**/*.pwd
+**/credentials.json
+**/secret.json
+**/secrets.json
+**/secrets.yaml
+**/secrets.yml
+**/secrets.xml
+**/key.json
+**/keys.json
+**/service-account*.json
+**/google-services.json
+**/googleservice-info.plist
+**/firebase-service-account*.json
+**/firebase-adminsdk*.json
+**/.npmrc
+**/.yarnrc
+# Spécifiques à AWS
+**/.aws/
+**/aws.json
+**/awsconfig.json
+**/credentials
+**/accessKeys.csv
+**/rootkey.csv
+# Spécifiques à Resend
+**/resend.json
+# Bases de données et stockages locaux
+**/.nedb
+**/.sqlite
+**/*.nedb
+**/*.leveldb
+**/*.ldb
+**/rethinkdb_data/
+**/neo4j/data/
+**/.cassandra/
+# Fichiers de logs supplémentaires
+**/pm2/logs/
+**/logs/
+**/supervisord.log
+# Dumps et sauvegardes
+**/*.dump
+**/*.backup
+**/*.bak
+**/*.dump.gz
+**/*.sql.gz
+**/*.mongodb
+**/*.mongo
+**/db/mongo/
+**/db/postgres/
+**/db/mysql/
+**/backups/
+**/backup/
+**/dump/
+**/dumps/
+**/*.mongodb.gz
+**/*.pgdump
+**/.db/
+# Autres fichiers sensibles
+**/.history/
+**/.vscode/launch.json
+**/.idea/workspace.xml
+**/*.code-workspace
+**/local.properties
+**/config.local.js
+**/config.dev.js
+**/config.prod.js
+**/*.private.*
+**/*.secret.*
+**/provisioning/
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/.terraform/
+**/kubeconfig
+**/.kube/
+**/.k8s/
+**/kubernetes/secrets/
+# Fichiers spécifiques à NionFar qu'il faut absolument exclure
+**/nionfar-secrets/
+**/nionfar-keys/
+backend/.env.production
+backend/.env.staging
+backend/.env.test
+
+# Gardez explicitement ces fichiers qui ne contiennent pas de secrets
+!frontend/.env.production
+!backend/.env.example
+!frontend/.env.example
+!docs/example-secrets.md 
