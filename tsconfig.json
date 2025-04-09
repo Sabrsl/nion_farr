@@ -16,7 +16,10 @@
   "include": [
     "backend/**/*.ts",
     "frontend/**/*.ts",
-    "frontend/**/*.tsx"
+    "frontend/**/*.tsx",
+    "mocks/**/*.ts",
+    "src/**/*.ts",
+    "types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
