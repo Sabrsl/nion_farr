@@ -1,15 +1,8 @@
 {
-  "version": 2,
   "framework": "nextjs",
-  "outputDirectory": "frontend/.next",
   "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/.next",
   "installCommand": "npm install",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/$1"
-    }
-  ],
   "env": {
     "NEXT_PUBLIC_API_URL": "https://nionfar-backend.onrender.com/api",
     "NEXT_PUBLIC_APP_URL": "https://nion-farr.vercel.app",
