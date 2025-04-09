@@ -134,90 +134,223 @@ mockData.categories.forEach(category => {
   inMemoryDB.categories.push(category);
 });
 
-// Configuration pour la gestion de la mémoire
+// Configuration de la gestion de la mémoire
 const MEMORY_MANAGEMENT = {
-  MAX_USERS_IN_MEMORY: 100,      // Nombre maximum d'utilisateurs en mémoire
-  MAX_TOKENS_IN_MEMORY: 200,     // Nombre maximum de tokens en mémoire
-  MEMORY_CHECK_INTERVAL: 60000,  // Vérifier la mémoire toutes les 60 secondes
-  HEAP_WARNING_THRESHOLD: 85,    // Seuil d'avertissement pour l'utilisation du heap (%)
-  HEAP_CRITICAL_THRESHOLD: 90,   // Seuil critique pour l'utilisation du heap (%)
-  TOKEN_EXPIRY: 24 * 60 * 60 * 1000, // Expiration des tokens (24h)
+  CHECK_INTERVAL_MS: 60000, // Vérifier toutes les 60 secondes
+  HEAP_WARNING_THRESHOLD: 75, // Déclencher un nettoyage à 75% d'utilisation (au lieu de 85%)
+  HEAP_CRITICAL_THRESHOLD: 85, // Critique à 85% (au lieu de 90%)
+  ROTATION_INTERVAL_MS: 3600000, // Rotation des données en mémoire toutes les heures
+  MAX_TOKENS_IN_MEMORY: 100, // Limiter à 100 tokens en mémoire
+  MAX_USERS_IN_MEMORY: 50, // Limiter à 50 utilisateurs en mémoire (au lieu de 200)
+  MAX_MEMORY_MB: 450, // Limiter la mémoire totale à 450 MB (sur 512 disponibles sur Render)
+  FORCE_GC_THRESHOLD: 80 // Forcer le garbage collection à 80% d'utilisation
 };
 
 // Fonction pour nettoyer la mémoire
 function cleanupMemory() {
   console.log('🧹 Exécution du nettoyage de la mémoire...');
-  const startHeapUsed = process.memoryUsage().heapUsed;
-  const now = Date.now();
-  let tokensRemoved = 0;
   
-  // Nettoyer les tokens expirés
-  inMemoryDB.tokens = inMemoryDB.tokens.filter(token => {
-    const isValid = token.expires > now;
-    if (!isValid) tokensRemoved++;
-    return isValid;
+  const memoryBefore = process.memoryUsage();
+  
+  // Forcer un garbage collection si disponible (Node.js avec --expose-gc)
+  if (global.gc && memoryBefore.heapUsed / memoryBefore.heapTotal > MEMORY_MANAGEMENT.FORCE_GC_THRESHOLD / 100) {
+    try {
+      console.log('♻️ Forçage du garbage collection...');
+      global.gc();
+    } catch (error) {
+      console.error('⚠️ Erreur lors du forçage du garbage collection:', error);
+    }
+  }
+  
+  const tokensBefore = inMemoryDB.tokens.length;
+  const usersBefore = inMemoryDB.users.length;
+  
+  // 1. Supprimer les tokens expirés
+  const now = new Date();
+  inMemoryDB.tokens = inMemoryDB.tokens.filter(token => token.expires > now);
+  
+  // 2. Si encore trop de tokens, ne garder que les plus récents
+  if (inMemoryDB.tokens.length > MEMORY_MANAGEMENT.MAX_TOKENS_IN_MEMORY) {
+    inMemoryDB.tokens.sort((a, b) => b.expires - a.expires); // Trier par date d'expiration (plus récent en premier)
+    inMemoryDB.tokens = inMemoryDB.tokens.slice(0, MEMORY_MANAGEMENT.MAX_TOKENS_IN_MEMORY);
+  }
+  
+  // 3. Si trop d'utilisateurs, ne garder que les essentiels
+  if (inMemoryDB.users.length > MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY) {
+    // Garder les utilisateurs les plus récemment actifs
+    const activeUserIds = [...new Set(inMemoryDB.tokens.map(t => t.userId))];
+    
+    // D'abord garder les utilisateurs avec des tokens actifs
+    const activeUsers = inMemoryDB.users.filter(user => 
+      activeUserIds.includes(user.id) || activeUserIds.includes(user._id?.toString())
+    );
+    
+    // Ensuite compléter si nécessaire avec les utilisateurs les plus récents
+    if (activeUsers.length < MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY) {
+      const inactiveUsers = inMemoryDB.users
+        .filter(user => !activeUserIds.includes(user.id) && !activeUserIds.includes(user._id?.toString()))
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      
+      const remainingSlots = MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY - activeUsers.length;
+      activeUsers.push(...inactiveUsers.slice(0, remainingSlots));
+    } else if (activeUsers.length > MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY) {
+      // Si toujours trop d'utilisateurs actifs, ne garder que la limite
+      activeUsers.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      activeUsers.length = MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY;
+    }
+    
+    inMemoryDB.users = activeUsers;
+  }
+  
+  // Supprimer les données non essentielles des utilisateurs pour économiser la mémoire
+  inMemoryDB.users.forEach(user => {
+    // Garder uniquement les champs nécessaires
+    if (user.services && user.services.length > 3) {
+      user.services = user.services.slice(0, 3); // Garder seulement 3 services
+    }
+    if (user.orders && user.orders.length > 5) {
+      user.orders = user.orders.slice(0, 5); // Garder seulement 5 commandes
+    }
+    
+    // Supprimer les descriptions et champs volumineux non essentiels
+    if (user.services) {
+      user.services.forEach(service => {
+        if (service.description && service.description.length > 100) {
+          service.description = service.description.substring(0, 100) + '...';
+        }
+        // Supprimer les champs non essentiels
+        delete service.metaDescription;
+        delete service.seoDescription;
+        delete service.requirements;
+        delete service.longDescription;
+      });
+    }
   });
   
-  // Si trop de tokens, supprimer les plus anciens
-  if (inMemoryDB.tokens.length > MEMORY_MANAGEMENT.MAX_TOKENS_IN_MEMORY) {
-    const countToRemove = inMemoryDB.tokens.length - MEMORY_MANAGEMENT.MAX_TOKENS_IN_MEMORY;
-    inMemoryDB.tokens.sort((a, b) => a.expires - b.expires);
-    inMemoryDB.tokens = inMemoryDB.tokens.slice(countToRemove);
-    tokensRemoved += countToRemove;
+  // 4. Nettoyer les objets non utilisés dans mockData
+  if (mockData) {
+    if (mockData.services && mockData.services.all && mockData.services.all.length > 20) {
+      mockData.services.all = mockData.services.all.slice(0, 20);
+    }
+    if (mockData.services && mockData.services.featured && mockData.services.featured.length > 10) {
+      mockData.services.featured = mockData.services.featured.slice(0, 10);
+    }
+    if (mockData.services && mockData.services.latest && mockData.services.latest.length > 10) {
+      mockData.services.latest = mockData.services.latest.slice(0, 10);
+    }
   }
   
-  // Si trop d'utilisateurs, garder uniquement les plus récents
-  let usersRemoved = 0;
-  if (inMemoryDB.users.length > MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY) {
-    const countToKeep = MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY;
-    inMemoryDB.users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    usersRemoved = inMemoryDB.users.length - countToKeep;
-    inMemoryDB.users = inMemoryDB.users.slice(0, countToKeep);
-  }
+  // 5. Ré-assigner les variables non utilisées
+  const tokensRemoved = tokensBefore - inMemoryDB.tokens.length;
+  const usersRemoved = usersBefore - inMemoryDB.users.length;
   
-  // Libérer la mémoire inutilisée
-  if (global.gc) {
-    global.gc();
-  }
-  
-  const endHeapUsed = process.memoryUsage().heapUsed;
-  const memoryFreed = (startHeapUsed - endHeapUsed) / (1024 * 1024);
+  const memoryAfter = process.memoryUsage();
+  const memoryFreed = (memoryBefore.heapUsed - memoryAfter.heapUsed) / (1024 * 1024);
   
   console.log(`🧹 Nettoyage terminé: ${tokensRemoved} tokens et ${usersRemoved} utilisateurs supprimés, ${memoryFreed.toFixed(2)} MB libéré`);
+  
+  return {
+    tokensRemoved,
+    usersRemoved,
+    memoryFreed
+  };
 }
 
 // Fonction pour vérifier l'état de la mémoire
 function checkMemoryUsage() {
   const memoryUsage = process.memoryUsage();
-  const heapUsed = memoryUsage.heapUsed;
-  const heapTotal = memoryUsage.heapTotal;
-  const heapUsedPercent = Math.round((heapUsed / heapTotal) * 100);
+  const heapUsedMB = Math.round(memoryUsage.heapUsed / (1024 * 1024));
+  const heapTotalMB = Math.round(memoryUsage.heapTotal / (1024 * 1024));
+  const heapUsedPercent = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
   
-  console.log(`📊 Surveillance mémoire: Heap utilisé: ${Math.round(heapUsed / 1024 / 1024)} MB / ` +
-    `${Math.round(heapTotal / 1024 / 1024)} MB (${heapUsedPercent}%)`);
+  console.log(`📊 Surveillance mémoire: Heap utilisé: ${heapUsedMB} MB / ${heapTotalMB} MB (${heapUsedPercent}%)`);
+  
+  // Action proactive: toujours nettoyer si mémoire > 80% de notre limite configurable
+  if (heapUsedMB > MEMORY_MANAGEMENT.MAX_MEMORY_MB * 0.8) {
+    console.warn(`⚠️ Approche de la limite de mémoire configurée (${heapUsedMB}/${MEMORY_MANAGEMENT.MAX_MEMORY_MB}MB), nettoyage préventif...`);
+    cleanupMemory();
+  }
   
   if (heapUsedPercent > MEMORY_MANAGEMENT.HEAP_CRITICAL_THRESHOLD) {
     console.warn(`⚠️ CRITIQUE: Utilisation du heap à ${heapUsedPercent}%, nettoyage d'urgence...`);
-    cleanupMemory();
+    const result = cleanupMemory();
     
-    // Si le nettoyage n'est pas suffisant, forcer un redémarrage propre
+    // Vérification post-nettoyage et redémarrage si nécessaire
     setTimeout(() => {
       const postCleanupUsage = process.memoryUsage();
       const postCleanupPercent = Math.round((postCleanupUsage.heapUsed / postCleanupUsage.heapTotal) * 100);
+      const postCleanupMB = Math.round(postCleanupUsage.heapUsed / (1024 * 1024));
       
-      if (postCleanupPercent > MEMORY_MANAGEMENT.HEAP_CRITICAL_THRESHOLD) {
-        console.error(`🔥 CRITIQUE: L'utilisation du heap reste à ${postCleanupPercent}% après nettoyage.`);
+      // Redémarrage si le nettoyage n'a pas été suffisant ET que la mémoire utilisée est élevée
+      if (postCleanupPercent > MEMORY_MANAGEMENT.HEAP_CRITICAL_THRESHOLD && 
+          postCleanupMB > MEMORY_MANAGEMENT.MAX_MEMORY_MB * 0.9) {
+        console.error(`🔥 CRITIQUE: L'utilisation du heap reste à ${postCleanupPercent}% (${postCleanupMB}MB) après nettoyage.`);
         console.log('💡 Redémarrage préventif du serveur pour éviter un crash...');
         
-        // Effectuer un redémarrage propre
-        // Note: Render redémarrera le service automatiquement
-        process.exit(0);
+        // Nettoyage avancé pré-redémarrage
+        prepareGracefulShutdown(true)
+          .then(() => {
+            // Process exit avec un code spécial pour indiquer un redémarrage préventif
+            process.exit(143);
+          })
+          .catch(err => {
+            console.error("Erreur lors du nettoyage pré-redémarrage:", err);
+            process.exit(1);
+          });
       }
     }, 5000);
   } else if (heapUsedPercent > MEMORY_MANAGEMENT.HEAP_WARNING_THRESHOLD) {
     console.warn(`⚠️ AVERTISSEMENT: Utilisation du heap à ${heapUsedPercent}%, nettoyage préventif...`);
     cleanupMemory();
   }
+}
+
+// Fonction de rotation périodique de la mémoire pour éviter les fuites
+function scheduleMemoryRotation() {
+  setInterval(() => {
+    console.log("🔄 Rotation périodique des données en mémoire...");
+    
+    // Forcer une synchronisation avec MongoDB si disponible
+    if (mongoose.connection.readyState === 1) {
+      syncInMemoryData()
+        .then(() => cleanupMemory())
+        .catch(console.error);
+    } else {
+      cleanupMemory();
+    }
+  }, MEMORY_MANAGEMENT.ROTATION_INTERVAL_MS);
+}
+
+// Amélioration de la fonction d'arrêt pour éviter les fuites mémoire
+async function prepareGracefulShutdown(isRestart = false) {
+  console.log(`Signal ${isRestart ? 'de redémarrage' : 'SIGTERM'} reçu. Arrêt du serveur...`);
+  
+  // Nettoyage des ressources
+  if (mongoose.connection.readyState === 1) {
+    console.log('Fermeture de la connexion à MongoDB...');
+    try {
+      await mongoose.connection.close();
+      console.log('Connexion MongoDB fermée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la fermeture de la connexion MongoDB:', error);
+    }
+  }
+  
+  // Nettoyage supplémentaire
+  inMemoryDB = { users: [], tokens: [] };
+  mockData = null;
+  
+  // Forcer un garbage collection si disponible
+  if (global.gc) {
+    try {
+      global.gc();
+      console.log('Garbage collection forcé effectué');
+    } catch (error) {
+      console.error('Erreur lors du forçage du garbage collection:', error);
+    }
+  }
+  
+  console.log('Serveur arrêté avec succès');
 }
 
 // Fonction pour générer un token JWT (simplifié)
@@ -1283,76 +1416,100 @@ const server = http.createServer(async (req, res) => {
   }));
 });
 
-// Démarrage de l'application
-async function bootstrap() {
+// Gestionnaire d'arrêt du serveur
+function shutdown(signal) {
+  console.log(`Signal ${signal} reçu. Arrêt du serveur...`);
+  
+  // Utiliser la nouvelle fonction pour arrêter gracieusement
+  prepareGracefulShutdown()
+    .then(() => {
+      console.log('Arrêt du serveur réussi');
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error('Erreur lors de l\'arrêt du serveur:', error);
+      process.exit(1);
+    });
+}
+
+// Mise à jour de l'initialisation du serveur pour inclure nos nouvelles fonctions de gestion mémoire
+async function startServer() {
   try {
-    await connectToDatabase();
+    // Essayer de se connecter à MongoDB
+    const databaseConnected = await connectToDatabase();
     
-    // Écouter sur toutes les interfaces (0.0.0.0) pour être accessible depuis l'extérieur
-    server.listen(PORT, '0.0.0.0', () => {
-      console.log(`Serveur NionFar API en mode de compatibilité démarré sur le port ${PORT}`);
-      console.log(`API accessible à: http://0.0.0.0:${PORT}/${API_PREFIX}`);
-      console.log(`URL de santé: http://0.0.0.0:${PORT}/health`);
+    if (!databaseConnected) {
+      console.warn('⚠️ Le serveur démarre sans connexion à MongoDB (mode dégradé)');
+    }
+    
+    // Créer et démarrer le serveur HTTP
+    const server = http.createServer(handleApiRequest);
+    server.listen(PORT, HOST, () => {
+      console.log(`API accessible à: http://${HOST}:${PORT}/api`);
+      console.log(`URL de santé: http://${HOST}:${PORT}/health`);
       
       // Démarrer la surveillance de la mémoire
-      console.log(`📊 Démarrage de la surveillance de la mémoire (intervalle: ${MEMORY_MANAGEMENT.MEMORY_CHECK_INTERVAL}ms)`);
-      setInterval(checkMemoryUsage, MEMORY_MANAGEMENT.MEMORY_CHECK_INTERVAL);
+      console.log(`📊 Démarrage de la surveillance de la mémoire (intervalle: ${MEMORY_MANAGEMENT.CHECK_INTERVAL_MS}ms)`);
+      setInterval(checkMemoryUsage, MEMORY_MANAGEMENT.CHECK_INTERVAL_MS);
+      
+      // Démarrer la rotation de la mémoire
+      scheduleMemoryRotation();
     });
     
-    // Gestion des signaux pour un arrêt propre
-    const shutdown = async (signal) => {
-      console.log(`Signal ${signal} reçu. Arrêt du serveur...`);
-      
-      server.close(async () => {
-        try {
-          if (mongoose.connection.readyState === 1) {
-            console.log('Fermeture de la connexion à MongoDB...');
-            await mongoose.connection.close();
-            console.log('Connexion MongoDB fermée avec succès');
-          }
-          console.log('Serveur arrêté avec succès');
-          process.exit(0);
-        } catch (err) {
-          console.error('Erreur lors de la fermeture des connexions:', err);
-          process.exit(1);
-        }
+    // Gestionnaire d'arrêt gracieux
+    process.on('SIGTERM', async () => {
+      await prepareGracefulShutdown();
+      server.close(() => {
+        process.exit(0);
       });
-      
-      // Forcer l'arrêt après 10 secondes si le serveur ne s'arrête pas proprement
-      setTimeout(() => {
-        console.error('Délai d\'attente dépassé, arrêt forcé');
-        process.exit(1);
-      }, 10000);
-    };
+    });
     
-    // Attacher les gestionnaires de signaux
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGINT', async () => {
+      await prepareGracefulShutdown();
+      server.close(() => {
+        process.exit(0);
+      });
+    });
     
-    // Ne pas appeler shutdown ici - laisser le serveur tourner
+    // Écouter les erreurs non gérées
+    process.on('uncaughtException', (error) => {
+      console.error('Erreur non gérée:', error);
+      // Ne pas arrêter le serveur, juste nettoyer la mémoire
+      cleanupMemory();
+    });
+    
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('Promesse rejetée non gérée:', reason);
+      // Ne pas arrêter le serveur, juste nettoyer la mémoire
+      cleanupMemory();
+    });
+    
+    return server;
   } catch (error) {
     console.error('Erreur lors du démarrage du serveur:', error);
     process.exit(1);
   }
 }
 
+// Fonction de démarrage de l'application
+async function bootstrap() {
+  try {
+    const server = await startServer();
+    console.log(`📡 Serveur NionFar API en mode de compatibilité démarré sur ${HOST}:${PORT}`);
+    
+    // Activer Node.js en mode --expose-gc si possible (dans un environnement non-production seulement)
+    if (NODE_ENV !== 'production' && !global.gc) {
+      console.log('⚠️ Pour améliorer la gestion mémoire, démarrer avec: NODE_OPTIONS="--expose-gc"');
+    }
+  } catch (error) {
+    console.error('❌ Erreur fatale lors du démarrage:', error);
+    process.exit(1);
+  }
+}
+
+// Démarrer l'application
 bootstrap();
-EOL
-fi
 
-# Rendre le fichier exécutable
-chmod +x dist/main.js
-
-# Afficher le contenu final
-echo "Contenu du répertoire dist:"
-find dist -type f | sort
-
-# Vérifier la taille du fichier
-if [ -f "dist/main.js" ]; then
-  echo "Taille de main.js: $(wc -c < dist/main.js) octets"
-  echo "Premières lignes de main.js:"
-  head -n 10 dist/main.js
-fi
-
+# Fin du script
 echo "===== FIN DU SCRIPT DE BUILD ====="
 exit 0 

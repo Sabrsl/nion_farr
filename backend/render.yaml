@@ -1,12 +1,11 @@
 services:
   - type: web
-    name: api
+    name: nionfar-backend
     env: node
     region: frankfurt
     plan: free
-    buildCommand: cd backend && bash render-build.sh
-    startCommand: cd backend && node dist/main.js
-    healthCheckPath: /health
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && NODE_OPTIONS="--max-old-space-size=450 --expose-gc" node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -17,14 +16,16 @@ services:
           name: nionfar-db
           property: connectionString
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
       - key: JWT_EXPIRATION
-        value: 3600
+        value: 86400
       - key: REFRESH_TOKEN_EXPIRATION
         value: 604800
+    healthCheckPath: /health
 
 databases:
   - name: nionfar-db
-    region: frankfurt
     plan: free
-    ipAllowList: [] 
+    region: frankfurt 
