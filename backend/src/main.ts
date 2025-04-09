@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import * as Sentry from '@sentry/node';
+import { Request, Response } from 'express';
 
 async function bootstrap() {
   console.log('Starting server...');
@@ -169,6 +170,17 @@ async function bootstrap() {
     console.log(`🚀 Application is running on: ${await app.getUrl()}`);
     console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
     console.log(`📚 Swagger docs: ${await app.getUrl()}/${configService.get('API_PREFIX')}/docs`);
+
+    // Pour obtenir l'IP de Render, créez un contrôleur avec un endpoint /api/ip
+    // Exemple:
+    // @Controller('api')
+    // export class IpController {
+    //   @Get('ip')
+    //   getIp(@Req() req: Request) {
+    //     const ip = req.ip || req.connection.remoteAddress;
+    //     return { ip };
+    //   }
+    // }
   } catch (error) {
     console.error('Failed to start application:', error);
     process.exit(1);

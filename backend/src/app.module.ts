@@ -29,6 +29,7 @@ import { SecurityModule } from './security/security.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { QueueModule } from './modules/queue/queue.module';
+import { IpModule } from './ip/ip.module';
 
 @Module({
   imports: [
@@ -112,6 +113,7 @@ import { QueueModule } from './modules/queue/queue.module';
     HealthModule,
     SecurityModule,
     QueueModule,
+    IpModule,
   ],
   controllers: [AppController],
   providers: [
