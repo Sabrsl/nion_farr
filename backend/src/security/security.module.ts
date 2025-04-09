@@ -2,8 +2,10 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { SecurityService } from './security.service';
 import { SecurityMiddleware } from './security.middleware';
 import { AuditLogService } from './audit-log.service';
+import { SecurityController } from './security.controller';
 
 @Module({
+  controllers: [SecurityController],
   providers: [SecurityService, AuditLogService],
   exports: [SecurityService, AuditLogService],
 })

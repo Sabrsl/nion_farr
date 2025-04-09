@@ -157,8 +157,7 @@ class AuthService {
           headers: {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-Token': localStorage.getItem('csrf_token') || '',
-            'X-Session-ID': localStorage.getItem('session_id') || ''
+            'X-CSRF-Token': localStorage.getItem('csrf_token') || ''
           },
           body: JSON.stringify(apiData),
           mode: 'cors',
@@ -228,7 +227,6 @@ class AuthService {
           xhr.setRequestHeader('Content-Type', 'application/json');
           xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
           xhr.setRequestHeader('X-CSRF-Token', localStorage.getItem('csrf_token') || '');
-          xhr.setRequestHeader('X-Session-ID', localStorage.getItem('session_id') || '');
           xhr.withCredentials = true; // Activer l'envoi des cookies pour le CSRF
           xhr.timeout = 15000;
           
@@ -336,8 +334,7 @@ class AuthService {
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRF-Token': localStorage.getItem('csrf_token') || '',
-          'X-Session-ID': localStorage.getItem('session_id') || ''
+          'X-CSRF-Token': localStorage.getItem('csrf_token') || ''
         },
         credentials: 'include',
         body: JSON.stringify(credentials)
@@ -361,12 +358,9 @@ class AuthService {
         localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       }
       
-      // Stocker les tokens CSRF et l'ID de session
+      // Stocker le token CSRF s'il est fourni par le serveur
       if (data.csrfToken) {
         localStorage.setItem('csrf_token', data.csrfToken);
-      }
-      if (data.sessionId) {
-        localStorage.setItem('session_id', data.sessionId);
       }
       
       // Stocker les données utilisateur si présentes
@@ -922,7 +916,7 @@ class AuthService {
   // Méthode pour récupérer les tokens CSRF
   private async fetchCsrfTokens(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiUrl}/auth/csrf-tokens`, {
+      const response = await fetch(`${this.apiUrl}/security/csrf-tokens`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -937,15 +931,14 @@ class AuthService {
 
       const data = await response.json();
       
-      if (data.csrfToken) {
-        localStorage.setItem('csrf_token', data.csrfToken);
+      if (data.token) {
+        localStorage.setItem('csrf_token', data.token);
+        console.log('Token CSRF récupéré avec succès');
+      } else {
+        console.warn('Token CSRF manquant dans la réponse');
       }
       
-      if (data.sessionId) {
-        localStorage.setItem('session_id', data.sessionId);
-      }
-      
-      return true;
+      return !!data.token;
     } catch (error) {
       console.error('Erreur lors de la récupération des tokens CSRF:', error);
       return false;

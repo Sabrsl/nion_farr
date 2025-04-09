@@ -60,12 +60,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Get CSRF tokens' })
   @ApiResponse({ status: 200, description: 'CSRF tokens generated successfully' })
   async getCsrfTokens() {
-    const sessionId = uuidv4();
-    const csrfToken = await this.securityService.generateCsrfToken(sessionId);
+    const token = this.securityService.generateCsrfToken();
     
     return {
-      csrfToken,
-      sessionId
+      token
     };
   }
 } 
