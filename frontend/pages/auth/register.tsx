@@ -112,7 +112,20 @@ const Register: React.FC = () => {
         errorMessage.toLowerCase().includes('cors')) {
       
       const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      setError(`Impossible de se connecter au serveur (${serverUrl}). Vérifiez que votre serveur backend est démarré.`);
+      
+      // Vérifier si le backend a été précédemment détecté comme hors ligne
+      const backendStatus = localStorage.getItem('backendStatus');
+      const lastCheck = localStorage.getItem('lastBackendCheck');
+      
+      if (backendStatus === 'offline' && lastCheck) {
+        const checkTime = new Date(lastCheck).toLocaleTimeString();
+        setError(`Le serveur (${serverUrl}) semble être temporairement indisponible (dernière vérification à ${checkTime}). 
+                   L'équipe technique a été informée de ce problème. Veuillez réessayer ultérieurement ou contacter le support.`);
+      } else {
+        setError(`Impossible de se connecter au serveur (${serverUrl}). 
+                   Le serveur est peut-être temporairement indisponible ou en maintenance. Veuillez réessayer dans quelques instants.`);
+      }
+      
       console.error("🌐 URL backend configurée:", serverUrl);
       
       return;
@@ -134,6 +147,46 @@ const Register: React.FC = () => {
     // Erreur par défaut
     setError(errorMessage || "Une erreur inattendue est survenue");
   };
+
+  // Fonction pour vérifier le statut du backend au chargement de la page
+  React.useEffect(() => {
+    const checkBackendStatus = async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
+        
+        // Utiliser AbortController pour gérer le timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(`${backendUrl}/health`, { 
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-cache',
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          localStorage.setItem('backendStatus', 'online');
+          localStorage.setItem('lastBackendCheck', new Date().toISOString());
+        } else {
+          localStorage.setItem('backendStatus', 'offline');
+          localStorage.setItem('lastBackendCheck', new Date().toISOString());
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification du backend:", error);
+        localStorage.setItem('backendStatus', 'offline');
+        localStorage.setItem('lastBackendCheck', new Date().toISOString());
+      }
+    };
+    
+    checkBackendStatus();
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

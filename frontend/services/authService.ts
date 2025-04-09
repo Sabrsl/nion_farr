@@ -103,6 +103,16 @@ class AuthService {
     }
 
     try {
+      // Vérifier la disponibilité du serveur avant de tenter l'inscription
+      const isServerAvailable = await this.checkServerAvailability();
+      if (!isServerAvailable) {
+        const serverUrl = this.apiUrl || 'le serveur';
+        return { 
+          success: false, 
+          error: `Impossible de communiquer avec le serveur (${serverUrl}). Le serveur est peut-être temporairement indisponible ou en maintenance. Veuillez réessayer dans quelques instants.`
+        };
+      }
+
       // Construire l'URL spécifique
       const url = `${this.apiUrl}/auth/register`;
       console.log("🌐 URL d'inscription complète:", url);
@@ -268,7 +278,7 @@ class AuthService {
             console.error("❌ Erreur réseau XHR");
             resolve({ 
               success: false, 
-              error: "Impossible de communiquer avec le serveur. Vérifiez votre connexion internet et que le serveur est bien démarré."
+              error: "Impossible de communiquer avec le serveur. Vérifiez votre connexion internet ou le serveur peut être temporairement indisponible. Veuillez réessayer plus tard."
             });
           };
           
@@ -807,18 +817,48 @@ class AuthService {
   }
 
   // Nouvelle méthode pour vérifier la disponibilité du serveur backend
-  private checkServerAvailability(): Promise<boolean> {
-    return new Promise(async (resolve) => {
+  private async checkServerAvailability(): Promise<boolean> {
+    console.log('🔍 Vérification de la disponibilité du serveur backend sur:', this.apiUrl);
+    
+    // Essayer plusieurs endpoints pour une vérification robuste
+    const endpoints = ['/health', '/status', '/', '/api'];
+    
+    for (const endpoint of endpoints) {
       try {
-        await axios.get(`${this.apiUrl}/health`, { timeout: 5000 });
-        console.log('🟢 Serveur backend disponible à', this.apiUrl);
-        resolve(true);
+        const url = `${this.apiUrl}${endpoint}`;
+        console.log(`🔄 Tentative de connexion à ${url}...`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-cache',
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        // Si la réponse est OK, le serveur est accessible
+        if (response.ok) {
+          console.log('🟢 Serveur backend disponible à', url);
+          return true;
+        }
       } catch (error) {
-        console.error('🔴 Serveur backend inaccessible :', this.apiUrl);
-        console.error('Détail de l\'erreur:', error);
-        resolve(false);
+        console.error(`❌ Échec de connexion à ${this.apiUrl}${endpoint}:`, error);
+        // Continuer avec le prochain endpoint
       }
-    });
+    }
+    
+    console.error('🔴 Serveur backend inaccessible après plusieurs tentatives:', this.apiUrl);
+    localStorage.setItem('backendStatus', 'offline');
+    localStorage.setItem('lastBackendCheck', new Date().toISOString());
+    return false;
   }
 
   forceRedirectAfterLogin(redirectUrl: string): void {
