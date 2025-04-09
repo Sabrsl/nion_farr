@@ -3,7 +3,7 @@ services:
     name: nion-farr-backend
     env: node
     buildCommand: cd backend && npm install && npm run build
-    startCommand: cd backend && NODE_OPTIONS="--max-old-space-size=512" npm run start:render
+    startCommand: cd backend && NODE_OPTIONS="--max-old-space-size=1024" npm run start:render
     envVars:
       - key: NODE_ENV
         value: production
@@ -50,7 +50,7 @@ services:
       - key: NEXT_PUBLIC_BASE_URL
         value: https://nionfar.sn
       - key: NODE_OPTIONS
-        value: --max_old_space_size=512
+        value: --max-old-space-size=1024
       - key: ORANGE_MONEY_API_URL
         value: https://api.orange.com
       - key: WAVE_API_URL

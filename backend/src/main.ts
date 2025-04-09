@@ -48,6 +48,7 @@ async function bootstrap() {
     // Variables d'environnement
     const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
     const environment = configService.get<string>('NODE_ENV') || 'development';
+    const port = process.env.PORT || 1000;
     
     console.log(`Environment: ${environment}`);
     console.log(`MongoDB URI: ${configService.get<string>('MONGODB_URI')}`);
@@ -85,104 +86,52 @@ async function bootstrap() {
     
     // CORS - Configuration pour la production et le développement
     const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const allowedOrigins = [frontendUrl];
-    
-    // Ajouter d'autres origines depuis les variables d'environnement si nécessaires
-    const additionalOrigins = configService.get<string>('ADDITIONAL_CORS_ORIGINS');
-    if (additionalOrigins) {
-      allowedOrigins.push(...additionalOrigins.split(','));
-    }
-    
-    if (environment === 'development') {
-      // En développement, être plus permissif
-      allowedOrigins.push('*');
-      console.log('Mode développement: CORS configuré pour les origines:', allowedOrigins);
-    } else {
-      console.log('Mode production: CORS configuré pour les origines spécifiques:', allowedOrigins);
-    }
+    const allowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS')?.split(',') || [frontendUrl];
     
     app.enableCors({
       origin: allowedOrigins,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
-      credentials: true
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-CSRF-Token', 'X-Session-ID'],
+      credentials: true,
+      maxAge: 3600,
     });
-    
-    // Préfixe global pour toutes les routes
-    app.setGlobalPrefix(apiPrefix);
-    
-    // Validation des données
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-        transformOptions: {
-          enableImplicitConversion: true,
-        },
-      }),
-    );
-    
+
     // Compression
     app.use(compression());
-    
-    // Configuration Swagger
+
+    // Validation globale
+    app.useGlobalPipes(new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }));
+
+    // Préfixe global de l'API
+    app.setGlobalPrefix(apiPrefix);
+
+    // Documentation Swagger
     if (environment !== 'production') {
       const config = new DocumentBuilder()
-        .setTitle('Nionfar API')
-        .setDescription('API de la plateforme de services freelance Nionfar')
+        .setTitle('NionFar API')
+        .setDescription('API documentation for NionFar')
         .setVersion('1.0')
         .addBearerAuth()
         .build();
       const document = SwaggerModule.createDocument(app, config);
-      SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
+      SwaggerModule.setup('api/docs', app, document);
     }
-    
-    // HSTS
-    if (configService.get<string>('HSTS_ENABLED') === 'true') {
-      app.use((req, res, next) => {
-        res.setHeader(
-          'Strict-Transport-Security',
-          'max-age=31536000; includeSubDomains',
-        );
-        next();
-      });
-    }
-    
-    // Content Security Policy
-    if (configService.get<string>('CSP_ENABLED') === 'true') {
-      app.use(
-        helmet.contentSecurityPolicy({
-          directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", 'data:', 'https:'],
-            connectSrc: ["'self'", 'https://nionfar-backend.onrender.com', 'https://nion-farr.vercel.app', 'https://*.vercel.app'],
-          },
-        }),
-      );
-    }
-    
-    // Démarrer l'application
-    const port = process.env.PORT || configService.get<number>('PORT') || 3001;
-    await app.listen(port, '0.0.0.0');
-    console.log(`🚀 Application is running on: ${await app.getUrl()}`);
-    console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
-    console.log(`📚 Swagger docs: ${await app.getUrl()}/${configService.get('API_PREFIX')}/docs`);
 
-    // Pour obtenir l'IP de Render, créez un contrôleur avec un endpoint /api/ip
-    // Exemple:
-    // @Controller('api')
-    // export class IpController {
-    //   @Get('ip')
-    //   getIp(@Req() req: Request) {
-    //     const ip = req.ip || req.connection.remoteAddress;
-    //     return { ip };
-    //   }
-    // }
+    // Démarrage du serveur
+    await app.listen(port, '0.0.0.0');
+    console.log(`Application is running on: http://localhost:${port}/${apiPrefix}`);
+    console.log(`Environment: ${environment}`);
+    console.log(`API Documentation: http://localhost:${port}/api/docs`);
+
   } catch (error) {
-    console.error('Failed to start application:', error);
+    console.error('Error during bootstrap:', error);
     process.exit(1);
   }
 }
