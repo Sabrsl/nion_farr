@@ -74,6 +74,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
+const os = require('os');
 
 // Chargement des variables d'environnement
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -199,11 +200,18 @@ async function connectToDatabase() {
 }
 
 // Ajouter des en-têtes CORS
-function setCorsHeaders(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+function setCorsHeaders(req, res) {
+  // Autoriser les requêtes depuis le frontend
+  const allowedOrigins = ['https://nion-farr.vercel.app', 'http://localhost:3000'];
+  const origin = req.headers.origin && allowedOrigins.includes(req.headers.origin) 
+    ? req.headers.origin 
+    : allowedOrigins[0];
+  
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Authorization, X-CSRF-Token');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 heures en secondes
 }
 
 // Analyser le corps de la requête
@@ -248,14 +256,14 @@ function validateRegisterFields(data) {
 const server = http.createServer(async (req, res) => {
   // Gestion des requêtes OPTIONS (CORS preflight)
   if (req.method === 'OPTIONS') {
-    setCorsHeaders(res);
+    setCorsHeaders(req, res);
     res.writeHead(204);
     res.end();
     console.log(`Received request: OPTIONS ${req.url}`);
     return;
   }
 
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
@@ -266,11 +274,18 @@ const server = http.createServer(async (req, res) => {
     const isConnected = mongoose.connection.readyState === 1;
     const memoryUsage = process.memoryUsage();
     const uptime = process.uptime();
+    const freeMemMB = Math.round(os.freemem() / 1024 / 1024);
+    const totalMemMB = Math.round(os.totalmem() / 1024 / 1024);
+    const heapUsedPercent = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
     
-    console.log(`Health check répondu: MongoDB=${isConnected ? 'connecté' : 'déconnecté'}, Uptime=${uptime.toFixed(2)}s`);
+    // Vérification de l'état de la mémoire
+    const memoryStatus = heapUsedPercent > 85 ? 'warning' : 'ok';
     
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
+    console.log(`Health check répondu: MongoDB=${isConnected ? 'connecté' : 'déconnecté'}, ` +
+      `Uptime=${uptime.toFixed(2)}s, Heap=${heapUsedPercent}%, ` +
+      `Memory=${Math.round(memoryUsage.rss / 1024 / 1024)}MB/${freeMemMB}MB free`);
+    
+    const healthStatus = {
       status: isConnected ? 'up' : 'degraded',
       database: isConnected ? 'connected' : 'disconnected',
       environment: NODE_ENV,
@@ -280,13 +295,23 @@ const server = http.createServer(async (req, res) => {
       memory: {
         rss: `${Math.round(memoryUsage.rss / 1024 / 1024)} MB`,
         heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)} MB`,
-        heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`,
-        external: `${Math.round(memoryUsage.external / 1024 / 1024)} MB`
+        heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB (${heapUsedPercent}%)`,
+        external: `${Math.round(memoryUsage.external / 1024 / 1024)} MB`,
+        freeSystemMemory: `${freeMemMB} MB`,
+        totalSystemMemory: `${totalMemMB} MB`,
+        memoryStatus: memoryStatus
       },
       users: inMemoryDB.users.length,
       services: inMemoryDB.services.length,
-      server: 'NionFar API Fallback'
-    }));
+      server: 'NionFar API Fallback',
+      processId: process.pid,
+      platform: process.platform,
+      arch: process.arch,
+      nodejs: process.version
+    };
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(healthStatus));
     return;
   }
 
@@ -931,10 +956,11 @@ async function bootstrap() {
   try {
     await connectToDatabase();
     
-    server.listen(PORT, () => {
+    // Écouter sur toutes les interfaces (0.0.0.0) pour être accessible depuis l'extérieur
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`Serveur NionFar API en mode de compatibilité démarré sur le port ${PORT}`);
-      console.log(`API accessible à: http://localhost:${PORT}/${API_PREFIX}`);
-      console.log(`URL de santé: http://localhost:${PORT}/health`);
+      console.log(`API accessible à: http://0.0.0.0:${PORT}/${API_PREFIX}`);
+      console.log(`URL de santé: http://0.0.0.0:${PORT}/health`);
     });
     
     // Gestion des signaux pour un arrêt propre
