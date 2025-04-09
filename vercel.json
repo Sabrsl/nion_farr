@@ -3,5 +3,6 @@
     { "source": "/(.*)", "destination": "/frontend/$1" }
   ],
   "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/.next"
+  "outputDirectory": "frontend/.next",
+  "rootDirectory": "frontend"
 } 
