@@ -72,12 +72,25 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 
 // Chargement des variables d'environnement
 const MONGODB_URI = process.env.MONGODB_URI;
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const API_PREFIX = process.env.API_PREFIX || 'api';
+const JWT_SECRET = process.env.JWT_SECRET || 'nionfar-secure-jwt-secret-key';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
+
+// Base de données en mémoire pour le mode de secours
+const inMemoryDB = {
+  users: [],
+  tokens: [],
+  services: [],
+  categories: [],
+  generateId: () => crypto.randomBytes(12).toString('hex')
+};
 
 // Données de démonstration pour le mode de secours
 const mockData = {
@@ -115,6 +128,55 @@ const mockData = {
   }
 };
 
+// Initialiser les données de test
+mockData.categories.forEach(category => {
+  inMemoryDB.categories.push(category);
+});
+
+// Fonction pour générer un token JWT (simplifié)
+function generateToken(payload) {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  const expiresIn = 86400; // 24 heures en secondes
+  
+  const payloadWithExpiry = {
+    ...payload,
+    iat: nowInSeconds,
+    exp: nowInSeconds + expiresIn
+  };
+  
+  const base64Header = Buffer.from(JSON.stringify(header)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const base64Payload = Buffer.from(JSON.stringify(payloadWithExpiry)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  
+  const signature = crypto
+    .createHmac('sha256', JWT_SECRET)
+    .update(`${base64Header}.${base64Payload}`)
+    .digest('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  
+  return `${base64Header}.${base64Payload}.${signature}`;
+}
+
+// Fonction pour valider un token JWT (simplifié)
+function validateToken(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    
+    if (payload.exp && payload.exp < nowInSeconds) return null;
+    
+    return payload;
+  } catch (error) {
+    console.error('Erreur de validation du token:', error.message);
+    return null;
+  }
+}
+
 // Connexion à MongoDB
 async function connectToDatabase() {
   try {
@@ -142,6 +204,44 @@ function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
   res.setHeader('Access-Control-Allow-Credentials', true);
+}
+
+// Analyser le corps de la requête
+function parseRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        const data = body ? JSON.parse(body) : {};
+        resolve(data);
+      } catch (e) {
+        reject(e);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+// Fonction de validation des champs d'inscription
+function validateRegisterFields(data) {
+  const errors = [];
+  
+  if (!data.email || !/^\S+@\S+\.\S+$/.test(data.email)) {
+    errors.push('Adresse email invalide');
+  }
+  
+  if (!data.password || data.password.length < 6) {
+    errors.push('Le mot de passe doit comporter au moins 6 caractères');
+  }
+  
+  if (!data.username || data.username.length < 3) {
+    errors.push('Le nom d\'utilisateur doit comporter au moins 3 caractères');
+  }
+  
+  return errors;
 }
 
 // Serveur HTTP avec routes pour NionFar
@@ -189,6 +289,196 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Route pour token CSRF
+  if (pathname === `/${API_PREFIX}/security/csrf-tokens`) {
+    const csrfToken = crypto.randomBytes(16).toString('hex');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      token: csrfToken
+    }));
+    return;
+  }
+
+  // Route pour l'inscription
+  if (pathname === `/${API_PREFIX}/auth/register` && req.method === 'POST') {
+    try {
+      const userData = await parseRequestBody(req);
+      const validationErrors = validateRegisterFields(userData);
+      
+      if (validationErrors.length > 0) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          message: 'Données d\'inscription invalides',
+          errors: validationErrors
+        }));
+        return;
+      }
+      
+      // Vérifier si l'email ou le nom d'utilisateur existe déjà
+      const emailExists = inMemoryDB.users.some(user => user.email === userData.email);
+      const usernameExists = inMemoryDB.users.some(user => user.username === userData.username);
+      
+      if (emailExists) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          message: 'Cet email est déjà utilisé'
+        }));
+        return;
+      }
+      
+      if (usernameExists) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          message: 'Ce nom d\'utilisateur est déjà pris'
+        }));
+        return;
+      }
+      
+      // Hacher le mot de passe
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(userData.password, salt);
+      
+      // Créer l'utilisateur en mémoire
+      const newUser = {
+        id: inMemoryDB.generateId(),
+        email: userData.email,
+        username: userData.username,
+        fullName: userData.fullName || '',
+        password: hashedPassword,
+        role: 'user',
+        createdAt: new Date().toISOString(),
+        isEmailVerified: false
+      };
+      
+      inMemoryDB.users.push(newUser);
+      
+      // Générer un token JWT
+      const token = generateToken({
+        id: newUser.id,
+        email: newUser.email,
+        username: newUser.username,
+        role: newUser.role
+      });
+      
+      // Générer un refresh token
+      const refreshToken = crypto.randomBytes(40).toString('hex');
+      inMemoryDB.tokens.push({
+        userId: newUser.id,
+        token: refreshToken,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 jours
+      });
+      
+      // Répondre avec le token et les informations de l'utilisateur
+      const userToReturn = { ...newUser };
+      delete userToReturn.password;
+      
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Inscription réussie',
+        user: userToReturn,
+        accessToken: token,
+        refreshToken: refreshToken,
+        expiresIn: 86400 // 24 heures en secondes
+      }));
+      
+      console.log(`Nouvel utilisateur inscrit: ${userData.email}`);
+    } catch (error) {
+      console.error('Erreur lors de l\'inscription:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        message: 'Erreur interne du serveur',
+        error: error.message
+      }));
+    }
+    return;
+  }
+
+  // Route pour la connexion
+  if (pathname === `/${API_PREFIX}/auth/login` && req.method === 'POST') {
+    try {
+      const loginData = await parseRequestBody(req);
+      
+      if (!loginData.email || !loginData.password) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          message: 'Email et mot de passe requis'
+        }));
+        return;
+      }
+      
+      // Trouver l'utilisateur par email
+      const user = inMemoryDB.users.find(user => user.email === loginData.email);
+      
+      if (!user) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          message: 'Email ou mot de passe incorrect'
+        }));
+        return;
+      }
+      
+      // Vérifier le mot de passe
+      const isMatch = await bcrypt.compare(loginData.password, user.password);
+      
+      if (!isMatch) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          message: 'Email ou mot de passe incorrect'
+        }));
+        return;
+      }
+      
+      // Générer un token JWT
+      const token = generateToken({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role
+      });
+      
+      // Générer un refresh token
+      const refreshToken = crypto.randomBytes(40).toString('hex');
+      inMemoryDB.tokens.push({
+        userId: user.id,
+        token: refreshToken,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 jours
+      });
+      
+      // Répondre avec le token et les informations de l'utilisateur
+      const userToReturn = { ...user };
+      delete userToReturn.password;
+      
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Connexion réussie',
+        user: userToReturn,
+        accessToken: token,
+        refreshToken: refreshToken,
+        expiresIn: 86400 // 24 heures en secondes
+      }));
+      
+      console.log(`Utilisateur connecté: ${loginData.email}`);
+    } catch (error) {
+      console.error('Erreur lors de la connexion:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        message: 'Erreur interne du serveur',
+        error: error.message
+      }));
+    }
+    return;
+  }
+
   // Route pour les catégories de services
   if (pathname === `/${API_PREFIX}/services/categories` || pathname === `/${API_PREFIX}/categories`) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -209,20 +499,331 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Route pour les services mis en avant
-  if (pathname === `/${API_PREFIX}/services/featured`) {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(mockData.services.featured));
+  // Route pour les services
+  if (pathname.startsWith(`/${API_PREFIX}/services`) && req.method === 'GET') {
+    // API pour récupérer un service spécifique par ID
+    if (pathname.match(new RegExp(`^/${API_PREFIX}/services/[a-zA-Z0-9]+$`))) {
+      const serviceId = pathname.split('/').pop();
+      
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        message: 'Service récupéré, mais en mode de compatibilité',
+        note: 'Les données complètes seront disponibles quand la connexion à la base de données sera rétablie'
+      }));
+      return;
+    }
+    
+    // Route pour les services mis en avant
+    if (pathname === `/${API_PREFIX}/services/featured`) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(mockData.services.featured));
+      return;
+    }
+    
+    // Route pour les services récents
+    if (pathname === `/${API_PREFIX}/services/latest`) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(mockData.services.latest));
+      return;
+    }
+    
+    // Liste de tous les services
+    if (pathname === `/${API_PREFIX}/services`) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        message: 'Liste des services disponible quand la connexion à la base de données sera rétablie',
+        serviceSamples: [...mockData.services.featured, ...mockData.services.latest],
+        total: mockData.stats.totalServices
+      }));
+      return;
+    }
+  }
+  
+  // Route pour création de service (POST)
+  if (pathname === `/${API_PREFIX}/services` && req.method === 'POST') {
+    // Vérification d'autorisation pour la création de service
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: false, 
+        message: 'Authentification requise' 
+      }));
+      return;
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const userData = validateToken(token);
+    
+    if (!userData) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: false, 
+        message: 'Token invalide ou expiré' 
+      }));
+      return;
+    }
+    
+    // Vérifier si l'utilisateur est freelancer ou admin
+    if (userData.role !== 'freelancer' && userData.role !== 'admin') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: false, 
+        message: 'Accès non autorisé. Seuls les freelancers et admins peuvent créer des services.' 
+      }));
+      return;
+    }
+    
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: false,
+      message: 'La création de services est temporairement indisponible en mode de compatibilité',
+      retryLater: true,
+      status: 'degraded'
+    }));
     return;
   }
-
-  // Route pour les services récents
-  if (pathname === `/${API_PREFIX}/services/latest`) {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(mockData.services.latest));
-    return;
+  
+  // Routes pour les commandes
+  if (pathname.startsWith(`/${API_PREFIX}/orders`)) {
+    // Vérification d'autorisation
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: false, 
+        message: 'Authentification requise' 
+      }));
+      return;
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const userData = validateToken(token);
+    
+    if (!userData) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: false, 
+        message: 'Token invalide ou expiré' 
+      }));
+      return;
+    }
+    
+    // Lister les commandes (GET)
+    if (pathname === `/${API_PREFIX}/orders` && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Fonctionnalité disponible quand la connexion à la base de données sera rétablie',
+        orders: []
+      }));
+      return;
+    }
+    
+    // Création de commande (POST)
+    if (pathname === `/${API_PREFIX}/orders` && req.method === 'POST') {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        message: 'La création de commandes est temporairement indisponible en mode de compatibilité',
+        retryLater: true,
+        status: 'degraded'
+      }));
+      return;
+    }
+    
+    // Récupération d'une commande spécifique (GET)
+    if (pathname.match(new RegExp(`^/${API_PREFIX}/orders/[a-zA-Z0-9]+$`)) && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Fonctionnalité disponible quand la connexion à la base de données sera rétablie',
+        order: null
+      }));
+      return;
+    }
+    
+    // Route pour les actions sur les commandes (cancel, complete, etc.)
+    if (pathname.match(new RegExp(`^/${API_PREFIX}/orders/[a-zA-Z0-9]+/(cancel|complete|deliver|revision|accept|status)$`)) && req.method === 'POST') {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        message: 'Les actions sur les commandes sont temporairement indisponibles en mode de compatibilité',
+        retryLater: true,
+        status: 'degraded'
+      }));
+      return;
+    }
   }
-
+  
+  // Routes pour les disputes
+  if (pathname.startsWith(`/${API_PREFIX}/disputes`)) {
+    // Vérification d'autorisation
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: false, 
+        message: 'Authentification requise' 
+      }));
+      return;
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const userData = validateToken(token);
+    
+    if (!userData) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: false, 
+        message: 'Token invalide ou expiré' 
+      }));
+      return;
+    }
+    
+    // Création d'un litige (POST)
+    if (pathname === `/${API_PREFIX}/disputes` && req.method === 'POST') {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        message: 'La création de litiges est temporairement indisponible en mode de compatibilité',
+        retryLater: true,
+        status: 'degraded'
+      }));
+      return;
+    }
+    
+    // Liste des litiges (GET)
+    if ((pathname === `/${API_PREFIX}/disputes` || pathname === `/${API_PREFIX}/disputes/admin`) && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Fonctionnalité disponible quand la connexion à la base de données sera rétablie',
+        disputes: []
+      }));
+      return;
+    }
+    
+    // Récupération d'un litige spécifique
+    if (pathname.match(new RegExp(`^/${API_PREFIX}/disputes/[a-zA-Z0-9]+$`)) && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Fonctionnalité disponible quand la connexion à la base de données sera rétablie',
+        dispute: null
+      }));
+      return;
+    }
+    
+    // Ajout de message à un litige
+    if (pathname.match(new RegExp(`^/${API_PREFIX}/disputes/[a-zA-Z0-9]+/messages$`)) && req.method === 'POST') {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        message: 'L\'ajout de messages est temporairement indisponible en mode de compatibilité',
+        retryLater: true,
+        status: 'degraded'
+      }));
+      return;
+    }
+  }
+  
+  // Routes pour les paiements
+  if (pathname.startsWith(`/${API_PREFIX}/payments`)) {
+    // Vérification d'autorisation pour toutes les routes sauf le webhook
+    if (pathname !== `/${API_PREFIX}/payments/webhook`) {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          success: false, 
+          message: 'Authentification requise' 
+        }));
+        return;
+      }
+      
+      const token = authHeader.split(' ')[1];
+      const userData = validateToken(token);
+      
+      if (!userData) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          success: false, 
+          message: 'Token invalide ou expiré' 
+        }));
+        return;
+      }
+    }
+    
+    // Webhook de paiement (accessible sans auth)
+    if (pathname === `/${API_PREFIX}/payments/webhook` && req.method === 'POST') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Webhook reçu'
+      }));
+      return;
+    }
+    
+    // Création d'un paiement
+    if (pathname === `/${API_PREFIX}/payments` && req.method === 'POST') {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        message: 'La création de paiements est temporairement indisponible en mode de compatibilité',
+        retryLater: true,
+        status: 'degraded'
+      }));
+      return;
+    }
+    
+    // Demande de retrait
+    if (pathname === `/${API_PREFIX}/payments/withdrawal` && req.method === 'POST') {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        message: 'Les retraits sont temporairement indisponibles en mode de compatibilité',
+        retryLater: true,
+        status: 'degraded'
+      }));
+      return;
+    }
+    
+    // Historique des retraits
+    if (pathname === `/${API_PREFIX}/payments/withdrawal/history` && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Fonctionnalité disponible quand la connexion à la base de données sera rétablie',
+        withdrawals: []
+      }));
+      return;
+    }
+    
+    // Solde de l'utilisateur
+    if (pathname === `/${API_PREFIX}/payments/balance` && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        balance: 0,
+        pendingBalance: 0,
+        currency: 'XOF'
+      }));
+      return;
+    }
+    
+    // Transactions de l'utilisateur
+    if (pathname === `/${API_PREFIX}/payments/transactions` && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: 'Fonctionnalité disponible quand la connexion à la base de données sera rétablie',
+        transactions: []
+      }));
+      return;
+    }
+  }
+  
   // Route pour les statistiques
   if (pathname === `/${API_PREFIX}/stats`) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -242,10 +843,30 @@ const server = http.createServer(async (req, res) => {
       endpoints: [
         `/${API_PREFIX}/health`,
         `/${API_PREFIX}/status`,
+        `/${API_PREFIX}/auth/register`,
+        `/${API_PREFIX}/auth/login`,
+        `/${API_PREFIX}/security/csrf-tokens`,
         `/${API_PREFIX}/services/categories`,
         `/${API_PREFIX}/services/categories/count`,
         `/${API_PREFIX}/services/featured`,
         `/${API_PREFIX}/services/latest`,
+        `/${API_PREFIX}/services`,
+        `/${API_PREFIX}/orders`,
+        `/${API_PREFIX}/orders/:id`,
+        `/${API_PREFIX}/orders/:id/deliver`,
+        `/${API_PREFIX}/orders/:id/cancel`,
+        `/${API_PREFIX}/orders/:id/complete`,
+        `/${API_PREFIX}/orders/:id/revision`,
+        `/${API_PREFIX}/orders/:id/accept`,
+        `/${API_PREFIX}/disputes`,
+        `/${API_PREFIX}/disputes/:id`,
+        `/${API_PREFIX}/disputes/:id/messages`,
+        `/${API_PREFIX}/payments`,
+        `/${API_PREFIX}/payments/webhook`,
+        `/${API_PREFIX}/payments/withdrawal`,
+        `/${API_PREFIX}/payments/withdrawal/history`,
+        `/${API_PREFIX}/payments/transactions`,
+        `/${API_PREFIX}/payments/balance`,
         `/${API_PREFIX}/stats`
       ],
       timestamp: new Date().toISOString()
@@ -279,9 +900,12 @@ async function bootstrap() {
       server.close(() => {
         if (mongoose.connection.readyState === 1) {
           console.log('Fermeture de la connexion à MongoDB...');
-          mongoose.connection.close(false, () => {
+          mongoose.connection.close().then(() => {
             console.log('Serveur arrêté avec succès');
             process.exit(0);
+          }).catch(err => {
+            console.error('Erreur lors de la fermeture de la connexion à MongoDB:', err);
+            process.exit(1);
           });
         } else {
           console.log('Serveur arrêté avec succès');
