@@ -3,7 +3,7 @@ services:
     name: nionfar-backend
     env: node
     buildCommand: cd backend && npm install && npm run build
-    startCommand: cd backend && npm run start:prod
+    startCommand: cd backend && npm run start:render
     envVars:
       - key: NODE_ENV
         value: production
