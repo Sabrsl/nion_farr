@@ -1,0 +1,123 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { isStrongPassword } from '../../../lib/auth/utils';
+import { userStorage, passwordResetTokens } from '../../../lib/auth/storage';
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ 
+      success: false,
+      error: 'Méthode non autorisée' 
+    });
+  }
+
+  try {
+    const { token, password, confirmPassword } = req.body;
+
+    // Validation des champs
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token requis',
+        details: { token: 'Le token de réinitialisation est requis' }
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Mot de passe requis',
+        details: { password: 'Veuillez fournir un nouveau mot de passe' }
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Les mots de passe ne correspondent pas',
+        details: { confirmPassword: 'Les mots de passe ne correspondent pas' }
+      });
+    }
+
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Mot de passe trop faible',
+        details: { 
+          password: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial'
+        }
+      });
+    }
+
+    // Récupérer les informations du token
+    const resetData = passwordResetTokens.get(token);
+
+    if (!resetData) {
+      return res.status(404).json({
+        success: false,
+        error: 'Token invalide',
+        details: { token: 'Le token de réinitialisation est invalide ou a expiré' }
+      });
+    }
+
+    // Vérifier si le token a expiré
+    const expiresAt = new Date(resetData.expiresAt);
+    if (expiresAt < new Date()) {
+      // Supprimer le token expiré
+      passwordResetTokens.delete(token);
+      
+      return res.status(401).json({
+        success: false,
+        error: 'Token expiré',
+        details: { token: 'Le token de réinitialisation a expiré' }
+      });
+    }
+
+    // Mettre à jour le mot de passe de l'utilisateur
+    const { email } = resetData;
+    
+    // Vérifier si l'utilisateur existe
+    if (!userStorage.exists(email)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Utilisateur introuvable',
+        details: { email: 'Aucun utilisateur trouvé avec cette adresse email' }
+      });
+    }
+
+    // Mettre à jour le mot de passe (simulé)
+    // Dans une vraie application, le mot de passe serait haché avant stockage
+    const user = userStorage.getByEmail(email);
+    
+    if (user) {
+      // Hasher le mot de passe avant de le stocker (simulé)
+      user.password = `hashed_${password}`;
+      user.passwordLastChanged = new Date().toISOString();
+      userStorage.update(user.id, user);
+      
+      // Supprimer le token une fois utilisé
+      passwordResetTokens.delete(token);
+  
+      return res.status(200).json({
+        success: true,
+        message: 'Mot de passe mis à jour avec succès',
+        redirectTo: '/'
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        error: 'Utilisateur introuvable',
+        details: { email: 'Aucun utilisateur trouvé avec cette adresse email' }
+      });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la réinitialisation du mot de passe:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Une erreur est survenue lors du traitement de votre demande',
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
+    });
+  }
+} 
