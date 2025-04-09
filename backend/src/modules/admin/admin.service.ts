@@ -1,28 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../users/entities/user.entity';
-import { Order } from '../orders/entities/order.entity';
-import { Service } from '../services/entities/service.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Order } from '../../../models/order.model';
+import { User } from '../../../models/user.model';
+import { Service } from '../../../models/service.model';
 
 @Injectable()
 export class AdminService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(Order)
-    private readonly orderRepository: Repository<Order>,
-    @InjectRepository(Service)
-    private readonly serviceRepository: Repository<Service>,
+    @InjectModel(Order.name) private readonly orderModel: Model<Order>,
+    @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(Service.name) private readonly serviceModel: Model<Service>
   ) {}
 
   async getDashboardStats(): Promise<any> {
-    const totalUsers = await this.userRepository.count();
-    const totalServices = await this.serviceRepository.count();
-    const totalOrders = await this.orderRepository.count();
+    const totalUsers = await this.userModel.countDocuments();
+    const totalServices = await this.serviceModel.countDocuments();
+    const totalOrders = await this.orderModel.countDocuments();
     
     // Récupérer quelques transactions récentes
-    const recentTransactions = await this.orderRepository.find({
+    const recentTransactions = await this.orderModel.find({
       order: { createdAt: 'DESC' },
       take: 10,
       relations: ['client', 'freelancer', 'service']
@@ -47,19 +44,15 @@ export class AdminService {
     const satisfaction = 98;
     
     // Compter les freelancers
-    const freelancersCount = await this.userRepository.count({
-      where: { 
-        isFreelancer: true,
-        isActive: true
-      }
+    const freelancersCount = await this.userModel.countDocuments({
+      isFreelancer: true,
+      isActive: true
     });
     
     // Compter les clients
-    const clientsCount = await this.userRepository.count({
-      where: { 
-        isFreelancer: false,
-        isActive: true
-      }
+    const clientsCount = await this.userModel.countDocuments({
+      isFreelancer: false,
+      isActive: true
     });
     
     return {
@@ -78,7 +71,7 @@ export class AdminService {
     try {
       // Calculer le nombre de visiteurs actifs par mois
       // Pour l'instant, on utilise une estimation basée sur le nombre d'utilisateurs * 5
-      const userCount = await this.userRepository.count();
+      const userCount = await this.userModel.countDocuments();
       const estimatedVisitors = userCount * 5;
       
       return { count: estimatedVisitors };
@@ -90,14 +83,25 @@ export class AdminService {
   
   async getPaymentsTotal(): Promise<{ total: number }> {
     try {
-      // Calculer le montant total des paiements
-      const result = await this.orderRepository
-        .createQueryBuilder('order')
-        .select('SUM(order.price)', 'total')
-        .where('order.status = :status', { status: 'completed' })
-        .getRawOne();
+      // Utiliser l'agrégation MongoDB pour calculer le total
+      const result = await this.orderModel.aggregate([
+        {
+          $match: {
+            status: 'completed'
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$price' }
+          }
+        }
+      ]).exec();
+
+      // Extraire le total du résultat de l'agrégation
+      const total = result.length > 0 ? result[0].total : 0;
       
-      return { total: Number(result.total) || 10000000 };
+      return { total: Number(total) || 10000000 };
     } catch (error) {
       console.error('Erreur lors du calcul des paiements:', error);
       return { total: 10000000 }; // Valeur par défaut (10M FCFA)
