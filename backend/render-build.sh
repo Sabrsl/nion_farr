@@ -134,6 +134,92 @@ mockData.categories.forEach(category => {
   inMemoryDB.categories.push(category);
 });
 
+// Configuration pour la gestion de la mémoire
+const MEMORY_MANAGEMENT = {
+  MAX_USERS_IN_MEMORY: 100,      // Nombre maximum d'utilisateurs en mémoire
+  MAX_TOKENS_IN_MEMORY: 200,     // Nombre maximum de tokens en mémoire
+  MEMORY_CHECK_INTERVAL: 60000,  // Vérifier la mémoire toutes les 60 secondes
+  HEAP_WARNING_THRESHOLD: 85,    // Seuil d'avertissement pour l'utilisation du heap (%)
+  HEAP_CRITICAL_THRESHOLD: 90,   // Seuil critique pour l'utilisation du heap (%)
+  TOKEN_EXPIRY: 24 * 60 * 60 * 1000, // Expiration des tokens (24h)
+};
+
+// Fonction pour nettoyer la mémoire
+function cleanupMemory() {
+  console.log('🧹 Exécution du nettoyage de la mémoire...');
+  const startHeapUsed = process.memoryUsage().heapUsed;
+  const now = Date.now();
+  let tokensRemoved = 0;
+  
+  // Nettoyer les tokens expirés
+  inMemoryDB.tokens = inMemoryDB.tokens.filter(token => {
+    const isValid = token.expires > now;
+    if (!isValid) tokensRemoved++;
+    return isValid;
+  });
+  
+  // Si trop de tokens, supprimer les plus anciens
+  if (inMemoryDB.tokens.length > MEMORY_MANAGEMENT.MAX_TOKENS_IN_MEMORY) {
+    const countToRemove = inMemoryDB.tokens.length - MEMORY_MANAGEMENT.MAX_TOKENS_IN_MEMORY;
+    inMemoryDB.tokens.sort((a, b) => a.expires - b.expires);
+    inMemoryDB.tokens = inMemoryDB.tokens.slice(countToRemove);
+    tokensRemoved += countToRemove;
+  }
+  
+  // Si trop d'utilisateurs, garder uniquement les plus récents
+  let usersRemoved = 0;
+  if (inMemoryDB.users.length > MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY) {
+    const countToKeep = MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY;
+    inMemoryDB.users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    usersRemoved = inMemoryDB.users.length - countToKeep;
+    inMemoryDB.users = inMemoryDB.users.slice(0, countToKeep);
+  }
+  
+  // Libérer la mémoire inutilisée
+  if (global.gc) {
+    global.gc();
+  }
+  
+  const endHeapUsed = process.memoryUsage().heapUsed;
+  const memoryFreed = (startHeapUsed - endHeapUsed) / (1024 * 1024);
+  
+  console.log(`🧹 Nettoyage terminé: ${tokensRemoved} tokens et ${usersRemoved} utilisateurs supprimés, ${memoryFreed.toFixed(2)} MB libéré`);
+}
+
+// Fonction pour vérifier l'état de la mémoire
+function checkMemoryUsage() {
+  const memoryUsage = process.memoryUsage();
+  const heapUsed = memoryUsage.heapUsed;
+  const heapTotal = memoryUsage.heapTotal;
+  const heapUsedPercent = Math.round((heapUsed / heapTotal) * 100);
+  
+  console.log(`📊 Surveillance mémoire: Heap utilisé: ${Math.round(heapUsed / 1024 / 1024)} MB / ` +
+    `${Math.round(heapTotal / 1024 / 1024)} MB (${heapUsedPercent}%)`);
+  
+  if (heapUsedPercent > MEMORY_MANAGEMENT.HEAP_CRITICAL_THRESHOLD) {
+    console.warn(`⚠️ CRITIQUE: Utilisation du heap à ${heapUsedPercent}%, nettoyage d'urgence...`);
+    cleanupMemory();
+    
+    // Si le nettoyage n'est pas suffisant, forcer un redémarrage propre
+    setTimeout(() => {
+      const postCleanupUsage = process.memoryUsage();
+      const postCleanupPercent = Math.round((postCleanupUsage.heapUsed / postCleanupUsage.heapTotal) * 100);
+      
+      if (postCleanupPercent > MEMORY_MANAGEMENT.HEAP_CRITICAL_THRESHOLD) {
+        console.error(`🔥 CRITIQUE: L'utilisation du heap reste à ${postCleanupPercent}% après nettoyage.`);
+        console.log('💡 Redémarrage préventif du serveur pour éviter un crash...');
+        
+        // Effectuer un redémarrage propre
+        // Note: Render redémarrera le service automatiquement
+        process.exit(0);
+      }
+    }, 5000);
+  } else if (heapUsedPercent > MEMORY_MANAGEMENT.HEAP_WARNING_THRESHOLD) {
+    console.warn(`⚠️ AVERTISSEMENT: Utilisation du heap à ${heapUsedPercent}%, nettoyage préventif...`);
+    cleanupMemory();
+  }
+}
+
 // Fonction pour générer un token JWT (simplifié)
 function generateToken(payload) {
   const header = { alg: 'HS256', typ: 'JWT' };
@@ -178,7 +264,7 @@ function validateToken(token) {
   }
 }
 
-// Connexion à MongoDB
+// Connexion à MongoDB avec reconnexion automatique
 async function connectToDatabase() {
   try {
     if (!MONGODB_URI) {
@@ -187,14 +273,39 @@ async function connectToDatabase() {
     }
     
     console.log(`Connexion à la base de données MongoDB (${NODE_ENV})...`);
+    
+    // Configuration de la connexion MongoDB avec reconnexion automatique
     await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Timeout après 5 secondes en cas d'échec de connexion
+      socketTimeoutMS: 45000, // Timeout après 45 secondes d'inactivité
+      // La reconnexion est activée par défaut avec useUnifiedTopology
     });
+    
     console.log('Connexion à MongoDB établie avec succès!');
+    
+    // Surveiller les événements de connexion MongoDB
+    mongoose.connection.on('disconnected', () => {
+      console.warn('⚠️ Connexion MongoDB perdue. Tentative de reconnexion...');
+    });
+    
+    mongoose.connection.on('reconnected', () => {
+      console.log('✅ Reconnecté à MongoDB avec succès!');
+    });
+    
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ Erreur MongoDB:', err);
+    });
+    
     return true;
   } catch (error) {
     console.error('Erreur de connexion à MongoDB:', error.message);
+    // En cas d'échec, programmer une nouvelle tentative
+    console.log('⏱️ Nouvelle tentative de connexion dans 10 secondes...');
+    setTimeout(() => {
+      connectToDatabase().catch(console.error);
+    }, 10000);
     return false;
   }
 }
@@ -961,6 +1072,10 @@ async function bootstrap() {
       console.log(`Serveur NionFar API en mode de compatibilité démarré sur le port ${PORT}`);
       console.log(`API accessible à: http://0.0.0.0:${PORT}/${API_PREFIX}`);
       console.log(`URL de santé: http://0.0.0.0:${PORT}/health`);
+      
+      // Démarrer la surveillance de la mémoire
+      console.log(`📊 Démarrage de la surveillance de la mémoire (intervalle: ${MEMORY_MANAGEMENT.MEMORY_CHECK_INTERVAL}ms)`);
+      setInterval(checkMemoryUsage, MEMORY_MANAGEMENT.MEMORY_CHECK_INTERVAL);
     });
     
     // Gestion des signaux pour un arrêt propre
