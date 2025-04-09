@@ -297,27 +297,47 @@ export class SecurityService {
    * Détecte les tentatives d'injection NoSQL
    */
   detectNoSqlInjection(input: any, path: string): boolean {
-    // Temporairement désactivé pour déboguer les problèmes de connexion
-    console.log('Detection NoSQL désactivée temporairement');
-    return false;
+    // Vérifier si le chemin est dans les règles contextuelles
+    const contextRule = this.contextualRules.find(rule => path.startsWith(rule.path));
     
-    /*
-    // Code original
     if (typeof input === 'object' && input !== null) {
       const serialized = JSON.stringify(input);
+      
+      // Si nous avons une règle contextuelle, appliquer des règles spécifiques
+      if (contextRule) {
+        // Vérifier uniquement les opérateurs non autorisés pour ce chemin
+        const unauthorizedOperators = this.suspiciousPatterns
+          .filter(pattern => {
+            const operator = pattern.source.replace(/[\\\$\/\^]/g, '');
+            return !contextRule.allowedOperators.includes(`$${operator}`);
+          });
+          
+        const hasUnauthorizedOperator = unauthorizedOperators.some(pattern => pattern.test(serialized));
+        if (hasUnauthorizedOperator) {
+          this.logger.warn(`Détection NoSQL: Opérateur non autorisé détecté pour ${path}`);
+          return true;
+        }
+        return false;
+      }
+      
+      // Pour les chemins sans règles contextuelles, appliquer la détection complète
       const patterns = [
-        /\$[\s]*[a-zA-Z0-9_]+/g, // Détecte les opérateurs MongoDB: $gt, $lt, etc.
-        /\.[a-zA-Z0-9_]+\(/g,     // Détecte les méthodes potentielles: .exec()
-        /\{\s*\$where\s*:/g,      // Détecte l'opérateur $where  
-        /;.+/g,                   // Points-virgules
+        /\$[\s]*[a-zA-Z0-9_]+/g,    // Détecte les opérateurs MongoDB: $gt, $lt, etc.
+        /\.[a-zA-Z0-9_]+\(/g,        // Détecte les méthodes potentielles: .exec()
+        /\{\s*\$where\s*:/g,         // Détecte l'opérateur $where  
+        /;.+/g,                      // Points-virgules
         /db\s*\.\s*[a-zA-Z0-9_]+\s*\(/g, // Appels à la base de données
-        /function\s*\(/g,          // Définitions de fonctions
-        /eval\s*\(/g,              // Eval
+        /function\s*\(/g,            // Définitions de fonctions
+        /eval\s*\(/g,                // Eval
       ];
       
-      return patterns.some(pattern => pattern.test(serialized));
+      const hasInjection = patterns.some(pattern => pattern.test(serialized));
+      if (hasInjection) {
+        this.logger.warn(`Détection NoSQL: Injection potentielle détectée pour ${path}`);
+        return true;
+      }
     }
+    
     return false;
-    */
   }
 } 

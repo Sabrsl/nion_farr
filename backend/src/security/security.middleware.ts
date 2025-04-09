@@ -20,8 +20,10 @@ export class SecurityMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     try {
+      const path = req.path;
+      
       // Vérifier si le chemin est exclu des vérifications de sécurité
-      if (this.EXCLUDED_PATHS.some(path => req.path.startsWith(path))) {
+      if (this.isExcludedPath(path)) {
         return next();
       }
 
@@ -37,7 +39,6 @@ export class SecurityMiddleware implements NestMiddleware {
       // Détecter les bots
       const ipAddress = req.ip || req.connection.remoteAddress;
       const userAgent = req.headers['user-agent'] || '';
-      const path = req.path;
 
       await this.securityService.logRequest(ipAddress, userAgent, path);
       
@@ -79,31 +80,38 @@ export class SecurityMiddleware implements NestMiddleware {
         }
       }
 
-      // Nettoyer les entrées pour prévenir les injections NoSQL
-      if (req.body) {
-        req.body = this.securityService.sanitizeInput(req.body);
-      }
-
-      if (req.query) {
-        req.query = this.securityService.sanitizeInput(req.query);
-      }
-
-      if (req.params) {
-        req.params = this.securityService.sanitizeInput(req.params);
-      }
-
       // Détecter les tentatives d'injection NoSQL
-      if (req.body && this.securityService.detectNoSqlInjection(req.body, path)) {
-        throw new BadRequestException('Invalid request: Possible NoSQL injection detected');
+      if (req.body && Object.keys(req.body).length > 0) {
+        const hasInjection = this.securityService.detectNoSqlInjection(req.body, path);
+        if (hasInjection) {
+          this.logger.warn(`NoSQL injection detected in request body for path: ${path}`);
+          throw new BadRequestException('Invalid request: Possible NoSQL injection detected');
+        }
       }
 
-      if (req.query && this.securityService.detectNoSqlInjection(req.query, path)) {
-        throw new BadRequestException('Invalid request: Possible NoSQL injection detected');
+      if (req.query && Object.keys(req.query).length > 0) {
+        const hasInjection = this.securityService.detectNoSqlInjection(req.query, path);
+        if (hasInjection) {
+          this.logger.warn(`NoSQL injection detected in query parameters for path: ${path}`);
+          throw new BadRequestException('Invalid request: Possible NoSQL injection detected');
+        }
       }
 
       next();
     } catch (error) {
+      // Améliorer la gestion des erreurs
+      if (error instanceof UnauthorizedException) {
+        this.logger.warn(`Security check failed: ${error.message}`);
+      } else if (error instanceof BadRequestException) {
+        this.logger.warn(`Invalid request detected: ${error.message}`);
+      } else {
+        this.logger.error(`Unexpected security error: ${error.message}`);
+      }
       next(error);
     }
+  }
+
+  private isExcludedPath(path: string): boolean {
+    return this.EXCLUDED_PATHS.some(p => path.startsWith(p));
   }
 } 
