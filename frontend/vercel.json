@@ -4,10 +4,10 @@
   "framework": "nextjs",
   "installCommand": "npm install",
   "outputDirectory": ".next",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/:path*",
-      "dest": "https://nionfar-backend.onrender.com/api/:path*"
+      "source": "/api/:path*",
+      "destination": "https://nionfar-backend.onrender.com/api/:path*"
     }
   ],
   "env": {
