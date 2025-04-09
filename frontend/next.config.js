@@ -2,12 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Définir le mode de rendu sur "export" pour générer des fichiers statiques
-  // Cela résout généralement les problèmes de routes-manifest.json
-  output: 'export',
+  // Définir le mode de rendu sur "standalone" pour que tout soit généré à la demande
+  output: 'standalone',
   
-  distDir: '.next',
-
   // Configuration des images
   images: {
     domains: ['nion-farr.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
@@ -121,11 +118,6 @@ const nextConfig = {
       },
     ];
   },
-
-  // Optimisé pour Vercel - pas besoin de définir le port explicitement
-  // server: {
-  //   port: 3000
-  // },
 
   async rewrites() {
     return [
