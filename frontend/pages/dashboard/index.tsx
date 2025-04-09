@@ -37,6 +37,7 @@ const Dashboard: NextPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeChartView, setActiveChartView] = useState('views');
   const [timeFilter, setTimeFilter] = useState('30days');
+  const [userData, setUserData] = useState<any>(null);
   const router = useRouter();
   
   // Formater les montants en FCFA
@@ -61,223 +62,71 @@ const Dashboard: NextPage = () => {
   }, [stats]);
   
   useEffect(() => {
-    // Simuler le chargement des données
-    const fetchData = async () => {
+    const fetchUserData = () => {
       try {
-        // En production, ceci serait remplacé par de vraies requêtes API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        setStats({
-          earnings: {
-            total: 945000,
-            pending: 75000,
-            withdrawn: 850000,
-            available: 20000
-          },
-          analytics: {
-            views: 1258,
-            clicks: 342,
-            conversionRate: 5.8,
-            averageRating: 4.9,
-            completionRate: 98,
-            totalOrders: 42,
-            pendingOrders: 3,
-            totalEarnings: 945000,
-            totalReviews: 124
-          },
-          activeOrders: 3,
-          pendingReviews: 2,
-          responseRate: 97,
-          responseTime: '2 heures'
-        });
-        
-        setRecentOrders([
-          {
-            id: 'ORD-1234',
-            title: 'Conception de logo pour restaurant',
-            serviceId: 'SRV-001',
-            serviceName: 'Création de logo professionnel',
-            providerId: 'PRV-001',
-            providerName: 'Amadou Diop',
-            clientId: 'CLI-001',
-            orderDate: '2023-08-15',
-            client: {
-              id: 'CLI-001',
-              username: 'Fatou Diallo',
-              avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-              isVerified: true
-            },
-            service: {
-              id: 'SRV-001',
-              title: 'Je vais créer un logo professionnel pour votre entreprise',
-              price: 25000,
-              rating: 4.9,
-              totalReviews: 124,
-              deliveryTime: 3,
-              images: [],
-              orderCount: 243,
-              createdAt: '2023-05-12',
-              slug: 'logo-professionnel'
-            },
-            status: 'in_progress',
-            price: 25000,
-            createdAt: '2023-08-15',
-            deadline: '2023-08-18',
-            isPaid: true,
-            messages: [],
-            requirements: 'Création d\'un logo moderne pour restaurant'
-          },
-          {
-            id: 'ORD-1235',
-            title: 'Développement d\'une landing page',
-            serviceId: 'SRV-002',
-            serviceName: 'Création de landing page attractive',
-            providerId: 'PRV-002',
-            providerName: 'Modou Ndiaye',
-            clientId: 'CLI-001',
-            orderDate: '2023-08-14',
-            client: {
-              id: 'CLI-002',
-              username: 'Modou Ndiaye',
-              avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-              isVerified: true
-            },
-            service: {
-              id: 'SRV-002',
-              title: 'Je vais créer une landing page attractive et optimisée',
-              price: 75000,
-              rating: 4.8,
-              totalReviews: 87,
-              deliveryTime: 5,
-              images: [],
-              orderCount: 156,
-              createdAt: '2023-04-24',
-              slug: 'landing-page-optimisee'
-            },
-            status: 'pending',
-            price: 75000,
-            createdAt: '2023-08-14',
-            deadline: '2023-08-19',
-            isPaid: true,
-            messages: [],
-            requirements: 'Création d\'une landing page responsive avec formulaire de contact'
-          },
-          {
-            id: 'ORD-1232',
-            title: 'Rédaction d\'articles SEO (x5)',
-            serviceId: 'SRV-003',
-            serviceName: 'Rédaction d\'articles SEO de qualité',
-            providerId: 'PRV-003',
-            providerName: 'Aminata Sow',
-            clientId: 'CLI-001',
-            orderDate: '2023-08-13',
-            client: {
-              id: 'CLI-003',
-              username: 'Aminata Sow',
-              avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-              isVerified: false
-            },
-            service: {
-              id: 'SRV-003',
-              title: 'Je vais rédiger des articles SEO de qualité pour votre blog',
-              price: 15000,
-              rating: 5.0,
-              totalReviews: 53,
-              deliveryTime: 2,
-              images: [],
-              orderCount: 112,
-              createdAt: '2023-06-08',
-              slug: 'articles-seo'
-            },
-            status: 'in_progress',
-            price: 75000,
-            createdAt: '2023-08-13',
-            deadline: '2023-08-17',
-            isPaid: true,
-            messages: [],
-            requirements: 'Rédaction de 5 articles SEO optimisés avec recherche de mots-clés'
-          },
-          {
-            id: 'ORD-1233',
-            title: 'Création d\'un flyer promotionnel pour un événement',
-            serviceId: 'SRV-004',
-            serviceName: 'Conception de flyers professionnels',
-            providerId: 'PRV-004',
-            providerName: 'Omar Sall',
-            clientId: 'CLI-004',
-            orderDate: '2023-08-10',
-            client: {
-              id: 'CLI-004',
-              username: 'Mariama Diallo',
-              avatar: 'https://randomuser.me/api/portraits/women/72.jpg',
-              isVerified: true
-            },
-            service: {
-              id: 'SRV-004',
-              title: 'Je vais créer un flyer promotionnel pour un événement',
-              price: 50000,
-              rating: 4.7,
-              totalReviews: 34,
-              deliveryTime: 7,
-              images: [],
-              orderCount: 78,
-              createdAt: '2023-07-15',
-              slug: 'flyer-promotionnel'
-            },
-            status: 'completed',
-            price: 50000,
-            createdAt: '2023-08-10',
-            deadline: '2023-08-17',
-            isPaid: true,
-            messages: [],
-            requirements: 'Création d\'un flyer promotionnel pour un événement'
+        // Récupérer les données utilisateur depuis le localStorage
+        const storedUser = localStorage.getItem('nionfarUser');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          console.log('Données utilisateur récupérées:', user);
+          setUserData(user);
+          
+          // Générer des statistiques basées sur les données utilisateur réelles
+          if (user) {
+            // Récupérer les commandes de l'utilisateur s'il y en a
+            const userOrders = user.orders || [];
+            setRecentOrders(Array.isArray(userOrders) ? userOrders : []);
+            
+            // Calculer les statistiques basées sur les données disponibles
+            const totalEarnings = userOrders.reduce((sum, order) => sum + (order.amount || 0), 0);
+            const pendingOrders = userOrders.filter(order => order.status === 'pending' || order.status === 'in_progress').length;
+            const completedOrders = userOrders.filter(order => order.status === 'completed').length;
+            const totalOrders = userOrders.length;
+            
+            // Utiliser les services de l'utilisateur s'il est freelancer
+            const userServices = user.services || [];
+            const totalReviews = userServices.reduce((sum, service) => sum + (service.totalReviews || 0), 0);
+            const totalViews = userServices.reduce((sum, service) => sum + (service.views || 0), 0);
+            
+            // Construire l'objet stats avec les données réelles
+            setStats({
+              earnings: {
+                total: totalEarnings || 0,
+                pending: userOrders.filter(o => o.status === 'pending').reduce((sum, o) => sum + (o.amount || 0), 0),
+                withdrawn: user.withdrawn || 0,
+                available: user.balance || 0
+              },
+              analytics: {
+                views: totalViews || 0,
+                clicks: userServices.reduce((sum, s) => sum + (s.clicks || 0), 0),
+                conversionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
+                averageRating: userServices.length > 0 
+                  ? userServices.reduce((sum, s) => sum + (s.rating || 0), 0) / userServices.length 
+                  : 0,
+                completionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
+                totalOrders: totalOrders,
+                pendingOrders: pendingOrders,
+                totalEarnings: totalEarnings,
+                totalReviews: totalReviews
+              },
+              activeOrders: pendingOrders,
+              pendingReviews: user.pendingReviews || 0,
+              responseRate: user.responseRate || 95,
+              responseTime: user.responseTime || '3 heures'
+            });
           }
-        ]);
-        
-        setNotifications([
-          {
-            id: 'NOTIF-001',
-            userId: 'USR-001',
-            type: 'order',
-            title: 'Nouvelle commande reçue',
-            message: 'Nouvelle commande reçue',
-            content: 'Vous avez reçu une nouvelle commande pour "Conception de logo"',
-            createdAt: '2023-08-15T10:30:00',
-            isRead: false,
-            link: '/dashboard/orders/ORD-1234'
-          },
-          {
-            id: 'NOTIF-002',
-            userId: 'USR-001',
-            type: 'message',
-            title: 'Nouveau message de Fatou Diallo',
-            message: 'Nouveau message reçu',
-            content: 'Bonjour, je voudrais savoir si vous pouvez ajouter une révision supplémentaire...',
-            createdAt: '2023-08-15T08:45:00',
-            isRead: true,
-            link: '/dashboard/messages/MSG-567'
-          },
-          {
-            id: 'NOTIF-003',
-            userId: 'USR-001',
-            type: 'system',
-            title: 'Paiement reçu',
-            message: 'Paiement reçu pour commande',
-            content: '25 000 FCFA ont été ajoutés à votre solde pour la commande #ORD-1230',
-            createdAt: '2023-08-14T15:20:00',
-            isRead: true,
-            link: '/dashboard/earnings'
-          }
-        ]);
-        
-        setIsLoading(false);
+        } else {
+          console.log('Aucune donnée utilisateur trouvée dans le localStorage');
+        }
       } catch (error) {
-        console.error("Erreur lors du chargement des données:", error);
+        console.error('Erreur lors de la récupération des données utilisateur:', error);
+      } finally {
         setIsLoading(false);
       }
     };
     
-    fetchData();
+    // Appeler la fonction pour récupérer les données utilisateur
+    fetchUserData();
   }, []);
 
   // Squelette de chargement

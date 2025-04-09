@@ -328,7 +328,10 @@ class AuthService {
       // Construction de l'URL
       const url = `${this.apiUrl}/auth/login`;
       
-      // Requête de connexion
+      // Requête de connexion avec un timeout étendu
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes de timeout
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -337,11 +340,27 @@ class AuthService {
           'X-CSRF-Token': localStorage.getItem('csrf_token') || ''
         },
         credentials: 'include',
-        body: JSON.stringify(credentials)
+        body: JSON.stringify(credentials),
+        signal: controller.signal
       });
       
-      // Traiter la réponse
-      const data = await response.json();
+      clearTimeout(timeoutId);
+      
+      // Traiter la réponse texte d'abord
+      const responseText = await response.text();
+      console.log(`📥 Réponse du serveur (${response.status}):`, responseText.substring(0, 150) + (responseText.length > 150 ? '...' : ''));
+      
+      // Analyser la réponse JSON de manière sécurisée
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.error("❌ Erreur parsing JSON:", e);
+        return { 
+          success: false, 
+          error: "Réponse invalide du serveur: " + responseText.substring(0, 100) 
+        };
+      }
       
       if (!response.ok) {
         console.error("❌ Erreur de connexion:", data);
@@ -351,11 +370,18 @@ class AuthService {
         };
       }
       
-      console.log("✅ Connexion réussie:", data);
+      console.log("✅ Connexion réussie:", {
+        success: data.success,
+        userId: data.user?.id,
+        tokenPresent: !!data.accessToken || !!data.token,
+        hasUserData: !!data.user
+      });
       
-      // Stocker le token si présent
-      if (data.token) {
-        localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      // Stocker le token si présent (vérifier les deux formats possibles)
+      const token = data.accessToken || data.token;
+      if (token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        this.token = token;
       }
       
       // Stocker le token CSRF s'il est fourni par le serveur
@@ -363,19 +389,38 @@ class AuthService {
         localStorage.setItem('csrf_token', data.csrfToken);
       }
       
-      // Stocker les données utilisateur si présentes
+      // Stocker les données utilisateur complètes si présentes
       if (data.user) {
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        // S'assurer que les données utilisateur sont stockées correctement
+        const userData = {
+          ...data.user,
+          // Convertir les propriétés booléennes en vrai booléens si elles sont des chaînes
+          isFreelancer: typeof data.user.isFreelancer === 'string' 
+            ? data.user.isFreelancer === 'true' 
+            : !!data.user.isFreelancer,
+          role: data.user.role || (data.user.isFreelancer ? 'freelance' : 'client')
+        };
+        
+        // Stocker les données utilisateur complètes y compris services, commandes, etc.
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+        console.log("👤 Données utilisateur stockées:", JSON.stringify(userData).substring(0, 100) + '...');
+        
+        // Mettre à jour l'utilisateur courant
+        this.user = userData;
         
         // Redirection automatique si activée
         if (autoRedirect) {
           // Rediriger vers la page appropriée selon le rôle
-          const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+          const targetUrl = userData.isFreelancer ? '/dashboard' : (redirectUrl || '/');
           this.forceRedirectAfterLogin(targetUrl);
         }
       }
       
-      return { success: true, user: data.user, token: data.token };
+      return { 
+        success: true, 
+        user: data.user, 
+        token: token || data.token 
+      };
     } catch (error) {
       console.error("🔥 Erreur lors de la connexion:", error);
       return { 
