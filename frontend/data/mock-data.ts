@@ -9,16 +9,21 @@ import {
   Withdrawal
 } from '../types';
 import { categories } from './categories';
-import { productionServices } from './production-services';
 
-// Utilisateur minimal
+/**
+ * Fichier de données nettoyé pour l'environnement de production.
+ * Toutes les données moquées ont été remplacées par des tableaux vides.
+ */
+
+// Utilisateur non défini en production
 export const currentUser = null;
 
-// Services - version vide
+// Tableaux vides pour la production
 export const freelancerServices: Service[] = [];
-
-// Commandes - aucune commande pour la production
 export const freelancerOrders: Order[] = [];
+export const userNotifications: Notification[] = [];
+export const userTransactions: Transaction[] = [];
+export const userWithdrawals: Withdrawal[] = [];
 
 // Statistiques vides
 export const freelancerStats: FreelancerStats = {
@@ -45,10 +50,5 @@ export const freelancerStats: FreelancerStats = {
   responseTime: '0'
 };
 
-// Données vides pour la production
-export const userNotifications: Notification[] = [];
-export const userTransactions: Transaction[] = [];
-export const userWithdrawals: Withdrawal[] = [];
-
-// Export des catégories
+// Export des catégories (données réelles)
 export { categories }; 

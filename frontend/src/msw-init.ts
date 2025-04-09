@@ -1,26 +1,15 @@
-// Ce fichier initialise Mock Service Worker uniquement en environnement de développement
+/**
+ * FICHIER DÉSACTIVÉ EN PRODUCTION
+ * 
+ * Ce fichier initialisait Mock Service Worker pour le développement.
+ * Il a été désactivé en environnement de production pour éviter l'utilisation 
+ * de données fictives.
+ */
 
 async function initMSW() {
-  // Vérifier si nous sommes en développement et si les mocks sont activés
-  const useMocks = process.env.NEXT_PUBLIC_USE_MOCKS === 'true';
-
-  if (process.env.NODE_ENV === 'development' && useMocks) {
-    try {
-      // Importer dynamiquement le worker MSW
-      const { worker } = await import('../mocks/browser');
-      
-      // Démarrer le worker avec logging minimal
-      await worker.start({
-        onUnhandledRequest: 'bypass', // Ne pas logger les requêtes non interceptées
-      });
-      
-      console.log('%c[MSW] Initialized - Mock API active', 'color: purple; font-weight: bold;');
-    } catch (error) {
-      console.error('[MSW] Failed to initialize:', error);
-    }
-  } else {
-    console.log('%c[API] Using real backend API', 'color: green; font-weight: bold;');
-  }
+  // Mock Service Worker est désactivé en production
+  console.log('%c[API] Using real backend API only', 'color: green; font-weight: bold;');
+  return false;
 }
 
 export default initMSW; 
