@@ -5,7 +5,7 @@ services:
     region: frankfurt
     plan: free
     buildCommand: cd backend && chmod +x render-build.sh && ./render-build.sh
-    startCommand: cd backend && NODE_OPTIONS="--max-old-space-size=1024" node dist/main.js
+    startCommand: cd backend && node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
