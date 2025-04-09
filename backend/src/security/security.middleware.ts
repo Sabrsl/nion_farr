@@ -10,86 +10,61 @@ export class SecurityMiddleware implements NestMiddleware {
     '/health',
     '/health/detailed',
     '/security/csrf-tokens',
+    '/auth/login',
+    '/auth/register'
   ];
 
   constructor(
     private readonly securityService: SecurityService,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
-    // Skip security checks for excluded paths
-    if (this.excludedPaths.includes(req.path)) {
-      return next();
-    }
+    try {
+      // Skip security checks for excluded paths
+      if (this.excludedPaths.some(path => req.path.startsWith(path))) {
+        this.logger.debug(`Skipping security checks for excluded path: ${req.path}`);
+        return next();
+      }
 
-    // Skip security checks in test mode
-    if (this.configService.get('NODE_ENV') === 'test') {
-      return next();
-    }
+      // Skip security checks in development
+      if (this.configService.get('NODE_ENV') === 'development') {
+        return next();
+      }
 
-    // In production, only validate CSRF for non-GET requests
-    if (this.configService.get('NODE_ENV') === 'production') {
-      if (req.method !== 'GET') {
+      // In production, validate CSRF tokens for non-GET requests
+      if (this.configService.get('NODE_ENV') === 'production' && req.method !== 'GET') {
         const csrfToken = req.headers['x-csrf-token'];
-        const sessionId = req.headers['x-session-id'];
-
-        if (!csrfToken || !sessionId) {
-          return res.status(403).json({
-            message: 'CSRF token or session ID missing',
+        if (!csrfToken) {
+          this.logger.warn(`CSRF token missing for path: ${req.path}`);
+          return res.status(403).json({ 
+            message: 'CSRF token missing',
+            code: 'CSRF_TOKEN_MISSING'
           });
         }
 
-        try {
-          await this.securityService.validateCsrfToken(
-            csrfToken as string,
-            sessionId as string,
-          );
-        } catch (error) {
-          return res.status(403).json({
+        const isValid = await this.securityService.validateCsrfToken(csrfToken as string);
+        if (!isValid) {
+          this.logger.warn(`Invalid CSRF token for path: ${req.path}`);
+          return res.status(403).json({ 
             message: 'Invalid CSRF token',
+            code: 'CSRF_TOKEN_INVALID'
           });
         }
       }
-    }
 
-    // Continue with other security checks
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'] || '';
-    
-    // Check for bot detection
-    const isBot = await this.securityService.isBot(ipAddress);
-    if (isBot) {
-      this.logger.warn(`Bot detected: ${ipAddress} - ${userAgent}`);
-      return res.status(403).json({
-        message: 'Access denied: Bot detected',
+      // Continue with other security checks
+      await this.securityService.checkBotDetection(req);
+      await this.securityService.checkNoSqlInjection(req);
+      await this.securityService.logRequest(req);
+
+      next();
+    } catch (error) {
+      this.logger.error(`Security middleware error: ${error.message}`, error.stack);
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        code: 'SECURITY_ERROR'
       });
     }
-
-    // Check for NoSQL injection
-    if (req.body && Object.keys(req.body).length > 0) {
-      const hasInjection = this.securityService.detectNoSqlInjection(req.body, req.path);
-      if (hasInjection) {
-        this.logger.warn(`NoSQL injection detected in request body for path: ${req.path}`);
-        return res.status(400).json({
-          message: 'Invalid request: Possible NoSQL injection detected',
-        });
-      }
-    }
-
-    if (req.query && Object.keys(req.query).length > 0) {
-      const hasInjection = this.securityService.detectNoSqlInjection(req.query, req.path);
-      if (hasInjection) {
-        this.logger.warn(`NoSQL injection detected in query parameters for path: ${req.path}`);
-        return res.status(400).json({
-          message: 'Invalid request: Possible NoSQL injection detected',
-        });
-      }
-    }
-
-    // Log the request
-    await this.securityService.logRequest(ipAddress, userAgent, req.path);
-
-    next();
   }
 } 

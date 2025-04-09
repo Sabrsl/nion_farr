@@ -13,7 +13,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main.js",
-    "start:render": "npm run build && npm run start:prod",
+    "start:render": "NODE_OPTIONS='--max-old-space-size=2048' npm run build && NODE_OPTIONS='--max-old-space-size=2048' npm run start:prod",
     "start:pm2": "pm2 start ecosystem.config.js --env production",
     "stop:pm2": "pm2 stop ecosystem.config.js",
     "restart:pm2": "pm2 restart ecosystem.config.js",

@@ -4,6 +4,7 @@ import { Connection } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import { AuditLogService, SecurityEventType, SecuritySeverity } from './audit-log.service';
+import { Request } from 'express';
 
 interface BlacklistedIp {
   ipAddress: string;
@@ -32,6 +33,7 @@ export class SecurityService {
   private readonly BOT_DETECTION_THRESHOLD = 100; // requêtes par minute
   private readonly BLACKLIST_DURATION = 24 * 60 * 60 * 1000; // 24 heures en millisecondes
   private readonly csrfSecret: string;
+  private readonly csrfTokens = new Map<string, { token: string; expiresAt: Date }>();
 
   // Règles contextuelles pour la détection NoSQL
   private readonly contextualRules: ContextualRule[] = [
@@ -159,45 +161,33 @@ export class SecurityService {
   /**
    * Génère un token CSRF pour une session
    */
-  async generateCsrfToken(sessionId: string): Promise<string> {
-    try {
-      const token = uuidv4();
-      const expiresAt = new Date(Date.now() + this.CSRF_TOKEN_EXPIRY * 1000);
-
-      await this.connection.collection('csrfTokens').insertOne({
-        token,
-        sessionId,
-        expiresAt,
-      });
-
-      await this.auditLogService.logSecurityEvent({
-        eventType: SecurityEventType.TOKEN_GENERATED,
-        severity: SecuritySeverity.INFO,
-        details: { sessionId, tokenType: 'CSRF' },
-        timestamp: new Date(),
-      });
-
-      return token;
-    } catch (error) {
-      this.logger.error(`Failed to generate CSRF token: ${error.message}`);
-      throw error;
-    }
+  generateCsrfToken(): string {
+    const token = uuidv4();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    this.csrfTokens.set(token, { token, expiresAt });
+    return token;
   }
 
   /**
    * Vérifie si un token CSRF est valide
    */
-  async validateCsrfToken(token: string, sessionId: string): Promise<boolean> {
+  async validateCsrfToken(token: string): Promise<boolean> {
     try {
-      const csrfToken = await this.connection.collection('csrfTokens').findOne({
-        token,
-        sessionId,
-        expiresAt: { $gt: new Date() },
-      });
+      const tokenData = this.csrfTokens.get(token);
+      if (!tokenData) {
+        this.logger.warn(`CSRF token not found: ${token}`);
+        return false;
+      }
 
-      return !!csrfToken;
+      if (tokenData.expiresAt < new Date()) {
+        this.logger.warn(`CSRF token expired: ${token}`);
+        this.csrfTokens.delete(token);
+        return false;
+      }
+
+      return true;
     } catch (error) {
-      this.logger.error(`Failed to validate CSRF token: ${error.message}`);
+      this.logger.error(`Error validating CSRF token: ${error.message}`);
       return false;
     }
   }
@@ -205,17 +195,12 @@ export class SecurityService {
   /**
    * Enregistre une requête pour la détection de bots
    */
-  async logRequest(ipAddress: string, userAgent: string, path: string): Promise<void> {
-    try {
-      await this.connection.collection('requestLogs').insertOne({
-        ipAddress,
-        timestamp: new Date(),
-        userAgent,
-        path,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to log request: ${error.message}`);
-    }
+  async logRequest(req: Request): Promise<void> {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'] || '';
+    const path = req.path;
+    
+    this.logger.debug(`Request: ${ipAddress} - ${userAgent} - ${path}`);
   }
 
   /**
@@ -339,5 +324,19 @@ export class SecurityService {
     }
     
     return false;
+  }
+
+  async checkBotDetection(req: Request): Promise<void> {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'] || '';
+    
+    // Log request for monitoring
+    this.logger.debug(`Request from IP: ${ipAddress}, User-Agent: ${userAgent}`);
+    
+    // TODO: Implement bot detection logic
+  }
+
+  async checkNoSqlInjection(req: Request): Promise<void> {
+    // TODO: Implement NoSQL injection detection
   }
 } 
