@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { AppProps } from 'next/app';
 import { AuthProvider } from '../contexts/AuthContext';
+// Import des polyfills pour corriger les avertissements
+import '../utils/polyfills';
 // Import Tailwind depuis le bon chemin (styles globaux)
 import '../styles/globals.css';
 import 'react-toastify/dist/ReactToastify.css';

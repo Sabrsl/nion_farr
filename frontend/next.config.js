@@ -66,6 +66,13 @@ const nextConfig = {
     serverComponentsExternalPackages: ['mongoose']
   },
 
+  // Désactiver certains avertissements React
+  modularizeImports: {
+    'util/': {
+      transform: 'util/{{member}}',
+    },
+  },
+
   async headers() {
     return [
       {
