@@ -5,11 +5,16 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { Public } from './decorators/public.decorator';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { SecurityService } from '../../security/security.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly securityService: SecurityService
+  ) {}
 
   @Public()
   @Post('register')
@@ -48,5 +53,19 @@ export class AuthController {
   async verifyEmail(@Param('token') token: string) {
     // À implémenter - verification du token d'email
     return { success: true, message: 'Email vérifié avec succès' };
+  }
+
+  @Public()
+  @Get('csrf-tokens')
+  @ApiOperation({ summary: 'Get CSRF tokens' })
+  @ApiResponse({ status: 200, description: 'CSRF tokens generated successfully' })
+  async getCsrfTokens() {
+    const sessionId = uuidv4();
+    const csrfToken = await this.securityService.generateCsrfToken(sessionId);
+    
+    return {
+      csrfToken,
+      sessionId
+    };
   }
 } 

@@ -103,6 +103,12 @@ class AuthService {
     }
 
     try {
+      // Récupérer les tokens CSRF avant l'inscription
+      const csrfTokensRetrieved = await this.fetchCsrfTokens();
+      if (!csrfTokensRetrieved) {
+        console.warn("⚠️ Impossible de récupérer les tokens CSRF, tentative d'inscription sans tokens");
+      }
+      
       // Vérifier la disponibilité du serveur avant de tenter l'inscription
       const isServerAvailable = await this.checkServerAvailability();
       if (!isServerAvailable) {
@@ -143,18 +149,20 @@ class AuthService {
         };
       }
 
-      // Utiliser fetch avec option credentials omit - pour éviter les problèmes CSRF
+      // Utiliser fetch avec option credentials include pour permettre l'envoi des cookies
       try {
         console.log("🔍 Tentative d'inscription avec fetch...");
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': localStorage.getItem('csrf_token') || '',
+            'X-Session-ID': localStorage.getItem('session_id') || ''
           },
           body: JSON.stringify(apiData),
           mode: 'cors',
-          credentials: 'omit' // Ne pas envoyer de cookies pour éviter les problèmes CSRF
+          credentials: 'include' // Inclure les cookies pour le CSRF
         });
         
         // Obtenir la réponse complète du serveur
@@ -219,7 +227,9 @@ class AuthService {
           xhr.open('POST', url, true);
           xhr.setRequestHeader('Content-Type', 'application/json');
           xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-          xhr.withCredentials = false; // Désactiver l'envoi des cookies pour éviter les problèmes CSRF
+          xhr.setRequestHeader('X-CSRF-Token', localStorage.getItem('csrf_token') || '');
+          xhr.setRequestHeader('X-Session-ID', localStorage.getItem('session_id') || '');
+          xhr.withCredentials = true; // Activer l'envoi des cookies pour le CSRF
           xhr.timeout = 15000;
           
           xhr.onreadystatechange = function() {
@@ -311,6 +321,12 @@ class AuthService {
     });
     
     try {
+      // Récupérer les tokens CSRF avant la connexion
+      const csrfTokens = await this.fetchCsrfTokens();
+      if (!csrfTokens) {
+        console.warn('Impossible de récupérer les tokens CSRF');
+      }
+      
       // Construction de l'URL
       const url = `${this.apiUrl}/auth/login`;
       
@@ -318,13 +334,13 @@ class AuthService {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-Token': localStorage.getItem('csrf_token') || '',
+          'X-Session-ID': localStorage.getItem('session_id') || ''
         },
-        body: JSON.stringify({
-          emailOrPhone: credentials.emailOrPhone,
-          password: credentials.password,
-          rememberMe: credentials.rememberMe
-        })
+        credentials: 'include',
+        body: JSON.stringify(credentials)
       });
       
       // Traiter la réponse
@@ -343,6 +359,14 @@ class AuthService {
       // Stocker le token si présent
       if (data.token) {
         localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      }
+      
+      // Stocker les tokens CSRF et l'ID de session
+      if (data.csrfToken) {
+        localStorage.setItem('csrf_token', data.csrfToken);
+      }
+      if (data.sessionId) {
+        localStorage.setItem('session_id', data.sessionId);
       }
       
       // Stocker les données utilisateur si présentes
@@ -892,6 +916,39 @@ class AuthService {
       
       // Forcer une redirection complète au lieu d'un rechargement
       window.location.href = finalUrlWithParams;
+    }
+  }
+
+  // Méthode pour récupérer les tokens CSRF
+  private async fetchCsrfTokens(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.apiUrl}/auth/csrf-tokens`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Erreur lors de la récupération des tokens CSRF:', response.status);
+        return false;
+      }
+
+      const data = await response.json();
+      
+      if (data.csrfToken) {
+        localStorage.setItem('csrf_token', data.csrfToken);
+      }
+      
+      if (data.sessionId) {
+        localStorage.setItem('session_id', data.sessionId);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des tokens CSRF:', error);
+      return false;
     }
   }
 }

@@ -51,7 +51,7 @@ export const VALID_CATEGORIES = [
 
 // Configuration générale pour les emails
 export const EMAIL_CONFIG = {
-  defaultSender: process.env.EMAIL_SENDER || 'Nionfar <onboarding@resend.dev>',
+  defaultSender: process.env.EMAIL_SENDER || 'onboarding@resend.dev',
   supportEmail: 'badzagueye@gmail.com',
   logoUrl: process.env.EMAIL_LOGO_URL || 'https://vynalapp.com/logo.png',
   websiteUrl: process.env.WEBSITE_URL || 'https://vynalapp.com',
@@ -59,7 +59,7 @@ export const EMAIL_CONFIG = {
   appName: 'Nionfar',
   templatePath: process.env.EMAIL_TEMPLATE_PATH || './templates',
   senderName: 'Nionfar',
-  senderEmail: 'onboarding@resend.dev',
+  senderEmail: process.env.EMAIL_SENDER || 'onboarding@resend.dev',
 };
 
 // Log the email configuration
