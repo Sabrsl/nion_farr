@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
+import { Queue, JobId } from 'bull';
 
 export interface EmailJob {
   to: string;
@@ -38,7 +38,7 @@ export class QueueService {
   async addEmailToQueue(
     emailJob: EmailJob,
     options: { priority?: number; delay?: number; jobId?: string } = {},
-  ): Promise<string> {
+  ): Promise<JobId> {
     try {
       const { priority = 5, delay = 0, jobId } = options;
       
@@ -75,7 +75,7 @@ export class QueueService {
   async addNotificationToQueue(
     notificationJob: NotificationJob,
     options: { priority?: number; delay?: number; jobId?: string } = {},
-  ): Promise<string> {
+  ): Promise<JobId> {
     try {
       const { priority = 5, delay = 0, jobId } = options;
       
@@ -106,7 +106,7 @@ export class QueueService {
   /**
    * Vérifier l'état d'un job d'email
    */
-  async getEmailJobStatus(jobId: string): Promise<any> {
+  async getEmailJobStatus(jobId: JobId): Promise<any> {
     try {
       const job = await this.emailQueue.getJob(jobId);
       if (!job) {
@@ -135,7 +135,7 @@ export class QueueService {
   /**
    * Vérifier l'état d'un job de notification
    */
-  async getNotificationJobStatus(jobId: string): Promise<any> {
+  async getNotificationJobStatus(jobId: JobId): Promise<any> {
     try {
       const job = await this.notificationQueue.getJob(jobId);
       if (!job) {
