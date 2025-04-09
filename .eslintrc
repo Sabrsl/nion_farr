@@ -1,0 +1,37 @@
+{
+  "root": true,
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2022": true
+  },
+  "extends": ["eslint:recommended"],
+  "ignorePatterns": ["dist", "node_modules", "**/*.min.js"],
+  "overrides": [
+    {
+      "files": ["backend/*.js", "backend/create-*.js", "backend/check-*.js"],
+      "rules": {
+        "no-unused-vars": "off"
+      }
+    },
+    {
+      "files": ["backend/**/*.ts"],
+      "parserOptions": {
+        "project": "./backend/tsconfig.json"
+      }
+    },
+    {
+      "files": ["frontend/**/*.ts", "frontend/**/*.tsx"],
+      "parserOptions": {
+        "project": "./frontend/tsconfig.json"
+      }
+    }
+  ]
+} 
