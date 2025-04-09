@@ -2,10 +2,12 @@
   "version": 2,
   "buildCommand": "npm run vercel-build",
   "framework": "nextjs",
-  "rewrites": [
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "https://nionfar-backend.onrender.com/api/:path*"
+      "src": "/api/:path*",
+      "dest": "https://nionfar-backend.onrender.com/api/:path*"
     }
   ],
   "env": {
