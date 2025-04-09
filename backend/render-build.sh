@@ -264,6 +264,160 @@ function validateToken(token) {
   }
 }
 
+// Définition du modèle User pour mongoose
+const UserSchema = new mongoose.Schema({
+  email: String,
+  username: String,
+  password: String,
+  firstName: String,
+  lastName: String,
+  fullName: String,
+  phoneNumber: String,
+  role: { type: String, default: 'user' },
+  isFreelancer: { type: Boolean, default: false },
+  isEmailVerified: { type: Boolean, default: false },
+  isPhoneVerified: { type: Boolean, default: false },
+  balance: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}, { strict: false });
+
+const ServiceSchema = new mongoose.Schema({
+  title: String,
+  description: String,
+  price: Number,
+  category: String,
+  provider: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  isActive: { type: Boolean, default: true },
+  rating: { type: Number, default: 0 },
+  totalReviews: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}, { strict: false });
+
+const OrderSchema = new mongoose.Schema({
+  orderNumber: String,
+  client: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  freelancer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  service: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
+  status: String,
+  amount: Number,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}, { strict: false });
+
+// Déclaration des modèles seulement lorsque nous avons une connexion
+let User, Service, Order;
+let modelsInitialized = false;
+
+// Initialiser les modèles mongoose
+function initializeModels() {
+  if (!modelsInitialized && mongoose.connection.readyState === 1) {
+    try {
+      User = mongoose.model('User');
+    } catch (e) {
+      User = mongoose.model('User', UserSchema);
+    }
+    
+    try {
+      Service = mongoose.model('Service');
+    } catch (e) {
+      Service = mongoose.model('Service', ServiceSchema);
+    }
+    
+    try {
+      Order = mongoose.model('Order');
+    } catch (e) {
+      Order = mongoose.model('Order', OrderSchema);
+    }
+    
+    modelsInitialized = true;
+    console.log('✅ Modèles Mongoose initialisés avec succès');
+  }
+}
+
+// Récupérer les données réelles de l'utilisateur lorsque la connexion à MongoDB est disponible
+async function getUserDataFromDB(userId) {
+  if (!modelsInitialized || mongoose.connection.readyState !== 1) {
+    return null;
+  }
+  
+  try {
+    // Récupérer l'utilisateur de MongoDB (sans le mot de passe)
+    const user = await User.findById(userId).select('-password').lean();
+    
+    if (!user) {
+      return null;
+    }
+    
+    console.log(`📊 Données utilisateur réelles récupérées pour: ${user.email || user.username}`);
+    
+    // Récupérer les données associées (commandes, services, etc.)
+    const orders = await Order.find({ 
+      $or: [{ client: userId }, { freelancer: userId }] 
+    }).sort({ createdAt: -1 }).limit(10).lean();
+    
+    const services = user.isFreelancer 
+      ? await Service.find({ provider: userId }).lean()
+      : [];
+    
+    return {
+      ...user,
+      id: user._id.toString(),
+      _id: user._id.toString(),
+      orders: orders.map(o => ({ ...o, id: o._id.toString(), _id: o._id.toString() })),
+      services: services.map(s => ({ ...s, id: s._id.toString(), _id: s._id.toString() }))
+    };
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données utilisateur:', error);
+    return null;
+  }
+}
+
+// Fonction pour gérer la connexion combinée (mémoire + MongoDB)
+async function getUser(userIdentifier) {
+  // Recherche d'abord en mémoire
+  let user = inMemoryDB.users.find(user => 
+    user.email === userIdentifier || 
+    user.phoneNumber === userIdentifier ||
+    user.username === userIdentifier
+  );
+  
+  // Si l'utilisateur existe en mémoire et que MongoDB est connecté,
+  // rechercher aussi les données dans MongoDB pour les enrichir
+  if (user && mongoose.connection.readyState === 1 && modelsInitialized) {
+    try {
+      // Chercher l'utilisateur dans MongoDB par email
+      const dbUser = await User.findOne({ 
+        $or: [
+          { email: user.email },
+          { username: user.username }
+        ]
+      }).select('-password').lean();
+      
+      if (dbUser) {
+        // Mettre à jour les données en mémoire avec les données réelles
+        console.log(`✅ Synchronisation des données utilisateur: ${user.email}`);
+        user = {
+          ...user,
+          id: dbUser._id.toString(),
+          _id: dbUser._id.toString(),
+          // Autres champs à synchroniser
+          balance: dbUser.balance || 0,
+          isEmailVerified: dbUser.isEmailVerified || false,
+          isPhoneVerified: dbUser.isPhoneVerified || false,
+          // etc.
+        };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la recherche dans MongoDB:', error);
+      // Continue avec les données en mémoire en cas d'erreur
+    }
+  }
+  
+  return user;
+}
+
 // Connexion à MongoDB avec reconnexion automatique
 async function connectToDatabase() {
   try {
@@ -285,6 +439,12 @@ async function connectToDatabase() {
     
     console.log('Connexion à MongoDB établie avec succès!');
     
+    // Initialiser les modèles Mongoose
+    initializeModels();
+    
+    // Importer quelques données réelles dans la mémoire pour une utilisation hors ligne
+    await syncInMemoryData();
+    
     // Surveiller les événements de connexion MongoDB
     mongoose.connection.on('disconnected', () => {
       console.warn('⚠️ Connexion MongoDB perdue. Tentative de reconnexion...');
@@ -292,6 +452,10 @@ async function connectToDatabase() {
     
     mongoose.connection.on('reconnected', () => {
       console.log('✅ Reconnecté à MongoDB avec succès!');
+      // Réinitialiser les modèles après reconnexion
+      initializeModels();
+      // Resynchroniser les données
+      syncInMemoryData().catch(console.error);
     });
     
     mongoose.connection.on('error', (err) => {
@@ -307,6 +471,54 @@ async function connectToDatabase() {
       connectToDatabase().catch(console.error);
     }, 10000);
     return false;
+  }
+}
+
+// Fonction pour synchroniser les données en mémoire avec MongoDB
+async function syncInMemoryData() {
+  if (!modelsInitialized || mongoose.connection.readyState !== 1) {
+    return;
+  }
+  
+  try {
+    console.log('🔄 Synchronisation des données en mémoire avec MongoDB...');
+    
+    // Charger les utilisateurs les plus récents (limité pour économiser la mémoire)
+    const dbUsers = await User.find()
+      .sort({ createdAt: -1 })
+      .limit(MEMORY_MANAGEMENT.MAX_USERS_IN_MEMORY)
+      .select('-password')
+      .lean();
+    
+    if (dbUsers && dbUsers.length > 0) {
+      // Convertir les utilisateurs de MongoDB pour qu'ils soient compatibles avec inMemoryDB
+      const formattedUsers = dbUsers.map(user => ({
+        id: user._id.toString(),
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        phoneNumber: user.phoneNumber || user.phone,
+        role: user.role || 'user',
+        isFreelancer: user.isFreelancer || false,
+        createdAt: user.createdAt || new Date().toISOString(),
+        isEmailVerified: user.isEmailVerified || false
+      }));
+      
+      // Fusionner avec les utilisateurs existants en mémoire (pour préserver les mots de passe hash)
+      inMemoryDB.users = inMemoryDB.users.filter(memUser => 
+        !formattedUsers.some(dbUser => dbUser.email === memUser.email || dbUser.username === memUser.username)
+      );
+      
+      // Ajouter les utilisateurs de MongoDB
+      inMemoryDB.users.push(...formattedUsers);
+      
+      console.log(`✅ ${formattedUsers.length} utilisateurs synchronisés depuis MongoDB`);
+    }
+    
+    // Synchroniser également les catégories, services, etc. si nécessaire
+    
+  } catch (error) {
+    console.error('Erreur lors de la synchronisation avec MongoDB:', error);
   }
 }
 
@@ -587,12 +799,8 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       
-      // Trouver l'utilisateur par email ou téléphone
-      const user = inMemoryDB.users.find(user => 
-        user.email === userIdentifier || 
-        user.phoneNumber === userIdentifier ||
-        user.username === userIdentifier
-      );
+      // Trouver l'utilisateur avec la fonction combinée
+      const user = await getUser(userIdentifier);
       
       if (!user) {
         res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -631,15 +839,28 @@ const server = http.createServer(async (req, res) => {
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 jours
       });
       
-      // Répondre avec le token et les informations de l'utilisateur
-      const userToReturn = { ...user };
-      delete userToReturn.password;
+      // Récupérer les données complètes de l'utilisateur si MongoDB est disponible
+      let userDataToReturn = { ...user };
+      delete userDataToReturn.password;
+      
+      // Si MongoDB est disponible, enrichir avec les données réelles
+      if (mongoose.connection.readyState === 1 && modelsInitialized) {
+        try {
+          const fullUserData = await getUserDataFromDB(user.id || user._id);
+          if (fullUserData) {
+            userDataToReturn = fullUserData;
+          }
+        } catch (error) {
+          console.error('Erreur lors de la récupération des données utilisateur:', error);
+          // Continue avec les données en mémoire en cas d'erreur
+        }
+      }
       
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
         message: 'Connexion réussie',
-        user: userToReturn,
+        user: userDataToReturn,
         accessToken: token,
         refreshToken: refreshToken,
         expiresIn: 86400 // 24 heures en secondes
