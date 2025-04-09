@@ -14,10 +14,14 @@ const basicManifest = {
   pages404: true,
   redirects: [],
   headers: [],
-  rewrites: [
+  routes: [
     {
-      source: "/api/:path*",
-      destination: "https://nionfar-backend.onrender.com/api/:path*"
+      src: "/api/(.*)",
+      dest: "https://nionfar-backend.onrender.com/api/$1"
+    },
+    {
+      src: "/(.*)",
+      dest: "/$1"
     }
   ],
   dynamicRoutes: []
