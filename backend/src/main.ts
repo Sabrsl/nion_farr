@@ -10,10 +10,15 @@ import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import * as Sentry from '@sentry/node';
 import { Request, Response } from 'express';
+import { checkRequiredEnvVars } from './config/check-env';
 
 async function bootstrap() {
   console.log('Starting server...');
   console.log('Current directory:', process.cwd());
+  
+  // Vérifier les variables d'environnement requises
+  checkRequiredEnvVars();
+  
   console.log('Environment variables:', {
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
@@ -48,7 +53,7 @@ async function bootstrap() {
     // Variables d'environnement
     const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
     const environment = configService.get<string>('NODE_ENV') || 'development';
-    const port = process.env.PORT || 1000;
+    const port = parseInt(process.env.PORT, 10) || 3000;
     
     console.log(`Environment: ${environment}`);
     console.log(`MongoDB URI: ${configService.get<string>('MONGODB_URI')}`);
@@ -91,7 +96,7 @@ async function bootstrap() {
     app.enableCors({
       origin: allowedOrigins,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-CSRF-Token', 'X-Session-ID'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-CSRF-Token'],
       credentials: true,
       maxAge: 3600,
     });

@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { NextRouter } from 'next/router';
 
 // Constantes pour le stockage des données d'authentification
-const AUTH_TOKEN_KEY = 'nionfarToken';
+const AUTH_TOKEN_KEY = 'auth_token';
 const USER_STORAGE_KEY = 'nionfarUser';
 
 interface LoginCredentials {
@@ -624,14 +624,14 @@ class AuthService {
   private setToken(token: string): void {
     this.token = token;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
     }
   }
 
   private removeToken(): void {
     this.token = null;
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem(AUTH_TOKEN_KEY);
     }
   }
 

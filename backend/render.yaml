@@ -2,13 +2,15 @@ services:
   - type: web
     name: nion-farr-backend
     env: node
-    buildCommand: cd backend && npm install && npm run build
-    startCommand: cd backend && NODE_OPTIONS="--max-old-space-size=1024" npm run start:render
+    region: frankfurt
+    plan: free
+    buildCommand: cd backend && chmod +x render-build.sh && ./render-build.sh
+    startCommand: cd backend && NODE_OPTIONS="--max-old-space-size=1024" node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 1000
+        value: 3000
       - key: API_PREFIX
         value: api
       - key: APP_URL
@@ -28,7 +30,7 @@ services:
       - key: EMAIL_LOGO_URL
         value: https://vynalapp.com/logo.png
       - key: EMAIL_SENDER
-        value: Nionfar <votre_domaine_verifié@resend.com>
+        value: Nionfar <onboarding@resend.dev>
       - key: FRONTEND_URL
         value: https://nion-farr.vercel.app
       - key: JWT_EXPIRES_IN
@@ -57,6 +59,8 @@ services:
         value: https://api.wave.com
       - key: WEBSITE_URL
         value: https://vynalapp.com
+      - key: RESEND_API_KEY
+        value: re_a4PMNnRv_AByeDNM1QaHhFqWcHFrB5h2Q
       # Variables sensibles à configurer manuellement sur Render
       - key: MONGODB_URI
         sync: false
@@ -77,8 +81,6 @@ services:
       - key: ORANGE_MONEY_API_KEY
         sync: false
       - key: ORANGE_MONEY_API_SECRET
-        sync: false
-      - key: RESEND_API_KEY
         sync: false
       - key: TWILIO_ACCOUNT_SID
         sync: false

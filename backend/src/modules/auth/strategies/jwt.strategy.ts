@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -8,16 +8,26 @@ import { User, UserStatus } from '../../users/entities/user.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     private readonly configService: ConfigService,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
   ) {
+    const jwtSecret = configService.get<string>('JWT_SECRET');
+    
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_SECRET'),
+      secretOrKey: jwtSecret,
     });
+    
+    if (!jwtSecret) {
+      this.logger.error('JWT_SECRET n\'est pas défini dans les variables d\'environnement!');
+    }
+    
+    this.logger.log('Stratégie JWT initialisée');
   }
 
   async validate(payload: any) {
