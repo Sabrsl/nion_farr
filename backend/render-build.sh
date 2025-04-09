@@ -264,13 +264,28 @@ const server = http.createServer(async (req, res) => {
   // Route pour vérification de santé
   if (pathname === '/health' || pathname === `/${API_PREFIX}/health`) {
     const isConnected = mongoose.connection.readyState === 1;
+    const memoryUsage = process.memoryUsage();
+    const uptime = process.uptime();
+    
+    console.log(`Health check répondu: MongoDB=${isConnected ? 'connecté' : 'déconnecté'}, Uptime=${uptime.toFixed(2)}s`);
+    
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: isConnected ? 'up' : 'degraded',
       database: isConnected ? 'connected' : 'disconnected',
       environment: NODE_ENV,
       version: '1.0.0',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      uptime: `${uptime.toFixed(2)} seconds`,
+      memory: {
+        rss: `${Math.round(memoryUsage.rss / 1024 / 1024)} MB`,
+        heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)} MB`,
+        heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`,
+        external: `${Math.round(memoryUsage.external / 1024 / 1024)} MB`
+      },
+      users: inMemoryDB.users.length,
+      services: inMemoryDB.services.length,
+      server: 'NionFar API Fallback'
     }));
     return;
   }
@@ -302,10 +317,18 @@ const server = http.createServer(async (req, res) => {
   // Route pour l'inscription
   if (pathname === `/${API_PREFIX}/auth/register` && req.method === 'POST') {
     try {
+      console.log(`Début du traitement d'une inscription: ${new Date().toISOString()}`);
       const userData = await parseRequestBody(req);
+      console.log('Données d\'inscription reçues:', JSON.stringify({
+        ...userData,
+        password: userData.password ? '******' : undefined,
+        passwordConfirm: userData.passwordConfirm ? '******' : undefined
+      }));
+      
       const validationErrors = validateRegisterFields(userData);
       
       if (validationErrors.length > 0) {
+        console.log('Échec de validation:', validationErrors);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: false,
@@ -320,6 +343,7 @@ const server = http.createServer(async (req, res) => {
       const usernameExists = inMemoryDB.users.some(user => user.username === userData.username);
       
       if (emailExists) {
+        console.log(`Échec d'inscription: email ${userData.email} déjà utilisé`);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: false,
@@ -329,6 +353,7 @@ const server = http.createServer(async (req, res) => {
       }
       
       if (usernameExists) {
+        console.log(`Échec d'inscription: nom d'utilisateur ${userData.username} déjà pris`);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: false,
@@ -336,6 +361,8 @@ const server = http.createServer(async (req, res) => {
         }));
         return;
       }
+      
+      console.log('Validation réussie, création du nouvel utilisateur');
       
       // Hacher le mot de passe
       const salt = await bcrypt.genSalt(10);
@@ -347,11 +374,18 @@ const server = http.createServer(async (req, res) => {
         email: userData.email,
         username: userData.username,
         fullName: userData.fullName || '',
+        phoneNumber: userData.phoneNumber || userData.phone,
         password: hashedPassword,
-        role: 'user',
+        role: userData.role?.toLowerCase() || 'user',
+        isFreelancer: userData.isFreelancer || userData.role?.toLowerCase() === 'freelance',
         createdAt: new Date().toISOString(),
         isEmailVerified: false
       };
+      
+      console.log('Ajout du nouvel utilisateur dans la mémoire:', JSON.stringify({
+        ...newUser,
+        password: '******'
+      }));
       
       inMemoryDB.users.push(newUser);
       
@@ -374,6 +408,8 @@ const server = http.createServer(async (req, res) => {
       // Répondre avec le token et les informations de l'utilisateur
       const userToReturn = { ...newUser };
       delete userToReturn.password;
+      
+      console.log('Inscription réussie, envoi de la réponse');
       
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -902,33 +938,36 @@ async function bootstrap() {
     });
     
     // Gestion des signaux pour un arrêt propre
-    const shutdown = async () => {
-      console.log('Arrêt du serveur...');
-      server.close(() => {
-        if (mongoose.connection.readyState === 1) {
-          console.log('Fermeture de la connexion à MongoDB...');
-          mongoose.connection.close().then(() => {
-            console.log('Serveur arrêté avec succès');
-            process.exit(0);
-          }).catch(err => {
-            console.error('Erreur lors de la fermeture de la connexion à MongoDB:', err);
-            process.exit(1);
-          });
-        } else {
+    const shutdown = async (signal) => {
+      console.log(`Signal ${signal} reçu. Arrêt du serveur...`);
+      
+      server.close(async () => {
+        try {
+          if (mongoose.connection.readyState === 1) {
+            console.log('Fermeture de la connexion à MongoDB...');
+            await mongoose.connection.close();
+            console.log('Connexion MongoDB fermée avec succès');
+          }
           console.log('Serveur arrêté avec succès');
           process.exit(0);
+        } catch (err) {
+          console.error('Erreur lors de la fermeture des connexions:', err);
+          process.exit(1);
         }
       });
       
-      // Forcer l'arrêt après 10 secondes
+      // Forcer l'arrêt après 10 secondes si le serveur ne s'arrête pas proprement
       setTimeout(() => {
         console.error('Délai d\'attente dépassé, arrêt forcé');
         process.exit(1);
       }, 10000);
     };
     
-    process.on('SIGTERM', shutdown);
-    process.on('SIGINT', shutdown);
+    // Attacher les gestionnaires de signaux
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    
+    // Ne pas appeler shutdown ici - laisser le serveur tourner
   } catch (error) {
     console.error('Erreur lors du démarrage du serveur:', error);
     process.exit(1);
