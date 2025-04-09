@@ -403,23 +403,30 @@ const server = http.createServer(async (req, res) => {
     try {
       const loginData = await parseRequestBody(req);
       
-      if (!loginData.email || !loginData.password) {
+      // Accepter soit emailOrPhone soit email comme identifiant
+      const userIdentifier = loginData.emailOrPhone || loginData.email;
+      
+      if (!userIdentifier || !loginData.password) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: false,
-          message: 'Email et mot de passe requis'
+          message: 'Email/téléphone et mot de passe requis'
         }));
         return;
       }
       
-      // Trouver l'utilisateur par email
-      const user = inMemoryDB.users.find(user => user.email === loginData.email);
+      // Trouver l'utilisateur par email ou téléphone
+      const user = inMemoryDB.users.find(user => 
+        user.email === userIdentifier || 
+        user.phoneNumber === userIdentifier ||
+        user.username === userIdentifier
+      );
       
       if (!user) {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: false,
-          message: 'Email ou mot de passe incorrect'
+          message: 'Identifiants incorrects'
         }));
         return;
       }
@@ -431,7 +438,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: false,
-          message: 'Email ou mot de passe incorrect'
+          message: 'Identifiants incorrects'
         }));
         return;
       }
@@ -466,7 +473,7 @@ const server = http.createServer(async (req, res) => {
         expiresIn: 86400 // 24 heures en secondes
       }));
       
-      console.log(`Utilisateur connecté: ${loginData.email}`);
+      console.log(`Utilisateur connecté: ${userIdentifier}`);
     } catch (error) {
       console.error('Erreur lors de la connexion:', error);
       res.writeHead(500, { 'Content-Type': 'application/json' });
