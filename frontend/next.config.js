@@ -2,8 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Définir le mode de rendu sur "standalone" pour que tout soit généré à la demande
-  output: 'standalone',
+  // Définir le mode de rendu sur "export" pour générer des fichiers statiques
+  // Cela résout généralement les problèmes de routes-manifest.json
+  output: 'export',
+  
+  distDir: '.next',
 
   // Configuration des images
   images: {
@@ -55,9 +58,9 @@ const nextConfig = {
   
   // Configuration du proxy API pour les requêtes backend
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    NEXT_PUBLIC_ENVIRONMENT: process.env.NEXT_PUBLIC_ENVIRONMENT,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api',
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
+    NEXT_PUBLIC_ENVIRONMENT: process.env.NEXT_PUBLIC_ENVIRONMENT || 'production',
   },
 
   // Forcer l'utilisation du runtime React
