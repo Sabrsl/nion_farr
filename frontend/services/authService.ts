@@ -67,7 +67,7 @@ class AuthService {
   constructor() {
     // Initialiser l'URL de l'API en fonction de l'environnement
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nionfar.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app';
     
     console.log("🔧 Configuration AuthService:", { 
       apiUrl, 

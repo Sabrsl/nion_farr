@@ -10,7 +10,7 @@
   ],
   "env": {
     "NEXT_PUBLIC_API_URL": "https://nionfar-backend.onrender.com/api",
-    "NEXT_PUBLIC_APP_URL": "https://nionfar.vercel.app",
+    "NEXT_PUBLIC_APP_URL": "https://nion-farr.vercel.app",
     "NEXT_PUBLIC_ENVIRONMENT": "production",
     "NEXT_DISABLE_ESLINT": "1",
     "NODE_ENV": "production",

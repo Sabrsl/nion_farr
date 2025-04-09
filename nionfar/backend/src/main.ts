@@ -157,7 +157,7 @@ async function bootstrap() {
             scriptSrc: ["'self'", "'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", 'data:', 'https:'],
-            connectSrc: ["'self'", 'https://nionfar-backend.onrender.com', 'https://nionfar.vercel.app', 'https://*.vercel.app'],
+            connectSrc: ["'self'", 'https://nionfar-backend.onrender.com', 'https://nion-farr.vercel.app', 'https://*.vercel.app'],
           },
         }),
       );

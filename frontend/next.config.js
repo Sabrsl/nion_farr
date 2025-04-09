@@ -7,7 +7,7 @@ const nextConfig = {
 
   // Configuration des images
   images: {
-    domains: ['nionfar.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
+    domains: ['nion-farr.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
     unoptimized: true,
   },
@@ -104,7 +104,7 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nionfar.vercel.app,https://nionfar-backend.onrender.com',
+            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nionfar-backend.onrender.com',
           },
           {
             key: 'Access-Control-Allow-Methods',

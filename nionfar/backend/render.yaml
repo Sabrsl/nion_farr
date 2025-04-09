@@ -27,11 +27,11 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
       - key: FRONTEND_URL
-        value: https://nionfar.vercel.app
+        value: https://nion-farr.vercel.app
       - key: APP_URL
         sync: false
       - key: ADDITIONAL_CORS_ORIGINS
-        value: https://nionfar.vercel.app,https://*.vercel.app
+        value: https://nion-farr.vercel.app,https://*.vercel.app
       - key: TWO_FACTOR_AUTHENTICATION_APP_NAME
         value: NionFar
       - key: MAIL_HOST
