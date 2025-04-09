@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiX } from 'react-icons/fi';
+import { FiX } from 'react-icons/fi/index.js';
 
 export interface ModalProps {
   isOpen: boolean;

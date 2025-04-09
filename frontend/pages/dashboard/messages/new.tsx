@@ -9,7 +9,7 @@ import {
   FiMessageSquare,
   FiPaperclip,
   FiPlus
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 import { NextPage } from 'next';
 import { useState, useEffect } from 'react';

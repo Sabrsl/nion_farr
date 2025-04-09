@@ -17,7 +17,7 @@ import {
   FiHome,
   FiShoppingBag,
   FiEye
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import fr from 'date-fns/locale/fr/index.js';

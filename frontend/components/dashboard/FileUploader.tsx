@@ -11,7 +11,7 @@ import {
   FiMaximize,
   FiUploadCloud,
   FiEye
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 interface FileUploaderProps {
   onFilesSelected: (files: File[]) => void;

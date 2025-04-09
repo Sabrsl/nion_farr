@@ -16,7 +16,7 @@ import {
   FiFileText,
   FiSend,
   FiUpload
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import FreelanceDashboardLayout from '../../../../components/dashboard/FreelanceDashboardLayout';
 import Link from 'next/link';
 import { Order } from '../../../../types';

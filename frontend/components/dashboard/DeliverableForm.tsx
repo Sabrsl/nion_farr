@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiUpload, FiX, FiFile, FiSend, FiPaperclip } from 'react-icons/fi';
+import { FiUpload, FiX, FiFile, FiSend, FiPaperclip } from 'react-icons/fi/index.js';
 import { toast } from 'react-toastify';
 import { useDropzone } from 'react-dropzone';
 

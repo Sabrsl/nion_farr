@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Message, User } from '../../types';
-import { FiClock, FiCheck, FiCheckCircle, FiPaperclip, FiDownload, FiImage, FiFile } from 'react-icons/fi';
+import { FiClock, FiCheck, FiCheckCircle, FiPaperclip, FiDownload, FiImage, FiFile } from 'react-icons/fi/index.js';
 import { formatDistanceToNow, format } from 'date-fns';
 import fr from 'date-fns/locale/fr/index.js';
 

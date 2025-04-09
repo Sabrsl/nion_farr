@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { useDropzone, FileRejection, Accept, FileError } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUploadCloud, FiAlertCircle, FiFile, FiImage, FiX, FiCheck, FiFileText, FiVideo, FiMusic } from 'react-icons/fi';
+import { FiUploadCloud, FiAlertCircle, FiFile, FiImage, FiX, FiCheck, FiFileText, FiVideo, FiMusic } from 'react-icons/fi/index.js';
 import classNames from 'classnames';
 
 // Constants for reuse

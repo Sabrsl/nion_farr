@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiClock } from 'react-icons/fi';
+import { FiClock } from 'react-icons/fi/index.js';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 

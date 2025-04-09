@@ -18,7 +18,7 @@ import {
   FiChevronRight,
   FiMenu,
   FiX
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Layout from '../components/Layout';
 import axios from 'axios';
 

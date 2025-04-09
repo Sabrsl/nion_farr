@@ -8,7 +8,7 @@ import {
   FiFile, 
   FiFileText,
   FiUploadCloud
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 interface Attachment {
   id?: string;

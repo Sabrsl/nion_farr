@@ -12,7 +12,7 @@ import {
   FiMusic,
   FiDatabase,
   FiPieChart
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 export const categories: Category[] = [
   {

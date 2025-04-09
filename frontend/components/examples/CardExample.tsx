@@ -6,7 +6,7 @@ import {
   CardFooter,
   Button 
 } from '../ui';
-import { FiInfo, FiStar, FiUser, FiCalendar } from 'react-icons/fi';
+import { FiInfo, FiStar, FiUser, FiCalendar } from 'react-icons/fi/index.js';
 
 export const CardExamples = () => {
   return (

@@ -2,7 +2,7 @@ import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiCheck, FiArrowRight, FiUsers, FiSearch, FiDollarSign, FiMessageSquare } from 'react-icons/fi';
+import { FiCheck, FiArrowRight, FiUsers, FiSearch, FiDollarSign, FiMessageSquare } from 'react-icons/fi/index.js';
 import Layout from '../components/layout/Layout';
 
 const CommentCaMarche: NextPage = () => {

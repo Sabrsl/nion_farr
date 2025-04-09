@@ -1,6 +1,6 @@
 import React from 'react';
 import { Transaction } from '../../types';
-import { FiArrowUp, FiArrowDown, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiArrowUp, FiArrowDown, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi/index.js';
 
 interface TransactionsTableProps {
   transactions: Transaction[];

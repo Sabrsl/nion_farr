@@ -19,14 +19,14 @@ import {
   FiInfo,
   FiBookmark,
   FiHeart
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Link from 'next/link';
 import Layout from '../components/layout/Layout';
 import { FilterSidebar } from '../components/explorer/FilterSidebar';
 import { ServiceGrid } from '../components/explorer/ServiceGrid';
 import { serviceExplorer } from '../services/serviceExplorerService';
 import axios from 'axios';
-import { BiSearch } from 'react-icons/bi';
+import { BiSearch } from 'react-icons/bi/index.js';
 
 // Types
 import { Category, Service, FilterOptions } from '../types';

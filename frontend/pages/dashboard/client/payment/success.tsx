@@ -6,7 +6,7 @@ import {
   FiArrowLeft, 
   FiDownload,
   FiMessageCircle 
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Link from 'next/link';
 import ClientDashboardLayout from '../../../../components/dashboard/ClientDashboardLayout';
 

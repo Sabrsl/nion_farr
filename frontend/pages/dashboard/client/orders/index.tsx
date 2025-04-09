@@ -11,7 +11,7 @@ import {
   FiRefreshCw, 
   FiChevronDown,
   FiUser
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import ClientDashboardLayout from '../../../../components/dashboard/ClientDashboardLayout';
 import Link from 'next/link';
 import { Order, OrderStatus, User } from '../../../../types';

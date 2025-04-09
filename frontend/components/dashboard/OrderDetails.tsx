@@ -15,7 +15,7 @@ import {
   FiLink,
   FiChevronRight,
   FiCheckCircle
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { format } from 'date-fns';
 import fr from 'date-fns/locale/fr/index.js';
 import { toast } from 'react-toastify';

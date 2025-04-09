@@ -2,7 +2,7 @@ import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useState } from 'react';
-import { FiSearch, FiChevronDown, FiChevronUp, FiUsers, FiDollarSign, FiShield, FiPackage, FiHelpCircle, FiMessageSquare } from 'react-icons/fi';
+import { FiSearch, FiChevronDown, FiChevronUp, FiUsers, FiDollarSign, FiShield, FiPackage, FiHelpCircle, FiMessageSquare } from 'react-icons/fi/index.js';
 
 const Aide: NextPage = () => {
   // State pour les FAQ ouvertes

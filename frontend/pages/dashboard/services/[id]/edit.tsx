@@ -24,7 +24,7 @@ import {
   FiRefreshCw,
   FiEdit2,
   FiCheck
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import DashboardLayout from '../../../../components/dashboard/DashboardLayout';
 import { Editor } from '@tinymce/tinymce-react';
 import { Dropzone } from '../../../../components/ui/Dropzone';

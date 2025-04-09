@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
-import { FiArrowLeft, FiMail } from 'react-icons/fi';
+import { FiArrowLeft, FiMail } from 'react-icons/fi/index.js';
 
 // Page de mot de passe oublié
 export default function ForgotPassword() {

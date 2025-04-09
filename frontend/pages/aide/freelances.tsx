@@ -10,7 +10,7 @@ import {
   FiShield, FiMessageSquare, FiPackage, FiAlertCircle,
   FiGlobe, FiZap, FiSettings, FiFileText, FiGrid, FiHelpCircle,
   FiVideo
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Layout from '../../components/layout/Layout';
 
 // Data for Conseils de réussite

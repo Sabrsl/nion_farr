@@ -1,7 +1,7 @@
 import React, { useState, useCallback, FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { FiAlertCircle, FiCheckCircle, FiUser, FiBriefcase, FiMail, FiPhone, FiLock } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle, FiUser, FiBriefcase, FiMail, FiPhone, FiLock } from 'react-icons/fi/index.js';
 import { authService } from '../../services/authService';
 import { toast } from 'react-toastify';
 

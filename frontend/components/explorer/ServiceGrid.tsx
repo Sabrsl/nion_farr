@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiGrid, FiList, FiChevronDown } from 'react-icons/fi';
+import { FiGrid, FiList, FiChevronDown } from 'react-icons/fi/index.js';
 import { UniversalServiceCard } from '../services/UniversalServiceCard';
 import { Service } from '../../types';
 

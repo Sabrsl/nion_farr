@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiClock, FiCheckCircle, FiClipboard, FiDownload, FiAlertTriangle, FiThumbsUp, FiRepeat, FiEdit, FiMessageSquare, FiCheck, FiXCircle, FiStar } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiClipboard, FiDownload, FiAlertTriangle, FiThumbsUp, FiRepeat, FiEdit, FiMessageSquare, FiCheck, FiXCircle, FiStar } from 'react-icons/fi/index.js';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/Button';
 import { Order, OrderStatus, User } from '../../types';

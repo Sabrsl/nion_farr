@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiChevronLeft } from 'react-icons/fi';
+import { FiChevronLeft } from 'react-icons/fi/index.js';
 import { useRouter } from 'next/router';
 import RegisterForm from '../components/auth/RegisterForm';
 

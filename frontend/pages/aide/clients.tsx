@@ -9,7 +9,7 @@ import {
   FiUsers, FiFileText, FiTarget, FiClock, FiDollarSign,
   FiPackage, FiGlobe, FiZap, FiEdit, FiStar,
   FiAlertCircle, FiHelpCircle, FiTrendingUp, FiSettings
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Layout from '../../components/layout/Layout';
 
 const GuideClients: NextPage = () => {

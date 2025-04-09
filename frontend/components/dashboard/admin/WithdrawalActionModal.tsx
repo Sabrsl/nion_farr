@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { Withdrawal } from '../../../types';
-import { FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi';
+import { FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi/index.js';
 
 interface WithdrawalActionModalProps {
   isOpen: boolean;

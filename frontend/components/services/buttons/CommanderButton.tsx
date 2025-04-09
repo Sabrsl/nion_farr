@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { FiPackage } from 'react-icons/fi';
+import { FiPackage } from 'react-icons/fi/index.js';
 import { Button } from '../../ui/Button';
 import { useAuth } from '../../../contexts/AuthContext';
 

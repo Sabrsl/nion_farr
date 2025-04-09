@@ -20,7 +20,7 @@ import {
   FiBarChart2,
   FiX,
   FiMenu
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import axios from 'axios';
 
 // Définition des types

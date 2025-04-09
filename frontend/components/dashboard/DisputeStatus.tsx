@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiAlertCircle, FiClock, FiCheckCircle, FiXCircle, FiActivity, FiMessageSquare } from 'react-icons/fi';
+import { FiAlertCircle, FiClock, FiCheckCircle, FiXCircle, FiActivity, FiMessageSquare } from 'react-icons/fi/index.js';
 import { Dispute } from '../../types';
 
 interface DisputeStatusProps {

@@ -11,7 +11,7 @@ import {
   FiArchive,
   FiCheck,
   FiClock
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { Conversation } from '../../types';
 import { formatDistanceToNow } from 'date-fns';
 import fr from 'date-fns/locale/fr/index.js';

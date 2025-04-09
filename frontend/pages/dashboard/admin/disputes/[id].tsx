@@ -6,7 +6,7 @@ import DashboardLayout from '../../../../components/layouts/DashboardLayout';
 import { Dispute, Order, ResolutionType } from '../../../../types';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { formatDate, timeAgo } from '../../../../utils/helpers';
-import { FiAlertTriangle, FiLoader, FiCheckCircle, FiXCircle, FiArrowLeft, FiInfo, FiUser, FiMessageSquare } from 'react-icons/fi';
+import { FiAlertTriangle, FiLoader, FiCheckCircle, FiXCircle, FiArrowLeft, FiInfo, FiUser, FiMessageSquare } from 'react-icons/fi/index.js';
 import Link from 'next/link';
 import { Button } from '../../../../components/ui/Button';
 import { disputeService } from '../../../../services/disputeService';

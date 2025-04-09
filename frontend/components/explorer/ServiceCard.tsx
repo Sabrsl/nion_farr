@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { FiHeart, FiStar, FiClock } from 'react-icons/fi';
+import { FiHeart, FiStar, FiClock } from 'react-icons/fi/index.js';
 import Image from 'next/image';
 import { Service } from '../../types';
 

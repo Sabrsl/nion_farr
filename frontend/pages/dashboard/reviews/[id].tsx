@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
-import { FiArrowLeft, FiStar, FiThumbsUp, FiFlag, FiUser, FiCalendar, FiMessageSquare } from 'react-icons/fi';
+import { FiArrowLeft, FiStar, FiThumbsUp, FiFlag, FiUser, FiCalendar, FiMessageSquare } from 'react-icons/fi/index.js';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import Spinner from '../../../components/ui/Spinner';
 import Button from '../../../components/ui/Button';

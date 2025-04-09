@@ -26,7 +26,7 @@ import {
   FiBriefcase,
   FiAlertCircle,
   FiHelpCircle
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { IconType } from 'react-icons';
 import { authService } from '../../services/authService';
 import { Avatar } from '../ui/Avatar';

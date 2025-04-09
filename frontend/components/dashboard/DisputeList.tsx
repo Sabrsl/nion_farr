@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dispute } from '../../types';
 import { formatDate, timeAgo } from '../../utils/helpers';
-import { FiAlertTriangle, FiFilter, FiSearch, FiUser, FiCheckCircle, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiFilter, FiSearch, FiUser, FiCheckCircle, FiX } from 'react-icons/fi/index.js';
 import Link from 'next/link';
 
 interface DisputeListProps {

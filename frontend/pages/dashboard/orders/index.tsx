@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NextPage } from 'next';
 import Head from 'next/head';
-import { FiList, FiPackage, FiAlertCircle } from 'react-icons/fi';
+import { FiList, FiPackage, FiAlertCircle } from 'react-icons/fi/index.js';
 import { motion } from 'framer-motion';
 import OrderList from '../../../components/dashboard/OrderList';
 import { useAuth } from '../../../contexts/AuthContext';

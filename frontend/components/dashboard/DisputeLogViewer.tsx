@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dispute, DisputeLogEntry } from '../../types';
 import disputeLogService from '../../services/disputeLogService';
-import { FiAlertCircle, FiClock, FiCheckCircle, FiXCircle, FiActivity, FiMessageSquare, FiUser, FiUsers, FiFileText, FiClipboard, FiSend, FiEye, FiMousePointer, FiBell, FiInfo } from 'react-icons/fi';
+import { FiAlertCircle, FiClock, FiCheckCircle, FiXCircle, FiActivity, FiMessageSquare, FiUser, FiUsers, FiFileText, FiClipboard, FiSend, FiEye, FiMousePointer, FiBell, FiInfo } from 'react-icons/fi/index.js';
 
 interface DisputeLogViewerProps {
   dispute: Dispute;

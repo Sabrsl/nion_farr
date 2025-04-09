@@ -1,6 +1,6 @@
 import { NextPage } from 'next';
 import { useState, useEffect } from 'react';
-import { FiShoppingBag, FiDollarSign } from 'react-icons/fi';
+import { FiShoppingBag, FiDollarSign } from 'react-icons/fi/index.js';
 import FreelanceDashboardLayout from '../../../components/dashboard/FreelanceDashboardLayout';
 import Link from 'next/link';
 

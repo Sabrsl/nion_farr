@@ -25,7 +25,7 @@ import {
   FiBox,
   FiUser,
   FiArrowLeft
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { Conversation, Message } from '../../../types';
 import { conversations } from '../../../data/mockMessages';
 

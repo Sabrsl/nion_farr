@@ -21,7 +21,7 @@ import {
   FiTarget,
   FiSettings,
   FiUsers
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Layout from '../../components/layout/Layout';
 
 const PaiementsFacturation: NextPage = () => {

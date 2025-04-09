@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { FiArrowDown, FiArrowUp, FiCalendar, FiCreditCard, FiDownload } from 'react-icons/fi';
+import { FiArrowDown, FiArrowUp, FiCalendar, FiCreditCard, FiDownload } from 'react-icons/fi/index.js';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { useAuth } from '../../../contexts/AuthContext';
 

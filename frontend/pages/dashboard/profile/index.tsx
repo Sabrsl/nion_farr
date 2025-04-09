@@ -28,7 +28,7 @@ import {
   FiInfo,
   FiShield,
   FiArrowRight
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { KycInfo } from '../../../services/securityService';
 
 // Créer une instance du service localement

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiSend, FiPaperclip, FiAlertCircle } from 'react-icons/fi';
+import { FiSend, FiPaperclip, FiAlertCircle } from 'react-icons/fi/index.js';
 import { Message as MessageType, User, Attachment } from '../../types';
 import messagingService from '../../services/messagingService';
 import { toast } from 'react-toastify';

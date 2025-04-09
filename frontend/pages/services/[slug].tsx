@@ -22,7 +22,7 @@ import {
   FiX,
   FiPlus,
   FiTrendingUp
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 // Components & Layout
 import Layout from '../../components/layout/Layout';

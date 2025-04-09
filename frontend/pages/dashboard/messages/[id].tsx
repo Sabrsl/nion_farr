@@ -26,7 +26,7 @@ import {
   FiExternalLink,
   FiDollarSign,
   FiMaximize
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { Conversation, Message, Attachment } from '../../../types';
 import { conversations, messages, getMessagesByConversationId } from '../../../data/mockMessages';
 

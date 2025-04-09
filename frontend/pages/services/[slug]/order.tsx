@@ -6,7 +6,7 @@ import Layout from '../../../components/layout/Layout';
 import { serviceExplorerService } from '../../../services/serviceExplorerService';
 import { ServicePackages } from '../../../components/services/ServicePackages';
 import { Button } from '../../../components/ui/Button';
-import { FiArrowLeft, FiShoppingCart, FiClock, FiCalendar, FiShield, FiAlertCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiShoppingCart, FiClock, FiCalendar, FiShield, FiAlertCircle } from 'react-icons/fi/index.js';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../../../contexts/AuthContext';

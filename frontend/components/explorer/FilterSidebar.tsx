@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiChevronDown, FiChevronUp, FiStar, FiX } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiStar, FiX } from 'react-icons/fi/index.js';
 import { RangeSlider } from '../ui/RangeSlider';
 
 interface FilterSidebarProps {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NextPage } from 'next';
 import DashboardLayout from '../../../../components/dashboard/DashboardLayout';
-import { FiAlertTriangle, FiCheck, FiCheckCircle, FiClock, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheck, FiCheckCircle, FiClock, FiX } from 'react-icons/fi/index.js';
 import { Withdrawal } from '../../../../types';
 import withdrawalService from '../../../../services/withdrawalService';
 import { toast } from 'react-toastify';

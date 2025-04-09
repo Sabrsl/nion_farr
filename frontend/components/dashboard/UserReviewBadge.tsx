@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiStar, FiAward } from 'react-icons/fi';
+import { FiStar, FiAward } from 'react-icons/fi/index.js';
 import { User } from '../../types';
 import { useTooltip } from '../../hooks/useTooltip';
 

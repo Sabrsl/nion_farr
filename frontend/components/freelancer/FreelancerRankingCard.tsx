@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FreelancerRanking, RankingFactor } from '../../types';
 import rankingService from '../../services/rankingService';
 import { Spinner, Alert } from '../ui/common';
-import { FiAlertTriangle, FiThumbsDown, FiClock } from 'react-icons/fi';
+import { FiAlertTriangle, FiThumbsDown, FiClock } from 'react-icons/fi/index.js';
 
 interface FreelancerRankingCardProps {
   userId: string;

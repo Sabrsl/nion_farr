@@ -17,7 +17,7 @@ import {
   FiShield,
   FiCheck,
   FiX
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 const SettingsPage: NextPage = () => {
   const { user } = useAuth();

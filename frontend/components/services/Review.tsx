@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import Image from 'next/image';
-import { FiThumbsUp, FiStar, FiCheck } from 'react-icons/fi';
+import { FiThumbsUp, FiStar, FiCheck } from 'react-icons/fi/index.js';
 import { Avatar } from '../ui/Avatar';
 
 // Définition du type Review

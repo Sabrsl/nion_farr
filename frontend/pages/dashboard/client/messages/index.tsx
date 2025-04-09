@@ -8,7 +8,7 @@ import {
   FiChevronRight,
   FiUser,
   FiClock
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Image from 'next/image';
 import Link from 'next/link';
 import ClientDashboardLayout from '../../../../components/dashboard/ClientDashboardLayout';

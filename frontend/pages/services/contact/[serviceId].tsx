@@ -22,7 +22,7 @@ import {
   FiStar,
   FiX,
   FiMapPin
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Head from 'next/head';
 
 // Components

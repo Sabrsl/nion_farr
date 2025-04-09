@@ -25,7 +25,7 @@ import {
   FiTrendingDown,
   FiAlertTriangle,
   FiChevronRight
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { FreelancerStats, Order, Notification } from '../../types';
 import { useRouter } from 'next/router';

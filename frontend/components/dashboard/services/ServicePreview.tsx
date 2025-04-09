@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiClock, FiRepeat, FiStar, FiDollarSign, FiTag, FiUser, FiCalendar } from 'react-icons/fi';
+import { FiClock, FiRepeat, FiStar, FiDollarSign, FiTag, FiUser, FiCalendar } from 'react-icons/fi/index.js';
 
 type ServicePreviewProps = {
   formData: any;

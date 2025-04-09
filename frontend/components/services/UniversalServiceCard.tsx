@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { FiStar, FiClock } from 'react-icons/fi';
+import { FiStar, FiClock } from 'react-icons/fi/index.js';
 import { Service } from '../../types';
 import { CustomService } from '../../types/custom';
 

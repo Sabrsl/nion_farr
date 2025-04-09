@@ -13,7 +13,7 @@ import {
   FiX, 
   FiUser,
   FiLogOut
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { useAuth } from '../../contexts/AuthContext';
 import { classNames } from '../../utils/helpers';
 

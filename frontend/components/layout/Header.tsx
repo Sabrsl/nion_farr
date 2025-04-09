@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiShoppingBag, FiMessageSquare, FiRefreshCw } from 'react-icons/fi';
+import { FiMenu, FiX, FiUser, FiLogOut, FiSettings, FiShoppingBag, FiMessageSquare, FiRefreshCw } from 'react-icons/fi/index.js';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar } from '../ui/Avatar';
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { FiStar, FiThumbsUp, FiFlag, FiMessageSquare, FiFilter, FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiStar, FiThumbsUp, FiFlag, FiMessageSquare, FiFilter, FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight } from 'react-icons/fi/index.js';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import Spinner from '../../../components/ui/Spinner';
 import EmptyState from '../../../components/ui/EmptyState';

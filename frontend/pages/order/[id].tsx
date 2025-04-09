@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FiCheck, FiChevronRight, FiDownload, FiAlertTriangle, FiClock, FiMessageCircle, FiCreditCard } from 'react-icons/fi';
+import { FiCheck, FiChevronRight, FiDownload, FiAlertTriangle, FiClock, FiMessageCircle, FiCreditCard } from 'react-icons/fi/index.js';
 import Layout from '../../components/layout/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import { Order } from '../../types';

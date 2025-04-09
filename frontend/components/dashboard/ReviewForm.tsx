@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiStar, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiStar, FiAlertCircle, FiCheckCircle } from 'react-icons/fi/index.js';
 import { Order, User, Review } from '../../types';
 import { toast } from 'react-toastify';
 import reviewService from '../../services/reviewService';

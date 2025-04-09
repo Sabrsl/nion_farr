@@ -5,7 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import OrderDetails from '../../../components/dashboard/OrderDetails';
 import { Order, OrderStatus } from '../../../types';
-import { FiChevronRight, FiCalendar, FiClock, FiMessageSquare, FiUser, FiAlertCircle } from 'react-icons/fi';
+import { FiChevronRight, FiCalendar, FiClock, FiMessageSquare, FiUser, FiAlertCircle } from 'react-icons/fi/index.js';
 import { toast } from 'react-toastify';
 import Link from 'next/link';
 import { motion } from 'framer-motion';

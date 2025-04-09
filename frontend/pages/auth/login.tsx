@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { authService } from '../../services/authService';
 import { NextPage } from 'next';
-import { FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle } from 'react-icons/fi/index.js';
 
 // Délai de redirection après connexion réussie
 const REDIRECT_DELAY = 100;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiRepeat, FiHelpCircle } from 'react-icons/fi';
+import { FiRepeat, FiHelpCircle } from 'react-icons/fi/index.js';
 import { toast } from 'react-toastify';
 
 interface RevisionRequestFormProps {

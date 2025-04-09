@@ -21,7 +21,7 @@ import {
   FiClock,
   FiCalendar,
   FiExternalLink
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { Service } from '../../../types';
 // Définition des services à l'intérieur du fichier au lieu d'importer

@@ -20,7 +20,7 @@ import {
   FiEye,
   FiArrowLeft,
   FiAlertTriangle
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { Dropzone } from '../../../components/ui/Dropzone';
 import { Switch } from '@headlessui/react';

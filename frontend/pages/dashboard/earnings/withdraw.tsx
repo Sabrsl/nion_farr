@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { toast } from 'react-toastify';
-import { FiAlertTriangle, FiCheckCircle, FiInfo, FiXCircle } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheckCircle, FiInfo, FiXCircle } from 'react-icons/fi/index.js';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSecurityCheck } from '../../../hooks/useSecurityCheck';

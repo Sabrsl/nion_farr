@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { FiX, FiAlertCircle, FiAlertTriangle } from 'react-icons/fi';
+import { FiX, FiAlertCircle, FiAlertTriangle } from 'react-icons/fi/index.js';
 import { toast } from 'react-toastify';
 import withdrawalService from '../../services/withdrawalService';
 import { useAuth } from '../../contexts/AuthContext';

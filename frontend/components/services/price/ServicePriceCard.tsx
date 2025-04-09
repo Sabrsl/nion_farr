@@ -11,7 +11,7 @@ import {
   FiDollarSign,
   FiChevronRight,
   FiChevronDown
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Tooltip } from '../../ui/Tooltip';

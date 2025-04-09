@@ -11,7 +11,7 @@ import {
   FiClock,
   FiCheckCircle,
   FiXCircle 
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 interface OrderListProps {
   orders: Order[];

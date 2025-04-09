@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Alert, Spinner } from '../ui/common';
 import { User, FreelancerRanking } from '../../types';
-import { FiUserCheck, FiStar, FiCalendar, FiShield, FiAlertTriangle, FiAward } from 'react-icons/fi';
+import { FiUserCheck, FiStar, FiCalendar, FiShield, FiAlertTriangle, FiAward } from 'react-icons/fi/index.js';
 import rankingService from '../../services/rankingService';
 import FreelancerRankingCard from './FreelancerRankingCard';
 import { CustomTabs, CustomTabsList, CustomTabsTrigger, CustomTabsContent } from '../ui/CustomTabs';

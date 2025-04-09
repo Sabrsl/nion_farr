@@ -5,7 +5,7 @@ import {
   FiCheck, 
   FiAlertCircle, 
   FiRefreshCw
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 interface OrderStatusBadgeProps {
   status: OrderStatus;

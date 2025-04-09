@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiMoreHorizontal, FiArchive, FiFlag, FiX, FiChevronLeft, FiClock, FiCheck, FiStar, FiPhone, FiVideo } from 'react-icons/fi';
+import { FiMoreHorizontal, FiArchive, FiFlag, FiX, FiChevronLeft, FiClock, FiCheck, FiStar, FiPhone, FiVideo } from 'react-icons/fi/index.js';
 import { Conversation, User } from '../../types';
 
 interface ConversationHeaderProps {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { Withdrawal } from '../../../types';
-import { FiX, FiUser, FiDollarSign, FiCalendar, FiCreditCard } from 'react-icons/fi';
+import { FiX, FiUser, FiDollarSign, FiCalendar, FiCreditCard } from 'react-icons/fi/index.js';
 
 interface WithdrawalDetailsModalProps {
   isOpen: boolean;

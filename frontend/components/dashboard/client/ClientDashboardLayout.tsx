@@ -19,7 +19,7 @@ import {
   FiAlertTriangle,
   FiHelpCircle,
   FiHeart
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { IconType } from 'react-icons';
 // Suppression de l'import problématique
 // Commenté plutôt que supprimé pour référence

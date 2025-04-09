@@ -13,7 +13,7 @@ import {
   FiShield, 
   FiMenu, 
   FiX 
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Layout from '../components/Layout';
 import { categories } from '../data/categories';
 import axios from 'axios';

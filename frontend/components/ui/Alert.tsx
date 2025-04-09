@@ -1,5 +1,5 @@
 import React, { ReactNode, memo } from 'react';
-import { FiAlertTriangle, FiInfo, FiCheckCircle, FiAlertCircle, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiInfo, FiCheckCircle, FiAlertCircle, FiX } from 'react-icons/fi/index.js';
 import classNames from 'classnames';
 
 export interface AlertProps {

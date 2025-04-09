@@ -13,7 +13,7 @@ import {
   FiExternalLink,
   FiCalendar,
   FiClock
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { Tooltip } from '../ui/Tooltip';
 import { Service } from '../../types';
 import { Rating } from '../ui/Rating';

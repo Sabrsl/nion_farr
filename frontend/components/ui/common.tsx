@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { FiLoader, FiAlertTriangle, FiInfo, FiCheck, FiX } from 'react-icons/fi';
+import { FiLoader, FiAlertTriangle, FiInfo, FiCheck, FiX } from 'react-icons/fi/index.js';
 import classNames from 'classnames';
 
 // ==================== Spinner Component ====================

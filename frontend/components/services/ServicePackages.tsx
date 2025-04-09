@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiPlus, FiCheck, FiX } from 'react-icons/fi';
+import { FiPlus, FiCheck, FiX } from 'react-icons/fi/index.js';
 import { Tab } from '@headlessui/react';
 
 interface PackageOption {

@@ -9,7 +9,7 @@ import {
   FiImage, FiCode, FiEdit, FiBarChart, FiVideo, FiGrid,
   FiSearch, FiMessageSquare, FiCreditCard, FiDollarSign, FiShield,
   FiHelpCircle, FiArrowUpRight, FiUsers, FiGlobe, FiSettings
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Layout from '../../components/layout/Layout';
 
 const CommandesServices: NextPage = () => {

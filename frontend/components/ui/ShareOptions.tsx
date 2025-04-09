@@ -6,7 +6,7 @@ import {
   FiMail, 
   FiLink, 
   FiCheck 
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 
 type SharePlatform = 'facebook' | 'twitter' | 'linkedin' | 'email';
 

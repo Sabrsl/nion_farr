@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiStar } from 'react-icons/fi';
+import { FiStar } from 'react-icons/fi/index.js';
 
 interface RatingProps {
   value?: number;

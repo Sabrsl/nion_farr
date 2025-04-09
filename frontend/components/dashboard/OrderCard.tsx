@@ -12,7 +12,7 @@ import {
   FiUser,
   FiGrid,
   FiBell
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { toast } from 'react-toastify';
 import { disputeService } from '../../services/disputeService';
 import { useAuth } from '../../contexts/AuthContext';

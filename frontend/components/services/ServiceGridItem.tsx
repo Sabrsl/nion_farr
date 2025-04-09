@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiStar, FiClock, FiMapPin } from 'react-icons/fi';
+import { FiStar, FiClock, FiMapPin } from 'react-icons/fi/index.js';
 import { Service } from '../../types';
 
 // Image par défaut

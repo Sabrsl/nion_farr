@@ -24,7 +24,7 @@ import {
   FiClock,
   FiShield,
   FiHeart
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import Layout from '../components/layout/Layout';
 
 // Importation d'une icône personnalisée pour X (anciennement Twitter)

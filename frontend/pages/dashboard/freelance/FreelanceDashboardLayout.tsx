@@ -20,7 +20,7 @@ import {
   FiHelpCircle,
   FiBookmark,
   FiShoppingCart
-} from 'react-icons/fi';
+} from 'react-icons/fi/index.js';
 import { IconType } from 'react-icons';
 
 interface NavItem {

@@ -6,7 +6,7 @@ import DashboardLayout from '../../../../components/layouts/DashboardLayout';
 import DisputeList from '../../../../components/dashboard/DisputeList';
 import { Dispute } from '../../../../types';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { FiAlertTriangle, FiLoader, FiFilter, FiSearch } from 'react-icons/fi';
+import { FiAlertTriangle, FiLoader, FiFilter, FiSearch } from 'react-icons/fi/index.js';
 
 const AdminDisputesPage: NextPage = () => {
   const router = useRouter();

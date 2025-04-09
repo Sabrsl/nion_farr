@@ -2,7 +2,7 @@ import React from 'react';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { FiAlertTriangle, FiHome, FiSearch } from 'react-icons/fi';
+import { FiAlertTriangle, FiHome, FiSearch } from 'react-icons/fi/index.js';
 import Link from 'next/link';
 import Layout from '../components/layout/Layout';
 
