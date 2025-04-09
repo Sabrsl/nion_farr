@@ -64,65 +64,121 @@ const Dashboard: NextPage = () => {
   useEffect(() => {
     const fetchUserData = () => {
       try {
+        // Vérification des clés disponibles dans localStorage
+        console.log('🔍 Clés disponibles dans localStorage:', 
+          Object.keys(localStorage).filter(key => !key.startsWith('_')));
+        
         // Récupérer les données utilisateur depuis le localStorage
+        // Essayer d'abord avec la constante USER_STORAGE_KEY définie dans authService
         const storedUser = localStorage.getItem('nionfarUser');
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          console.log('Données utilisateur récupérées:', user);
-          setUserData(user);
-          
-          // Générer des statistiques basées sur les données utilisateur réelles
-          if (user) {
-            // Récupérer les commandes de l'utilisateur s'il y en a
-            const userOrders = user.orders || [];
-            setRecentOrders(Array.isArray(userOrders) ? userOrders : []);
-            
-            // Calculer les statistiques basées sur les données disponibles
-            const totalEarnings = userOrders.reduce((sum, order) => sum + (order.amount || 0), 0);
-            const pendingOrders = userOrders.filter(order => order.status === 'pending' || order.status === 'in_progress').length;
-            const completedOrders = userOrders.filter(order => order.status === 'completed').length;
-            const totalOrders = userOrders.length;
-            
-            // Utiliser les services de l'utilisateur s'il est freelancer
-            const userServices = user.services || [];
-            const totalReviews = userServices.reduce((sum, service) => sum + (service.totalReviews || 0), 0);
-            const totalViews = userServices.reduce((sum, service) => sum + (service.views || 0), 0);
-            
-            // Construire l'objet stats avec les données réelles
-            setStats({
-              earnings: {
-                total: totalEarnings || 0,
-                pending: userOrders.filter(o => o.status === 'pending').reduce((sum, o) => sum + (o.amount || 0), 0),
-                withdrawn: user.withdrawn || 0,
-                available: user.balance || 0
-              },
-              analytics: {
-                views: totalViews || 0,
-                clicks: userServices.reduce((sum, s) => sum + (s.clicks || 0), 0),
-                conversionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
-                averageRating: userServices.length > 0 
-                  ? userServices.reduce((sum, s) => sum + (s.rating || 0), 0) / userServices.length 
-                  : 0,
-                completionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
-                totalOrders: totalOrders,
-                pendingOrders: pendingOrders,
-                totalEarnings: totalEarnings,
-                totalReviews: totalReviews
-              },
-              activeOrders: pendingOrders,
-              pendingReviews: user.pendingReviews || 0,
-              responseRate: user.responseRate || 95,
-              responseTime: user.responseTime || '3 heures'
-            });
+        
+        if (!storedUser) {
+          console.warn('⚠️ Aucune donnée trouvée avec la clé "nionfarUser", tentative avec autres clés possibles');
+          // Autres possibilités de noms de clés
+          const alternateKeys = ['auth_user', 'user', 'currentUser', 'userData'];
+          for (const key of alternateKeys) {
+            const altData = localStorage.getItem(key);
+            if (altData) {
+              console.log(`✅ Données trouvées avec la clé alternative "${key}"`);
+              try {
+                const parsedData = JSON.parse(altData);
+                setUserData(parsedData);
+                processUserData(parsedData);
+                return;
+              } catch (e) {
+                console.error(`Erreur lors du parsing des données de "${key}":`, e);
+              }
+            }
           }
-        } else {
-          console.log('Aucune donnée utilisateur trouvée dans le localStorage');
+          console.log('❌ Aucune donnée utilisateur trouvée dans le localStorage sous aucune clé connue');
+          setIsLoading(false);
+          return;
+        }
+        
+        try {
+          const user = JSON.parse(storedUser);
+          console.log('✅ Données utilisateur récupérées:', JSON.stringify(user, null, 2));
+          console.log('🔑 Propriétés principales:', Object.keys(user));
+          
+          if (user.orders) {
+            console.log(`📦 ${user.orders.length} commandes trouvées`);
+          } else {
+            console.warn('⚠️ Aucune commande trouvée dans les données utilisateur');
+          }
+          
+          if (user.services) {
+            console.log(`🛠️ ${user.services.length} services trouvés`);
+          } else {
+            console.warn('⚠️ Aucun service trouvé dans les données utilisateur');
+          }
+          
+          setUserData(user);
+          processUserData(user);
+        } catch (e) {
+          console.error('❌ Erreur lors du parsing des données utilisateur:', e);
+          setIsLoading(false);
         }
       } catch (error) {
-        console.error('Erreur lors de la récupération des données utilisateur:', error);
-      } finally {
+        console.error('❌ Erreur lors de la récupération des données utilisateur:', error);
         setIsLoading(false);
       }
+    };
+    
+    // Fonction pour traiter les données utilisateur et mettre à jour l'état
+    const processUserData = (user) => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      
+      // Récupérer les commandes de l'utilisateur s'il y en a
+      const userOrders = user.orders || [];
+      setRecentOrders(Array.isArray(userOrders) ? userOrders : []);
+      
+      // Calculer les statistiques basées sur les données disponibles
+      const totalEarnings = userOrders.reduce((sum, order) => sum + (order.amount || 0), 0);
+      const pendingOrders = userOrders.filter(order => 
+        order.status === 'pending' || order.status === 'in_progress').length;
+      const completedOrders = userOrders.filter(order => 
+        order.status === 'completed').length;
+      const totalOrders = userOrders.length;
+      
+      // Utiliser les services de l'utilisateur s'il est freelancer
+      const userServices = user.services || [];
+      const totalReviews = userServices.reduce((sum, service) => 
+        sum + (service.totalReviews || 0), 0);
+      const totalViews = userServices.reduce((sum, service) => 
+        sum + (service.views || 0), 0);
+      
+      // Construire l'objet stats avec les données réelles
+      setStats({
+        earnings: {
+          total: totalEarnings || 0,
+          pending: userOrders.filter(o => o.status === 'pending')
+            .reduce((sum, o) => sum + (o.amount || 0), 0),
+          withdrawn: user.withdrawn || 0,
+          available: user.balance || 0
+        },
+        analytics: {
+          views: totalViews || 0,
+          clicks: userServices.reduce((sum, s) => sum + (s.clicks || 0), 0),
+          conversionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
+          averageRating: userServices.length > 0 
+            ? userServices.reduce((sum, s) => sum + (s.rating || 0), 0) / userServices.length 
+            : 0,
+          completionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
+          totalOrders: totalOrders,
+          pendingOrders: pendingOrders,
+          totalEarnings: totalEarnings,
+          totalReviews: totalReviews
+        },
+        activeOrders: pendingOrders,
+        pendingReviews: user.pendingReviews || 0,
+        responseRate: user.responseRate || 95,
+        responseTime: user.responseTime || '3 heures'
+      });
+      
+      setIsLoading(false);
     };
     
     // Appeler la fonction pour récupérer les données utilisateur
