@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, ReactNode } from 'react';
 import { FiLoader, FiAlertTriangle, FiInfo, FiCheck, FiX } from 'react-icons/fi/index.js';
 import classNames from 'classnames';
 
@@ -263,3 +263,36 @@ export const TabPanel = memo<TabPanelProps>(({
 });
 
 TabPanel.displayName = 'TabPanel';
+
+// Composant Container pour assurer un alignement cohérent à travers tout le site
+export const Container: React.FC<{
+  children: ReactNode;
+  className?: string;
+  fluid?: boolean; // Si true, pas de max-width
+}> = ({ children, className = '', fluid = false }) => {
+  // Utiliser exactement les mêmes paddings que le header pour une cohérence visuelle
+  return (
+    <div className={`w-full px-4 md:px-8 lg:px-12 ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+// Composant Section qui combine les espacements et les arrière-plans standard
+export const Section: React.FC<{
+  children: ReactNode;
+  className?: string;
+  bgColor?: string;
+}> = ({ 
+  children, 
+  className = '', 
+  bgColor = 'bg-white'
+}) => {
+  return (
+    <section className={`py-16 ${bgColor} ${className}`}>
+      <Container>
+        {children}
+      </Container>
+    </section>
+  );
+};

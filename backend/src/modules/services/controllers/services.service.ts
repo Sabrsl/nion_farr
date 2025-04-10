@@ -188,4 +188,27 @@ export class ServicesService {
       };
     }
   }
+
+  /**
+   * Récupérer les meilleurs services basés sur le nombre de commandes et d'avis
+   * @param limit Nombre maximum de services à récupérer
+   * @param minReviews Nombre minimum d'avis requis
+   * @returns Les meilleurs services
+   */
+  async findTopServices(limit: number = 4, minReviews: number = 5): Promise<Service[]> {
+    // Créer une requête pour récupérer les services avec plus de minReviews avis
+    // et triés par nombre de commandes (totalOrders) décroissant
+    const topServices = await this.serviceRepository
+      .createQueryBuilder('service')
+      .leftJoinAndSelect('service.provider', 'provider')
+      .leftJoinAndSelect('service.category', 'category')
+      .leftJoinAndSelect('service.reviews', 'reviews')
+      .where('service.isActive = :isActive', { isActive: true })
+      .andWhere('service.totalReviews >= :minReviews', { minReviews })
+      .orderBy('service.totalOrders', 'DESC')
+      .limit(limit)
+      .getMany();
+    
+    return topServices;
+  }
 } 

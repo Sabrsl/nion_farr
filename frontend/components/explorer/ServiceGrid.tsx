@@ -8,9 +8,10 @@ interface ServiceGridProps {
   services: Service[];
   isLoading: boolean;
   viewMode?: 'grid' | 'list';
+  hideEmptyState?: boolean;
 }
 
-export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading, viewMode }) => {
+export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading, viewMode, hideEmptyState = false }) => {
   // Utiliser localStorage pour persister le type de vue entre les sessions
   const [viewType, setViewType] = useState<'grid' | 'list'>(() => {
     // Vérifier si on est côté client
@@ -87,7 +88,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading, v
     <div className="space-y-6">
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-200">
-        <div className="font-medium text-gray-700">
+        <div className="font-medium text-xs sm:text-sm text-gray-700">
           {isLoading ? (
             <span>Chargement des services...</span>
           ) : (
@@ -207,17 +208,17 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ services, isLoading, v
         <div className="py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Chargement des services...</p>
+            <p className="mt-4 text-xs sm:text-sm text-gray-600">Chargement des services...</p>
           </div>
         </div>
       )}
 
       {/* Empty state */}
-      {!isLoading && sortedServices.length === 0 && (
+      {!isLoading && sortedServices.length === 0 && !hideEmptyState && (
         <div className="py-12 text-center">
           <div className="bg-gray-50 rounded-xl p-8 max-w-lg mx-auto">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun service trouvé</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Aucun service trouvé</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-6">
               Essayez de modifier vos filtres ou de rechercher autre chose.
             </p>
             <button

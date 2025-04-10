@@ -620,78 +620,88 @@ export const getServerSideProps: GetServerSideProps<ServicePageProps> = async (c
   
   console.log('[ServicePage][SSR] Récupération du service avec slug:', slug);
   
-  if (typeof slug === 'string') {
-    try {
-      // Récupérer le service depuis l'API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/services/${slug}`);
-      
-      if (!response.ok) {
-        console.log('[ServicePage][SSR] Service non trouvé, redirection vers service-unavailable');
-        return {
-          redirect: {
-            destination: '/service-unavailable?reason=not-found',
-            permanent: false,
-          },
-        };
-      }
-      
-      const data = await response.json();
-      const service = data.service;
-      
-      // Vérifier que le service est actif
-      if (!service || !service.isActive) {
-        console.log('[ServicePage][SSR] Service inactif ou non trouvé, redirection vers service-unavailable');
-        return {
-          redirect: {
-            destination: '/service-unavailable?reason=inactive',
-            permanent: false,
-          },
-        };
-      }
-      
-      console.log('[ServicePage][SSR] Service trouvé:', !!service);
-      
-      // Récupérer les services similaires via l'API
-      const relatedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/services/related?categoryId=${
-        typeof service.category === 'object' ? service.category?.id : service.category
-      }&exclude=${service.id}&limit=4`);
-      
-      let relatedServices = [];
-      if (relatedResponse.ok) {
-        const relatedData = await relatedResponse.json();
-        relatedServices = relatedData.services || [];
-      }
-      
-      console.log('[ServicePage][SSR] Nombre de services liés trouvés:', relatedServices.length);
-      
-      // Générer le titre de la page pour le passer au niveau de l'application
-      const pageTitle = service.title ? `${service.title} - Nionfar` : 'Détail du service - Nionfar';
-      
-      return {
-        props: {
-          service,
-          relatedServices,
-          title: pageTitle // Cette prop sera utilisée par _app.tsx
-        }
-      };
-    } catch (error) {
-      console.error('[ServicePage][SSR] Erreur lors de la récupération du service:', error);
+  if (typeof slug !== 'string') {
+    console.log('[ServicePage][SSR] Paramètre slug invalide');
+    return {
+      redirect: {
+        destination: '/services',
+        permanent: false,
+      },
+    };
+  }
+  
+  // Importer dynamiquement le service pour éviter les problèmes côté serveur
+  const serviceService = (await import('../../services/serviceService')).default;
+  
+  try {
+    // Récupérer le service via le service centralisé qui gère le cache et les fallbacks
+    const service = await serviceService.getServiceById(slug);
+    
+    if (!service) {
+      console.log('[ServicePage][SSR] Service non trouvé, redirection vers service-unavailable');
       return {
         redirect: {
-          destination: '/error',
+          destination: '/service-unavailable?reason=not-found',
           permanent: false,
         },
       };
     }
+    
+    // Vérifier que le service est actif
+    if (!service.isActive) {
+      console.log('[ServicePage][SSR] Service inactif, redirection vers service-unavailable');
+      return {
+        redirect: {
+          destination: '/service-unavailable?reason=inactive',
+          permanent: false,
+        },
+      };
+    }
+    
+    console.log('[ServicePage][SSR] Service trouvé:', service.title);
+    
+    // Récupérer les services liés via le service
+    let relatedServices = [];
+    try {
+      // Si une méthode spécifique existe pour les services liés
+      if (typeof serviceService.getRelatedServices === 'function') {
+        relatedServices = await serviceService.getRelatedServices(service.id, 4);
+      } else {
+        // Sinon, faire une requête par catégorie et exclure le service actuel
+        const categoryId = service.category?.id || '';
+        if (categoryId) {
+          const categoryServices = await serviceService.getServicesByCategory(categoryId);
+          relatedServices = categoryServices
+            .filter(s => s.id !== service.id)
+            .slice(0, 4);
+        }
+      }
+    } catch (relatedError) {
+      console.error('[ServicePage][SSR] Erreur lors de la récupération des services liés:', relatedError);
+      // Continuer, même sans services liés
+    }
+    
+    console.log('[ServicePage][SSR] Nombre de services liés trouvés:', relatedServices.length);
+    
+    // Générer le titre de la page
+    const pageTitle = service.title ? `${service.title} - Nionfar` : 'Détail du service - Nionfar';
+    
+    return {
+      props: {
+        service,
+        relatedServices,
+        title: pageTitle
+      }
+    };
+  } catch (error) {
+    console.error('[ServicePage][SSR] Erreur lors de la récupération du service:', error);
+    return {
+      redirect: {
+        destination: '/error',
+        permanent: false,
+      },
+    };
   }
-  
-  console.log('[ServicePage][SSR] Paramètre slug invalide');
-  return {
-    redirect: {
-      destination: '/services',
-      permanent: false,
-    },
-  };
 };
 
 export default ServicePage;

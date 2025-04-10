@@ -1,0 +1,32 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+npm run pre-push
+
+echo "🔍 Vérification du build Railway avant le push..."
+
+# Stocker la branche actuelle
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Ne vérifier que si on pousse sur main ou develop
+if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "develop" ]; then
+  echo "🚀 Push sur $BRANCH détecté, vérification du build Railway..."
+  
+  # Vérifie si des fichiers du backend ont été modifiés
+  BACKEND_CHANGES=$(git diff --cached --name-only | grep "^backend/")
+  
+  if [ -n "$BACKEND_CHANGES" ]; then
+    echo "📦 Modifications détectées dans le backend, vérification du build Railway..."
+    npm run test:railway-build || {
+      echo "❌ Le build Railway a échoué! Corrections nécessaires avant de push."
+      echo "💡 Conseil: Exécutez 'cd backend && npm run build:railway' pour voir les erreurs détaillées."
+      exit 1
+    }
+  else
+    echo "✅ Aucune modification dans le backend, passe la vérification du build Railway."
+  fi
+else
+  echo "✅ Pas de push sur main ou develop, passe la vérification du build Railway."
+fi
+
+echo "✅ Vérifications pré-push terminées avec succès!" 

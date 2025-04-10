@@ -165,29 +165,20 @@ const Contact: NextPage = () => {
   const contactTabs = [
     {
       title: "Particuliers",
-      icon: <FiUser className="w-6 h-6" />,
+      icon: <FiUser className="w-5 h-5" />,
       content: (
         <>
-          <p className="text-lg text-gray-600 mb-6">
-            Vous avez un projet personnel et souhaitez faire appel à nos services ? Contactez-nous directement par email ou téléphone.
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+            Vous avez un projet personnel et souhaitez faire appel à nos services ? Contactez-nous directement par email.
           </p>
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="flex items-center group">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
-                <FiMail className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center mr-3 sm:mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
+                <FiMail className="text-white w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <a href="mailto:particuliers@nionfar.sn" className="text-indigo-600 hover:text-indigo-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
+              <a href="mailto:particuliers@nionfar.sn" className="text-sm sm:text-base text-indigo-600 hover:text-indigo-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
                 particuliers@nionfar.sn
-                <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </a>
-            </div>
-            <div className="flex items-center group">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
-                <FiPhone className="text-white" />
-              </div>
-              <a href="tel:+221701234567" className="text-indigo-600 hover:text-indigo-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
-                +221 70 123 45 67
-                <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-4 h-4" />
               </a>
             </div>
           </div>
@@ -196,29 +187,20 @@ const Contact: NextPage = () => {
     },
     {
       title: "Entreprises",
-      icon: <FiGlobe className="w-6 h-6" />,
+      icon: <FiGlobe className="w-5 h-5" />,
       content: (
         <>
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
             Vous représentez une entreprise et souhaitez établir un partenariat ou utiliser nos services ? Notre équipe dédiée est à votre écoute.
           </p>
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="flex items-center group">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
-                <FiMail className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 flex items-center justify-center mr-3 sm:mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
+                <FiMail className="text-white w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <a href="mailto:entreprises@nionfar.sn" className="text-blue-600 hover:text-blue-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
+              <a href="mailto:entreprises@nionfar.sn" className="text-sm sm:text-base text-blue-600 hover:text-blue-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
                 entreprises@nionfar.sn
-                <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </a>
-            </div>
-            <div className="flex items-center group">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
-                <FiPhone className="text-white" />
-              </div>
-              <a href="tel:+221334567890" className="text-blue-600 hover:text-blue-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
-                +221 33 456 78 90
-                <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-4 h-4" />
               </a>
             </div>
           </div>
@@ -227,20 +209,20 @@ const Contact: NextPage = () => {
     },
     {
       title: "Presse",
-      icon: <FiMessageCircle className="w-6 h-6" />,
+      icon: <FiMessageCircle className="w-5 h-5" />,
       content: (
         <>
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
             Journaliste ou média souhaitant réaliser un reportage ou obtenir des informations sur NionFar ? Contactez notre service presse.
           </p>
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="flex items-center group">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
-                <FiMail className="text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center mr-3 sm:mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
+                <FiMail className="text-white w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <a href="mailto:presse@nionfar.sn" className="text-pink-600 hover:text-pink-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
+              <a href="mailto:presse@nionfar.sn" className="text-sm sm:text-base text-pink-600 hover:text-pink-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
                 presse@nionfar.sn
-                <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-4 h-4" />
               </a>
             </div>
           </div>
@@ -307,27 +289,27 @@ const Contact: NextPage = () => {
         </Head>
 
         <main className="relative z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
             <motion.div 
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16"
+              className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16"
             >
               {/* Formulaire de contact amélioré */}
               <motion.div 
                 ref={formRef}
                 variants={itemVariants} 
-                className="bg-white rounded-2xl shadow-2xl p-8 lg:p-10 order-2 lg:order-1 backdrop-blur-sm bg-opacity-90 border border-gray-100 relative overflow-hidden"
+                className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 lg:p-10 order-2 lg:order-1 backdrop-blur-sm bg-opacity-90 border border-gray-100 relative overflow-hidden"
               >
                 {/* Decorative elements */}
                 <div className="absolute -top-20 -right-20 w-40 h-40 bg-indigo-100 rounded-full opacity-70 blur-3xl"></div>
                 <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-100 rounded-full opacity-70 blur-3xl"></div>
                 
                 <div className="relative">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Envoyez-nous un message</h2>
-                  <p className="text-gray-600 mb-8">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Envoyez-nous un message</h2>
+                  <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
                     Complétez le formulaire ci-dessous et nous vous répondrons dans les plus brefs délais
                   </p>
                   
@@ -336,32 +318,32 @@ const Contact: NextPage = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.5 }}
-                      className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl p-8 text-center"
+                      className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl p-6 sm:p-8 text-center"
                     >
-                      <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                        <FiCheck className="w-10 h-10 text-white" />
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                        <FiCheck className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                       </div>
-                      <h3 className="text-2xl font-bold text-green-800 mb-3">Message envoyé avec succès !</h3>
-                      <p className="text-green-700 mb-8">
+                      <h3 className="text-xl sm:text-2xl font-bold text-green-800 mb-2 sm:mb-3">Message envoyé avec succès !</h3>
+                      <p className="text-sm sm:text-base text-green-700 mb-6 sm:mb-8">
                         Merci de nous avoir contactés. Notre équipe vous répondra très rapidement.
                       </p>
                       <button 
                         onClick={() => setFormSubmitted(false)}
-                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-base font-medium rounded-lg hover:shadow-lg transition-all duration-300"
+                        className="inline-flex items-center px-5 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm sm:text-base font-medium rounded-lg hover:shadow-lg transition-all duration-300"
                       >
                         Envoyer un nouveau message
                       </button>
                     </motion.div>
                   ) : (
-                    <form onSubmit={handleFormSubmit} className="space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div>
-                          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor="firstName" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                             Prénom
                           </label>
                           <div className={`relative ${formErrors.firstName ? 'animate-shake' : ''}`}>
                             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                              <FiUser />
+                              <FiUser className="w-4 h-4" />
                             </span>
                             <input
                               type="text"
@@ -369,21 +351,21 @@ const Contact: NextPage = () => {
                               name="firstName"
                               value={formData.firstName}
                               onChange={handleInputChange}
-                              className={`w-full pl-10 pr-4 py-3 bg-gray-50 border ${formErrors.firstName ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors`}
+                              className={`w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 bg-gray-50 border ${formErrors.firstName ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors text-sm`}
                               placeholder="Votre prénom"
                             />
                             {formErrors.firstName && (
-                              <p className="mt-1 text-sm text-red-500">Veuillez entrer votre prénom</p>
+                              <p className="mt-1 text-xs text-red-500">Veuillez entrer votre prénom</p>
                             )}
                           </div>
                         </div>
                         <div>
-                          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                          <label htmlFor="lastName" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                             Nom
                           </label>
                           <div className={`relative ${formErrors.lastName ? 'animate-shake' : ''}`}>
                             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                              <FiUser />
+                              <FiUser className="w-4 h-4" />
                             </span>
                             <input
                               type="text"
@@ -391,23 +373,23 @@ const Contact: NextPage = () => {
                               name="lastName"
                               value={formData.lastName}
                               onChange={handleInputChange}
-                              className={`w-full pl-10 pr-4 py-3 bg-gray-50 border ${formErrors.lastName ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors`}
+                              className={`w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 bg-gray-50 border ${formErrors.lastName ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors text-sm`}
                               placeholder="Votre nom"
                             />
                             {formErrors.lastName && (
-                              <p className="mt-1 text-sm text-red-500">Veuillez entrer votre nom</p>
+                              <p className="mt-1 text-xs text-red-500">Veuillez entrer votre nom</p>
                             )}
                           </div>
                         </div>
                       </div>
                       
                       <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                           Email
                         </label>
                         <div className={`relative ${formErrors.email ? 'animate-shake' : ''}`}>
                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                            <FiMail />
+                            <FiMail className="w-4 h-4" />
                           </span>
                           <input
                             type="email"
@@ -415,29 +397,29 @@ const Contact: NextPage = () => {
                             name="email"
                             value={formData.email}
                             onChange={handleInputChange}
-                            className={`w-full pl-10 pr-4 py-3 bg-gray-50 border ${formErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors`}
+                            className={`w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 bg-gray-50 border ${formErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors text-sm`}
                             placeholder="votre.email@exemple.com"
                           />
                           {formErrors.email && (
-                            <p className="mt-1 text-sm text-red-500">Veuillez entrer un email valide</p>
+                            <p className="mt-1 text-xs text-red-500">Veuillez entrer un email valide</p>
                           )}
                         </div>
                       </div>
                       
                       <div>
-                        <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="subject" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                           Sujet
                         </label>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                            <FiMessageCircle />
+                            <FiMessageCircle className="w-4 h-4" />
                           </span>
                           <select
                             id="subject"
                             name="subject"
                             value={formData.subject}
                             onChange={handleInputChange}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors"
+                            className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors text-sm"
                           >
                             <option value="">Sélectionnez un sujet</option>
                             <option value="info">Demande d'information</option>
@@ -450,21 +432,21 @@ const Contact: NextPage = () => {
                       </div>
                       
                       <div>
-                        <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="message" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                           Message
                         </label>
                         <div className={`relative ${formErrors.message ? 'animate-shake' : ''}`}>
                           <textarea
                             id="message"
                             name="message"
-                            rows={6}
+                            rows={5}
                             value={formData.message}
                             onChange={handleInputChange}
-                            className={`w-full px-4 py-3 bg-gray-50 border ${formErrors.message ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors`}
+                            className={`w-full px-4 py-2 sm:py-3 bg-gray-50 border ${formErrors.message ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-colors text-sm`}
                             placeholder="Décrivez votre demande en détail..."
                           ></textarea>
                           {formErrors.message && (
-                            <p className="mt-1 text-sm text-red-500">Veuillez entrer votre message</p>
+                            <p className="mt-1 text-xs text-red-500">Veuillez entrer votre message</p>
                           )}
                         </div>
                       </div>
@@ -481,11 +463,11 @@ const Contact: NextPage = () => {
                           />
                         </div>
                         <div className="ml-3">
-                          <label htmlFor="privacy" className={`text-sm ${formErrors.privacy ? 'text-red-500' : 'text-gray-600'}`}>
+                          <label htmlFor="privacy" className={`text-xs sm:text-sm ${formErrors.privacy ? 'text-red-500' : 'text-gray-600'}`}>
                             J'accepte la <Link href="/confidentialite" className="text-indigo-600 hover:text-indigo-800">politique de confidentialité</Link>
                           </label>
                           {formErrors.privacy && (
-                            <p className="mt-1 text-sm text-red-500">Vous devez accepter la politique de confidentialité</p>
+                            <p className="mt-1 text-xs text-red-500">Vous devez accepter la politique de confidentialité</p>
                           )}
                         </div>
                       </div>
@@ -493,12 +475,12 @@ const Contact: NextPage = () => {
                       <div>
                         <button
                           type="submit"
-                          className="w-full flex items-center justify-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-base font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                          className="w-full flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm sm:text-base font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                         >
-                          <FiSend className="mr-2" />
+                          <FiSend className="mr-2 w-4 h-4" />
                           Envoyer le message
                         </button>
-                        <p className="text-xs text-gray-500 mt-3 text-center">
+                        <p className="text-xs text-gray-500 mt-2 sm:mt-3 text-center">
                           En soumettant ce formulaire, vous acceptez notre politique de confidentialité.
                         </p>
                       </div>
@@ -509,18 +491,18 @@ const Contact: NextPage = () => {
               
               {/* Contact Info et Tabs améliorés */}
               <motion.div variants={itemVariants} className="order-1 lg:order-2">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Nous contacter</h2>
-                <p className="text-gray-600 mb-8">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Nous contacter</h2>
+                <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
                   Choisissez le service adapté à votre besoin
                 </p>
 
                 {/* Contact tabs */}
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl overflow-hidden mb-6 sm:mb-8">
                   <div className="flex border-b">
                     {contactTabs.map((tab, index) => (
                       <button
                         key={index}
-                        className={`flex-1 py-4 px-4 flex items-center justify-center gap-2 transition-colors ${
+                        className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 flex items-center justify-center gap-1 sm:gap-2 transition-colors ${
                           activeTab === index 
                             ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50' 
                             : 'text-gray-600 hover:bg-gray-50'
@@ -528,11 +510,11 @@ const Contact: NextPage = () => {
                         onClick={() => setActiveTab(index)}
                       >
                         {tab.icon}
-                        <span className="font-medium">{tab.title}</span>
+                        <span className="text-sm sm:text-base font-medium">{tab.title}</span>
                       </button>
                     ))}
                   </div>
-                  <div className="p-6">
+                  <div className="p-4 sm:p-6">
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={activeTab}
@@ -540,72 +522,29 @@ const Contact: NextPage = () => {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.3 }}
-                        className="min-h-[240px]"
+                        className="min-h-[200px] sm:min-h-[240px]"
                       >
                         {contactTabs[activeTab].content}
                       </motion.div>
                     </AnimatePresence>
                   </div>
                 </div>
-
-                {/* Bureaux physiques */}
-                <div className="bg-white rounded-2xl shadow-xl p-6 mt-8">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                    <FiMapPin className="mr-2 text-indigo-600" />
-                    Nos bureaux
-                  </h3>
-                  <div className="space-y-6">
-                    <div className="flex items-start">
-                      <div className="bg-indigo-100 p-2 rounded-lg mr-4">
-                        <FiLocation className="w-5 h-5 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Siège - Dakar</h4>
-                        <address className="not-italic text-gray-600 mt-1">
-                          Immeuble Rivonia, 2ème étage<br />
-                          Plateau, Avenue Léopold Sédar Senghor<br />
-                          Dakar, Sénégal
-                        </address>
-                        <p className="text-sm text-gray-500 mt-1">
-                          <FiClock className="inline mr-1" /> Lun-Ven: 9h-18h
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start">
-                      <div className="bg-purple-100 p-2 rounded-lg mr-4">
-                        <FiLocation className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Bureau - Saint-Louis</h4>
-                        <address className="not-italic text-gray-600 mt-1">
-                          Résidence Les Alizes, 1er étage<br />
-                          Avenue Général De Gaulle<br />
-                          Saint-Louis, Sénégal
-                        </address>
-                        <p className="text-sm text-gray-500 mt-1">
-                          <FiClock className="inline mr-1" /> Lun-Ven: 9h-17h
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 
                 {/* Social Media Links */}
-                <div className="mt-8">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Suivez-nous</h3>
-                  <div className="flex space-x-4">
-                    <a href="https://linkedin.com/company/nionfar" className="w-10 h-10 rounded-full bg-[#0077B5] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg" aria-label="LinkedIn">
-                      <FiLinkedin />
+                <div className="mt-6 sm:mt-8">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Suivez-nous</h3>
+                  <div className="flex space-x-3 sm:space-x-4">
+                    <a href="https://linkedin.com/company/nionfar" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#0077B5] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg" aria-label="LinkedIn">
+                      <FiLinkedin className="w-4 h-4 sm:w-5 sm:h-5" />
                     </a>
-                    <a href="https://facebook.com/nionfarsn" className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg" aria-label="Facebook">
-                      <FiFacebook />
+                    <a href="https://facebook.com/nionfarsn" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg" aria-label="Facebook">
+                      <FiFacebook className="w-4 h-4 sm:w-5 sm:h-5" />
                     </a>
-                    <a href="https://x.com/nionfarsn" className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg" aria-label="X (anciennement Twitter)">
+                    <a href="https://x.com/nionfarsn" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg" aria-label="X (anciennement Twitter)">
                       <XIcon />
                     </a>
-                    <a href="https://instagram.com/nionfarsn" className="w-10 h-10 rounded-full bg-gradient-to-br from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg" aria-label="Instagram">
-                      <FiInstagram />
+                    <a href="https://instagram.com/nionfarsn" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg" aria-label="Instagram">
+                      <FiInstagram className="w-4 h-4 sm:w-5 sm:h-5" />
                     </a>
                   </div>
                 </div>
@@ -614,10 +553,10 @@ const Contact: NextPage = () => {
           </div>
           
           {/* FAQ Section */}
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Questions fréquentes</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">Questions fréquentes</h2>
+              <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
                 Retrouvez les réponses aux questions les plus courantes ou contactez-nous directement
               </p>
             </div>
@@ -627,21 +566,21 @@ const Contact: NextPage = () => {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
             >
               {faqs.map((faq, index) => (
                 <motion.div 
                   key={index}
                   variants={itemVariants}
-                  className="bg-white rounded-xl shadow-md overflow-hidden"
+                  className="bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden"
                 >
                   <button
                     onClick={() => toggleFaq(index)}
-                    className="w-full px-6 py-5 flex justify-between items-center focus:outline-none"
+                    className="w-full px-4 sm:px-6 py-4 sm:py-5 flex justify-between items-center focus:outline-none"
                   >
-                    <span className="font-medium text-left text-gray-900">{faq.question}</span>
+                    <span className="text-sm sm:text-base font-medium text-left text-gray-900">{faq.question}</span>
                     <FiChevronDown 
-                      className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${
+                      className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-500 transition-transform duration-300 ${
                         activeFaq === index ? 'transform rotate-180' : ''
                       }`} 
                     />
@@ -654,9 +593,9 @@ const Contact: NextPage = () => {
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="px-6 pb-5"
+                        className="px-4 sm:px-6 pb-4 sm:pb-5"
                       >
-                        <p className="text-gray-600">{faq.answer}</p>
+                        <p className="text-sm sm:text-base text-gray-600">{faq.answer}</p>
                       </motion.div>
                     )}
                   </AnimatePresence>

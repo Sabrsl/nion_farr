@@ -66,21 +66,21 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
 
   // Rendu des métadonnées réutilisables (rating, delivery time)
   const renderMetadata = () => (
-    <div className="mt-2 flex items-center text-sm text-gray-500">
+    <div className="mt-1.5 sm:mt-2 flex items-center text-xs sm:text-sm text-gray-500">
       {rating > 0 && (
         <div className="flex items-center">
-          <FiStar className="h-4 w-4 text-yellow-400" />
-          <span className="ml-1">{rating.toFixed(1)}</span>
+          <FiStar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-yellow-400" />
+          <span className="ml-0.5 sm:ml-1">{rating.toFixed(1)}</span>
           {totalReviews > 0 && (
-            <span className="ml-1">({totalReviews})</span>
+            <span className="ml-0.5 sm:ml-1">({totalReviews})</span>
           )}
         </div>
       )}
       
       {deliveryTime && (
-        <div className="flex items-center ml-4">
-          <FiClock className="h-4 w-4" />
-          <span className="ml-1">{deliveryTime}</span>
+        <div className="flex items-center ml-3 sm:ml-4">
+          <FiClock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          <span className="ml-0.5 sm:ml-1">{deliveryTime}</span>
         </div>
       )}
     </div>
@@ -89,8 +89,8 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
   // Rendu des informations du prestataire
   const renderProvider = () => (
     provider && (
-      <div className="mt-2 flex items-center">
-        <div className="flex-shrink-0 h-6 w-6 relative">
+      <div className="mt-1.5 sm:mt-2 flex items-center">
+        <div className="flex-shrink-0 h-4 w-4 sm:h-5 sm:w-5 relative">
           <Image
             src={avatarError ? DEFAULT_AVATAR : (provider.avatar || DEFAULT_AVATAR)}
             alt={provider.name}
@@ -99,7 +99,7 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
             onError={() => setAvatarError(true)}
           />
         </div>
-        <span className="ml-2 text-sm text-gray-500">
+        <span className="ml-1.5 sm:ml-2 text-xs sm:text-sm text-gray-500">
           {provider.name}
         </span>
       </div>
@@ -108,8 +108,8 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
 
   // Rendu du prix
   const renderPrice = () => (
-    <div className="mt-2">
-      <span className="text-lg font-medium text-gray-900">
+    <div className="mt-1.5 sm:mt-2">
+      <span className="text-sm sm:text-base md:text-lg font-medium text-gray-900">
         {typeof price === 'number' ? price.toLocaleString() : price} FCFA
       </span>
     </div>
@@ -118,10 +118,10 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
   // Vue en liste
   if (viewType === 'list') {
     return (
-      <Link href={serviceUrl} className={`block p-4 hover:bg-gray-50 transition-colors duration-200 ${className}`} onClick={handleClick}>
-        <div className="flex items-start space-x-4">
+      <Link href={serviceUrl} className={`block p-2 sm:p-4 hover:bg-gray-50 transition-colors duration-200 ${className}`} onClick={handleClick}>
+        <div className="flex items-start space-x-2 sm:space-x-4">
           {/* Image du service */}
-          <div className="flex-shrink-0 w-24 h-24 relative">
+          <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 relative">
             <Image
               src={imageError ? DEFAULT_IMAGE : (image || DEFAULT_IMAGE)}
               alt={title}
@@ -133,7 +133,7 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
 
           {/* Contenu */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-medium text-gray-900 truncate">
+            <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 truncate">
               {title}
             </h3>
             
@@ -151,19 +151,20 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
     <Link href={serviceUrl} className={`block group ${className}`} onClick={handleClick}>
       <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
         {/* Image du service */}
-        <div className="relative h-48">
+        <div className="relative h-32 sm:h-40 md:h-48">
           <Image
             src={imageError ? DEFAULT_IMAGE : (image || DEFAULT_IMAGE)}
             alt={title}
             fill
             className="object-cover group-hover:opacity-90 transition-opacity duration-200"
             onError={() => setImageError(true)}
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
           />
         </div>
 
         {/* Contenu */}
-        <div className="p-4">
-          <h3 className="text-lg font-medium text-gray-900 truncate">
+        <div className="p-2 sm:p-3 md:p-4">
+          <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 truncate">
             {title}
           </h3>
 

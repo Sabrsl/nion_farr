@@ -19,7 +19,7 @@ import {
   FiMenu,
   FiX
 } from 'react-icons/fi/index.js';
-import Layout from '../components/Layout';
+import Layout from '../components/layout/Layout';
 import axios from 'axios';
 
 // Service pour récupérer les statistiques de la plateforme
@@ -157,7 +157,7 @@ const DevenirFreelance: NextPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-6"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight mb-4"
             >
               Valorisez vos talents et <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">boostez vos revenus</span>
             </motion.h1>
@@ -166,7 +166,7 @@ const DevenirFreelance: NextPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-xl text-indigo-100 max-w-3xl mb-10"
+              className="text-base sm:text-lg md:text-xl text-indigo-100 max-w-3xl mb-8"
             >
               Rejoignez la première plateforme de freelancing au Sénégal et proposez vos services
               à des milliers de clients locaux et internationaux, sans intermédiaire.
@@ -205,29 +205,29 @@ const DevenirFreelance: NextPage = () => {
         </section>
         
         {/* Stats Section */}
-        <section className="relative z-20 -mt-16 mb-8">
+        <section className="relative z-20 -mt-12 mb-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-xl shadow-xl p-8 hover:shadow-2xl transition-shadow duration-300 border border-gray-100 group"
+                className="bg-white rounded-xl shadow-xl p-4 sm:p-6 hover:shadow-2xl transition-shadow duration-300 border border-gray-100 group"
               >
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-4 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                    <FiUsers className="w-8 h-8" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-indigo-100 flex items-center justify-center mb-3 sm:mb-4 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                    <FiUsers className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
-                  <p className="text-4xl font-bold text-indigo-600 mb-2 flex items-center">
+                  <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-indigo-600 mb-1 sm:mb-2 flex items-center">
                     {isLoading ? (
-                      <span className="inline-block w-20 h-8 bg-indigo-100 animate-pulse rounded"></span>
+                      <span className="inline-block w-16 h-6 sm:w-20 sm:h-8 bg-indigo-100 animate-pulse rounded"></span>
                     ) : (
                       formatNumber(stats.activeClients)
                     )}
-                    <span className="ml-2 text-base font-normal text-indigo-400">chaque mois</span>
+                    <span className="ml-2 text-xs sm:text-sm font-normal text-indigo-400">chaque mois</span>
                   </p>
-                  <p className="text-gray-600">Clients actifs sur la plateforme</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Clients actifs sur la plateforme</p>
                 </div>
               </motion.div>
               
@@ -236,21 +236,21 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-xl shadow-xl p-8 hover:shadow-2xl transition-shadow duration-300 border border-gray-100 group"
+                className="bg-white rounded-xl shadow-xl p-4 sm:p-6 hover:shadow-2xl transition-shadow duration-300 border border-gray-100 group"
               >
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-4 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                    <FiDollarSign className="w-8 h-8" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-indigo-100 flex items-center justify-center mb-3 sm:mb-4 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                    <FiDollarSign className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
-                  <p className="text-4xl font-bold text-indigo-600 mb-2 flex items-center">
+                  <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-indigo-600 mb-1 sm:mb-2 flex items-center">
                     {isLoading ? (
-                      <span className="inline-block w-20 h-8 bg-indigo-100 animate-pulse rounded"></span>
+                      <span className="inline-block w-16 h-6 sm:w-20 sm:h-8 bg-indigo-100 animate-pulse rounded"></span>
                     ) : (
                       formatCurrency(stats.paymentsToFreelancers)
                     )}
-                    <span className="ml-2 text-base font-normal text-indigo-400">FCFA</span>
+                    <span className="ml-2 text-xs sm:text-sm font-normal text-indigo-400">FCFA</span>
                   </p>
-                  <p className="text-gray-600">Payés aux freelances en 2023</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Payés aux freelances en 2023</p>
                 </div>
               </motion.div>
               
@@ -259,21 +259,21 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-xl shadow-xl p-8 hover:shadow-2xl transition-shadow duration-300 border border-gray-100 group"
+                className="bg-white rounded-xl shadow-xl p-4 sm:p-6 hover:shadow-2xl transition-shadow duration-300 border border-gray-100 group"
               >
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-4 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
-                    <FiAward className="w-8 h-8" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-indigo-100 flex items-center justify-center mb-3 sm:mb-4 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                    <FiAward className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
-                  <p className="text-4xl font-bold text-indigo-600 mb-2 flex items-center">
+                  <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-indigo-600 mb-1 sm:mb-2 flex items-center">
                     {isLoading ? (
-                      <span className="inline-block w-12 h-8 bg-indigo-100 animate-pulse rounded"></span>
+                      <span className="inline-block w-10 h-6 sm:w-12 sm:h-8 bg-indigo-100 animate-pulse rounded"></span>
                     ) : (
                       `${stats.satisfactionRate}%`
                     )}
-                    <span className="ml-2 text-base font-normal text-indigo-400">de satisfaction</span>
+                    <span className="ml-2 text-xs sm:text-sm font-normal text-indigo-400">de satisfaction</span>
                   </p>
-                  <p className="text-gray-600">Clients satisfaits de leurs freelances</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Clients satisfaits de leurs freelances</p>
                 </div>
               </motion.div>
             </div>
@@ -290,11 +290,11 @@ const DevenirFreelance: NextPage = () => {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <div className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 text-sm font-medium mb-4">
+              <div className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 text-xs sm:text-sm font-medium mb-4">
                 Avantages exclusifs
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Pourquoi rejoindre NionFar ?</h2>
-              <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">Pourquoi rejoindre NionFar ?</h2>
+              <p className="mt-4 text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
                 Nous vous offrons tous les outils et le soutien nécessaires pour réussir en tant que freelance
               </p>
             </motion.div>
@@ -305,13 +305,13 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
-                <div className="text-indigo-600 mb-6 bg-indigo-50 w-14 h-14 rounded-lg flex items-center justify-center">
-                  <FiDollarSign className="w-7 h-7" />
+                <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
+                  <FiDollarSign className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Revenus garantis</h3>
-                <p className="text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-gray-900">Revenus garantis</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Recevez votre paiement dans les 24 heures après la validation de votre travail. Notre système d'escrow protège à la fois les freelances et les clients.
                 </p>
               </motion.div>
@@ -321,13 +321,13 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
-                <div className="text-indigo-600 mb-6 bg-indigo-50 w-14 h-14 rounded-lg flex items-center justify-center">
-                  <FiTrendingUp className="w-7 h-7" />
+                <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
+                  <FiTrendingUp className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Visibilité maximale</h3>
-                <p className="text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-gray-900">Visibilité maximale</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Notre algorithme de mise en relation met en avant vos services auprès des clients les plus pertinents pour augmenter vos chances de vente.
                 </p>
               </motion.div>
@@ -337,13 +337,13 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
-                <div className="text-indigo-600 mb-6 bg-indigo-50 w-14 h-14 rounded-lg flex items-center justify-center">
-                  <FiShield className="w-7 h-7" />
+                <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
+                  <FiShield className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Sécurité assurée</h3>
-                <p className="text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-gray-900">Sécurité assurée</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Tous les paiements sont sécurisés et les conditions de service sont clairement définies pour vous protéger contre les litiges et les impayés.
                 </p>
               </motion.div>
@@ -353,13 +353,13 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
-                <div className="text-indigo-600 mb-6 bg-indigo-50 w-14 h-14 rounded-lg flex items-center justify-center">
-                  <FiUsers className="w-7 h-7" />
+                <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
+                  <FiUsers className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Communauté active</h3>
-                <p className="text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-gray-900">Communauté active</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Rejoignez une communauté dynamique de freelances partout au Sénégal et profitez d'opportunités de collaboration, de networking et de formation continue.
                 </p>
               </motion.div>
@@ -369,13 +369,13 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
-                <div className="text-indigo-600 mb-6 bg-indigo-50 w-14 h-14 rounded-lg flex items-center justify-center">
-                  <FiStar className="w-7 h-7" />
+                <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
+                  <FiStar className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Programme d'excellence</h3>
-                <p className="text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-gray-900">Programme d'excellence</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Accédez à des avantages exclusifs, une visibilité accrue et des commissions réduites en rejoignant notre programme d'élite pour les freelances les plus performants.
                 </p>
               </motion.div>
@@ -385,13 +385,13 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.6 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
-                <div className="text-indigo-600 mb-6 bg-indigo-50 w-14 h-14 rounded-lg flex items-center justify-center">
-                  <FiClock className="w-7 h-7" />
+                <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
+                  <FiClock className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Flexibilité totale</h3>
-                <p className="text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-gray-900">Flexibilité totale</h3>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                   Travaillez à votre rythme, choisissez vos projets et définissez vos propres tarifs selon votre expertise. Vous êtes le maître de votre emploi du temps.
                 </p>
               </motion.div>
@@ -400,20 +400,20 @@ const DevenirFreelance: NextPage = () => {
         </section>
 
         {/* How It Works */}
-        <section className="py-20 bg-white">
+        <section className="py-16 sm:py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
-              className="text-center mb-16"
+              className="text-center mb-12 sm:mb-16"
             >
-              <div className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 text-sm font-medium mb-4">
+              <div className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 text-xs sm:text-sm font-medium mb-4">
                 Processus simple
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Comment ça marche ?</h2>
-              <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">Comment ça marche ?</h2>
+              <p className="mt-4 text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
                 Rejoignez NionFar et commencez à gagner de l'argent en 3 étapes simples
               </p>
             </motion.div>
@@ -422,7 +422,7 @@ const DevenirFreelance: NextPage = () => {
               {/* Ligne de connexion */}
               <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-indigo-100 hidden md:block" style={{ transform: 'translateX(-50%)' }}></div>
               
-              <div className="space-y-24">
+              <div className="space-y-16 sm:space-y-24">
                 <motion.div 
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -430,9 +430,9 @@ const DevenirFreelance: NextPage = () => {
                   viewport={{ once: true }}
                   className="flex flex-col md:flex-row items-center relative"
                 >
-                  <div className="md:w-1/2 p-6 md:pr-16 md:text-right order-2 md:order-1">
-                    <h3 className="text-2xl font-semibold mb-4 text-gray-900">Créez votre profil de freelance</h3>
-                    <p className="text-lg text-gray-600 mb-6">
+                  <div className="md:w-1/2 p-4 sm:p-6 md:pr-16 md:text-right order-2 md:order-1">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-gray-900">Créez votre profil de freelance</h3>
+                    <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-4 sm:mb-6">
                       Inscrivez-vous gratuitement, complétez votre profil avec vos compétences, expériences et exemples de travaux pour attirer les clients. Un profil complet augmente vos chances de succès.
                     </p>
                     <Link 
@@ -444,12 +444,12 @@ const DevenirFreelance: NextPage = () => {
                     </Link>
                   </div>
                   
-                  <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-8 md:mb-0 z-10">
-                    <div className="bg-indigo-600 h-16 w-16 rounded-full flex items-center justify-center text-white text-2xl font-bold">1</div>
+                  <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-6 sm:mb-8 md:mb-0 z-10">
+                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 h-14 w-14 sm:h-16 sm:w-16 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">1</div>
                   </div>
                   
-                  <div className="md:w-1/2 p-6 md:pl-16 order-1 md:order-2">
-                    <div className="bg-indigo-50 rounded-2xl p-6 shadow-md">
+                  <div className="md:w-1/2 p-4 sm:p-6 md:pl-16 order-1 md:order-2">
+                    <div className="bg-indigo-50 rounded-xl p-4 sm:p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
                       <ul className="space-y-3 text-gray-600">
                         <li className="flex items-start">
                           <FiCheckCircle className="text-indigo-600 mt-1 mr-3 flex-shrink-0" />
@@ -475,9 +475,9 @@ const DevenirFreelance: NextPage = () => {
                   viewport={{ once: true }}
                   className="flex flex-col md:flex-row items-center relative"
                 >
-                  <div className="md:w-1/2 p-6 md:pl-16 order-2">
-                    <h3 className="text-2xl font-semibold mb-4 text-gray-900">Publiez vos services</h3>
-                    <p className="text-lg text-gray-600 mb-6">
+                  <div className="md:w-1/2 p-4 sm:p-6 md:pl-16 order-2">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-gray-900">Publiez vos services</h3>
+                    <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-4 sm:mb-6">
                       Créez des offres détaillées de vos services avec des prix clairs, des délais et des descriptions précises. Soyez transparent sur ce que vous proposez et les livrables attendus.
                     </p>
                     <Link 
@@ -489,12 +489,12 @@ const DevenirFreelance: NextPage = () => {
                     </Link>
                   </div>
                   
-                  <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-8 md:mb-0 z-10">
-                    <div className="bg-indigo-600 h-16 w-16 rounded-full flex items-center justify-center text-white text-2xl font-bold">2</div>
+                  <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-6 sm:mb-8 md:mb-0 z-10">
+                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 h-14 w-14 sm:h-16 sm:w-16 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">2</div>
                   </div>
                   
-                  <div className="md:w-1/2 p-6 md:pr-16 md:text-right order-1">
-                    <div className="bg-indigo-50 rounded-2xl p-6 shadow-md">
+                  <div className="md:w-1/2 p-4 sm:p-6 md:pr-16 md:text-right order-1">
+                    <div className="bg-indigo-50 rounded-xl p-4 sm:p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
                       <ul className="space-y-3 text-gray-600">
                         <li className="flex items-start md:justify-end">
                           <span className="md:order-2">Définissez vos tarifs et conditions</span>
@@ -520,9 +520,9 @@ const DevenirFreelance: NextPage = () => {
                   viewport={{ once: true }}
                   className="flex flex-col md:flex-row items-center relative"
                 >
-                  <div className="md:w-1/2 p-6 md:pr-16 md:text-right order-2 md:order-1">
-                    <h3 className="text-2xl font-semibold mb-4 text-gray-900">Livrez & recevez votre paiement</h3>
-                    <p className="text-lg text-gray-600 mb-6">
+                  <div className="md:w-1/2 p-4 sm:p-6 md:pr-16 md:text-right order-2 md:order-1">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 text-gray-900">Livrez & recevez votre paiement</h3>
+                    <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-4 sm:mb-6">
                       Réalisez les projets commandés par vos clients, livrez un travail de qualité et recevez votre paiement directement sur votre compte dans les 24 heures après validation.
                     </p>
                     <Link 
@@ -534,12 +534,12 @@ const DevenirFreelance: NextPage = () => {
                     </Link>
                   </div>
                   
-                  <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-8 md:mb-0 z-10">
-                    <div className="bg-indigo-600 h-16 w-16 rounded-full flex items-center justify-center text-white text-2xl font-bold">3</div>
+                  <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-6 sm:mb-8 md:mb-0 z-10">
+                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 h-14 w-14 sm:h-16 sm:w-16 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">3</div>
                   </div>
                   
-                  <div className="md:w-1/2 p-6 md:pl-16 order-1 md:order-2">
-                    <div className="bg-indigo-50 rounded-2xl p-6 shadow-md">
+                  <div className="md:w-1/2 p-4 sm:p-6 md:pl-16 order-1 md:order-2">
+                    <div className="bg-indigo-50 rounded-xl p-4 sm:p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
                       <ul className="space-y-3 text-gray-600">
                         <li className="flex items-start">
                           <FiCheckCircle className="text-indigo-600 mt-1 mr-3 flex-shrink-0" />
@@ -572,11 +572,11 @@ const DevenirFreelance: NextPage = () => {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <div className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 text-sm font-medium mb-4">
+              <div className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 text-xs sm:text-sm font-medium mb-4">
                 Témoignages
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Ce que disent nos freelances</h2>
-              <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">Ce que disent nos freelances</h2>
+              <p className="mt-4 text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
                 Découvrez les expériences de ceux qui ont déjà rejoint notre communauté
               </p>
             </motion.div>
@@ -587,18 +587,18 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 relative"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 relative"
               >
-                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-indigo-100 rounded-full p-3 shadow-md">
+                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-indigo-100 rounded-full p-2 sm:p-3 shadow-md">
                   <div className="flex text-indigo-500">
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                   </div>
                 </div>
-                <div className="h-20 w-20 bg-indigo-100 rounded-full mb-6 overflow-hidden">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 bg-indigo-100 rounded-full mb-4 sm:mb-6 overflow-hidden">
                   <img
                     src="/img/testimonial-fatou.jpg"
                     alt="Fatou Diop"
@@ -608,13 +608,13 @@ const DevenirFreelance: NextPage = () => {
                     }}
                   />
                 </div>
-                <p className="text-gray-600 mb-6 italic">
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 italic">
                   "Grâce à NionFar, j'ai pu développer mon activité de freelance et maintenant je travaille avec des clients du monde entier tout en restant au Sénégal."
                 </p>
                 <div className="flex items-center">
                   <div>
-                    <h4 className="font-semibold text-gray-900">Fatou Diop</h4>
-                    <p className="text-sm text-indigo-600">Graphiste, Dakar</p>
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900">Fatou Diop</h4>
+                    <p className="text-xs sm:text-sm text-indigo-600">Graphiste, Dakar</p>
                   </div>
                 </div>
               </motion.div>
@@ -624,18 +624,18 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 relative"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 relative"
               >
-                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-indigo-100 rounded-full p-3 shadow-md">
+                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-indigo-100 rounded-full p-2 sm:p-3 shadow-md">
                   <div className="flex text-indigo-500">
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                   </div>
                 </div>
-                <div className="h-20 w-20 bg-indigo-100 rounded-full mb-6 overflow-hidden">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 bg-indigo-100 rounded-full mb-4 sm:mb-6 overflow-hidden">
                   <img
                     src="/img/testimonial-abdoulaye.jpg"
                     alt="Abdoulaye Ndiaye"
@@ -645,13 +645,13 @@ const DevenirFreelance: NextPage = () => {
                     }}
                   />
                 </div>
-                <p className="text-gray-600 mb-6 italic">
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 italic">
                   "J'ai commencé sur NionFar il y a un an et aujourd'hui j'ai plus de clients que je ne peux en gérer. La plateforme m'a vraiment aidé à lancer ma carrière."
                 </p>
                 <div className="flex items-center">
                   <div>
-                    <h4 className="font-semibold text-gray-900">Abdoulaye Ndiaye</h4>
-                    <p className="text-sm text-indigo-600">Développeur Web, Thiès</p>
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900">Abdoulaye Ndiaye</h4>
+                    <p className="text-xs sm:text-sm text-indigo-600">Développeur Web, Thiès</p>
                   </div>
                 </div>
               </motion.div>
@@ -661,18 +661,18 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
                 viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 relative"
+                className="bg-white p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 relative"
               >
-                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-indigo-100 rounded-full p-3 shadow-md">
+                <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-indigo-100 rounded-full p-2 sm:p-3 shadow-md">
                   <div className="flex text-indigo-500">
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
-                    <FiStar className="fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                    <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                   </div>
                 </div>
-                <div className="h-20 w-20 bg-indigo-100 rounded-full mb-6 overflow-hidden">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 bg-indigo-100 rounded-full mb-4 sm:mb-6 overflow-hidden">
                   <img
                     src="/img/testimonial-aminata.jpg"
                     alt="Aminata Sow"
@@ -682,13 +682,13 @@ const DevenirFreelance: NextPage = () => {
                     }}
                   />
                 </div>
-                <p className="text-gray-600 mb-6 italic">
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 italic">
                   "Ce que j'apprécie le plus chez NionFar, c'est la sécurité des paiements et la qualité du support client. Je recommande à tous les freelances sénégalais."
                 </p>
                 <div className="flex items-center">
                   <div>
-                    <h4 className="font-semibold text-gray-900">Aminata Sow</h4>
-                    <p className="text-sm text-indigo-600">Rédactrice, Saint-Louis</p>
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900">Aminata Sow</h4>
+                    <p className="text-xs sm:text-sm text-indigo-600">Rédactrice, Saint-Louis</p>
                   </div>
                 </div>
               </motion.div>
@@ -706,11 +706,11 @@ const DevenirFreelance: NextPage = () => {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <div className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 text-sm font-medium mb-4">
+              <div className="inline-block px-3 py-1 rounded-full bg-indigo-100 text-indigo-600 text-xs sm:text-sm font-medium mb-4">
                 Questions fréquentes
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Tout ce que vous devez savoir</h2>
-              <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">Tout ce que vous devez savoir</h2>
+              <p className="mt-4 text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
                 Les réponses aux questions les plus courantes pour démarrer sur NionFar
               </p>
             </motion.div>
@@ -725,13 +725,13 @@ const DevenirFreelance: NextPage = () => {
                   viewport={{ once: true }}
                   className="mb-6 bg-white rounded-xl shadow-md overflow-hidden border border-gray-100"
                 >
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                      <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-3 text-sm font-bold">Q</span>
+                  <div className="p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                      <span className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-3 text-xs sm:text-sm font-bold">Q</span>
                       {faq.question}
                     </h3>
-                    <div className="pl-11">
-                      <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                    <div className="pl-9 sm:pl-11">
+                      <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{faq.answer}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -758,7 +758,7 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
-                className="text-3xl md:text-5xl font-bold text-white mb-6"
+                className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-4 sm:mb-6"
               >
                 Prêt à démarrer votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">aventure de freelance</span> ?
               </motion.h2>
@@ -768,7 +768,7 @@ const DevenirFreelance: NextPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
                 viewport={{ once: true }}
-                className="text-xl text-indigo-100 mb-10"
+                className="text-base sm:text-lg md:text-xl text-indigo-100 mb-6 sm:mb-10"
               >
                 Rejoignez des milliers de freelances qui construisent leur carrière sur NionFar et commencez à gagner dès aujourd'hui.
               </motion.p>
@@ -782,14 +782,14 @@ const DevenirFreelance: NextPage = () => {
               >
                 <Link 
                   href="/register?type=freelance" 
-                  className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-white text-indigo-600 font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group"
+                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-white text-indigo-600 font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group text-sm sm:text-base"
                 >
                   S'inscrire comme freelance
                   <FiChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link 
                   href="/contact" 
-                  className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-white/30 text-white font-medium backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full border border-white/30 text-white font-medium backdrop-blur-sm hover:bg-white/10 transition-all duration-300 text-sm sm:text-base"
                 >
                   Contacter l'équipe
                 </Link>

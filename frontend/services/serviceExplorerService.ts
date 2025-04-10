@@ -137,6 +137,23 @@ const serviceExplorer = {
     }
   },
 
+  // Vérifier si un utilisateur peut commander un service
+  canOrderService: async (serviceId: string, userId: string): Promise<{
+    canOrder: boolean;
+    message?: string;
+  }> => {
+    try {
+      const response = await axios.get(`/api/services/${serviceId}/can-order?userId=${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la vérification de la commande:', error);
+      return {
+        canOrder: false,
+        message: 'Une erreur est survenue lors de la vérification'
+      };
+    }
+  },
+
   // Get related services
   getRelatedServices: async (serviceId: string, limit = 4): Promise<Service[]> => {
     try {
