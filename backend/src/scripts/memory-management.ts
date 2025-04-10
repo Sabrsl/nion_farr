@@ -3,16 +3,21 @@
  * This script helps optimize memory usage in constrained environments like Render Free tier
  */
 
-// Define memory thresholds
-const MEMORY_WARNING_THRESHOLD = 85; // 85% heap usage triggers warning
-const MEMORY_CRITICAL_THRESHOLD = 90; // 90% heap usage is critical
+// Define memory thresholds - lowered to prevent constant cleanup cycles
+const MEMORY_WARNING_THRESHOLD = 75; // 75% heap usage triggers warning
+const MEMORY_CRITICAL_THRESHOLD = 85; // 85% heap usage is critical
 
 let memoryMonitorInterval: NodeJS.Timeout | null = null;
 let lastGcRequest = 0;
-const GC_MIN_INTERVAL = 5 * 60 * 1000; // Minimum 5 minutes between GC attempts
+// Increase minimum interval between GC attempts to reduce pressure
+const GC_MIN_INTERVAL = 30 * 60 * 1000; // Minimum 30 minutes between GC attempts
+
+// Track cleanup attempts to prevent infinite loops
+let cleanupAttemptsCount = 0;
+const MAX_CLEANUP_ATTEMPTS = 3; // Maximum cleanup attempts before backing off
 
 // Interface for memory usage stats
-interface MemoryStats {
+export interface MemoryStats {
   heapUsed: number;
   heapTotal: number;
   heapPercent: number;
@@ -42,13 +47,14 @@ export function logMemoryUsage(detailed = false): MemoryStats {
   const rss = Math.round(memUsage.rss / 1024 / 1024);
   const heapPercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
   
-  if (detailed) {
-    console.log(`📊 Memory Usage:`);
-    console.log(`  - Heap: ${heapUsed}MB / ${heapTotal}MB (${heapPercent}%)`);
-    console.log(`  - RSS: ${rss}MB`);
-    console.log(`  - External: ${external}MB`);
-  } else {
-    if (heapPercent > MEMORY_WARNING_THRESHOLD) {
+  // Only log if detailed is requested or if heap usage is high
+  if (detailed || heapPercent > MEMORY_WARNING_THRESHOLD) {
+    if (detailed) {
+      console.log(`📊 Memory Usage:`);
+      console.log(`  - Heap: ${heapUsed}MB / ${heapTotal}MB (${heapPercent}%)`);
+      console.log(`  - RSS: ${rss}MB`);
+      console.log(`  - External: ${external}MB`);
+    } else {
       console.log(`📊 Heap: ${heapUsed}MB / ${heapTotal}MB (${heapPercent}%)`);
     }
   }
@@ -63,26 +69,29 @@ export function logMemoryUsage(detailed = false): MemoryStats {
 }
 
 /**
- * Start memory monitoring
+ * Start memory monitoring with less frequent checks
  */
-export function startMemoryMonitoring(intervalMs = 5 * 60 * 1000): void {
+export function startMemoryMonitoring(intervalMs = 30 * 60 * 1000): void {
   // Don't start multiple intervals
   if (memoryMonitorInterval) {
     clearInterval(memoryMonitorInterval);
   }
   
-  console.log('📊 Starting memory monitoring (interval:', intervalMs, 'ms)');
+  console.log('📊 Memory monitoring started (interval:', Math.round(intervalMs/1000/60), 'minutes)');
   
-  // Initial memory logging
-  logMemoryUsage(true);
+  // Initial memory logging - with less detail to save log space
+  logMemoryUsage(false);
   
-  // Set interval for periodic checks
+  // Set interval for periodic checks - much less frequent
   memoryMonitorInterval = setInterval(() => {
     const memStats = logMemoryUsage(false);
     
-    // Try to clean up if memory usage is high
-    if (memStats.heapPercent > MEMORY_WARNING_THRESHOLD) {
+    // Only try to clean up if memory usage is very high and we haven't tried too many times
+    if (memStats.heapPercent > MEMORY_CRITICAL_THRESHOLD && cleanupAttemptsCount < MAX_CLEANUP_ATTEMPTS) {
       attemptMemoryCleanup(memStats.heapPercent);
+    } else {
+      // Reset cleanup counter periodically to allow future cleanup attempts
+      cleanupAttemptsCount = 0;
     }
   }, intervalMs);
 }
@@ -99,31 +108,21 @@ export function stopMemoryMonitoring(): void {
 }
 
 /**
- * Attempt to clean up memory
+ * Attempt to clean up memory - simplified and less aggressive
  */
 export function attemptMemoryCleanup(heapPercent: number): void {
   const now = Date.now();
   
-  if (heapPercent > MEMORY_WARNING_THRESHOLD) {
-    console.log(`⚠️ Memory warning: Heap usage at ${heapPercent}%`);
+  // Increment counter
+  cleanupAttemptsCount++;
+  
+  // Only log cleanup attempts, don't perform expensive operations
+  if (heapPercent > MEMORY_CRITICAL_THRESHOLD) {
+    console.log(`⚠️ High memory usage: ${heapPercent}%, attempt ${cleanupAttemptsCount}/${MAX_CLEANUP_ATTEMPTS}`);
     
-    // Only try to run GC if enough time has passed since last attempt
-    if (global.gc && now - lastGcRequest > GC_MIN_INTERVAL) {
-      console.log('🧹 Running garbage collection...');
-      try {
-        global.gc();
-        lastGcRequest = now;
-        
-        // Log memory after cleanup
-        setTimeout(() => {
-          const memStats = logMemoryUsage(true);
-          console.log(`🧹 After cleanup: Heap at ${memStats.heapPercent}%`);
-        }, 1000);
-      } catch (err) {
-        console.error('Error running garbage collection:', err);
-      }
-    } else {
-      console.log('⏳ GC skipped: Last GC too recent or not available');
+    // Don't attempt automatic restarts as they cause more issues
+    if (cleanupAttemptsCount >= MAX_CLEANUP_ATTEMPTS) {
+      console.log('🔄 Maximum cleanup attempts reached, backing off until next cycle');
     }
   }
 }

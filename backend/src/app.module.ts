@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module';
 import { BackupService } from './scripts/backup';
 import { getMongooseMemoryOptions, getTypeOrmMemoryOptions } from './config/mongodb-memory-options';
 import { getMemoryConfig } from './config/environment';
+import { SyncControlService } from './scripts/sync-control';
 
 // Modules
 import { UsersModule } from './modules/users/users.module';
@@ -134,6 +135,7 @@ import { IpModule } from './ip/ip.module';
   controllers: [AppController],
   providers: [
     AppService,
+    SyncControlService,
     // Disable BackupService in memory-constrained environments as it's resource intensive
     ...(getMemoryConfig().disableBackups ? [] : [BackupService]),
     {

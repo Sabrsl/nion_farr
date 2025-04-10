@@ -21,11 +21,14 @@ export const isMemoryConstrainedEnvironment = (): boolean => {
   const isRenderFreeTier = process.env.IS_RENDER === 'true' && 
     process.env.RENDER_SERVICE_TYPE === 'web' &&
     !process.env.RENDER_SERVICE_PAID;
+    
+  // Check for user synchronization disable flag
+  const disableUserSync = process.env.DISABLE_USER_SYNC === 'true';
   
   // Only apply constraints in production
   const isProduction = process.env.NODE_ENV === 'production';
   
-  return isProduction && (memoryOptimized || hasSmallHeapSize || isRenderFreeTier);
+  return isProduction && (memoryOptimized || hasSmallHeapSize || isRenderFreeTier || disableUserSync);
 };
 
 /**
@@ -37,16 +40,18 @@ export const getMemoryConfig = () => {
   return {
     isConstrained,
     // Use shorter intervals for DB connections in constrained environments
-    mongoosePoolSize: isConstrained ? 3 : 10,
+    mongoosePoolSize: isConstrained ? 2 : 10,
     // Reduce logging in constrained environments
     logLevel: isConstrained ? 'error' : 'info',
     // Increase memory monitoring interval in constrained environments (ms)
-    memoryMonitoringInterval: isConstrained ? 5 * 60 * 1000 : 60 * 1000,
+    memoryMonitoringInterval: isConstrained ? 30 * 60 * 1000 : 60 * 1000, // 30 minutes in constrained mode
     // Disable certain features in constrained environments
     disableBackups: isConstrained,
     disableScheduledTasks: isConstrained,
+    // Should we synchronize user data in memory
+    disableUserSync: process.env.DISABLE_USER_SYNC === 'true' || isConstrained,
     // Heap usage thresholds for warnings and critical alerts
-    memoryWarningThreshold: 85, // percentage
-    memoryCriticalThreshold: 90, // percentage
+    memoryWarningThreshold: 75, // percentage, lowered from 85%
+    memoryCriticalThreshold: 85, // percentage, lowered from 90%
   };
 }; 
