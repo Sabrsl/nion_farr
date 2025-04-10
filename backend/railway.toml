@@ -1,13 +1,13 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install --no-audit && npm run build"
+buildCommand = "npm run build:railway"
 
 [deploy]
 startCommand = "npm run start:railway"
 healthcheckPath = "/health/ping"
-healthcheckTimeout = 15
+healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
-healthcheckInterval = 10
+healthcheckInterval = 15
 
 [environments]
 NODE_ENV = "production"
