@@ -8,6 +8,10 @@ echo "- Port: $PORT"
 echo "- Railway deployment: $RAILWAY_DEPLOYMENT"
 echo "- MongoDB URI configuré: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; else echo "non"; fi)"
 
+# Exécuter le script de préparation pour Railway
+echo "📦 Exécution du script de préparation pour Railway..."
+node scripts/prepare-railway.js
+
 # Nettoyer les fichiers .js générés qui causent des conflits
 echo "🧹 Nettoyage des fichiers .js problématiques..."
 if [ -f "scripts/clean-source-js.js" ]; then
@@ -145,17 +149,29 @@ fi
 echo "✅ Version de NODE: $(node --version)"
 echo "✅ Version de NPM: $(npm --version)"
 
-# Vérifier si main.js existe
-if [ -f "dist/src/main.js" ]; then
-  echo "✅ Démarrage de l'application principale..."
+# Vérifier si main.js existe (dans l'un des deux emplacements)
+if [ -f "dist/main.js" ]; then
+  echo "✅ Utilisation de dist/main.js pour le démarrage..."
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log || (
+    echo "❌ Échec du démarrage avec dist/main.js, tentative avec dist/src/main.js..."
+    if [ -f "dist/src/main.js" ]; then
+      NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/src/main.js 2>&1 | tee logs/app.log || (
+        echo "❌ Échec du démarrage avec dist/src/main.js également, utilisation du serveur de secours..."
+        NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js
+      )
+    else
+      echo "❌ dist/src/main.js manquant également, démarrage du serveur de secours..."
+      NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js
+    fi
+  )
+elif [ -f "dist/src/main.js" ]; then
+  echo "✅ Utilisation de dist/src/main.js pour le démarrage..."
   NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/src/main.js 2>&1 | tee logs/app.log || (
-    echo "❌ Échec du démarrage de l'application principale, examen des logs..."
-    tail -n 50 logs/app.log
-    echo "🔄 Utilisation du serveur de secours pour maintenir les healthchecks"
+    echo "❌ Échec du démarrage avec dist/src/main.js, utilisation du serveur de secours..."
     NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js
   )
 else
-  echo "❌ main.js manquant! Démarrage du serveur de secours..."
+  echo "❌ Aucun fichier main.js trouvé! Démarrage du serveur de secours..."
   NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js
 fi
 

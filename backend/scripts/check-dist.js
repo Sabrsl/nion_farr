@@ -11,6 +11,7 @@ console.log('🔍 Vérification des fichiers du build...');
 const distPath = path.join(__dirname, '..', 'dist');
 const srcPath = path.join(distPath, 'src');
 const mainJsPath = path.join(srcPath, 'main.js');
+const rootMainJsPath = path.join(distPath, 'main.js');
 const serverBackupPath = path.join(__dirname, '..', 'server-simple.js');
 
 // Vérifier si le répertoire dist existe
@@ -181,6 +182,10 @@ server.listen(PORT, '0.0.0.0', () => {
   }
   fs.writeFileSync(mainJsPath, backupMainJs);
   console.log('✅ Fichier main.js de secours créé avec succès dans dist/src/');
+  
+  // Également copier vers dist/main.js pour Railway
+  fs.writeFileSync(rootMainJsPath, backupMainJs);
+  console.log('✅ Fichier main.js de secours créé avec succès dans dist/ pour Railway');
 } else {
   // Vérifier la taille du fichier main.js
   const stats = fs.statSync(mainJsPath);
@@ -303,7 +308,37 @@ process.on('SIGTERM', () => {
 
     fs.writeFileSync(mainJsPath, backupMainJs);
     console.log('✅ Fichier main.js de secours créé');
+    
+    // Également copier vers dist/main.js pour Railway
+    fs.writeFileSync(rootMainJsPath, backupMainJs);
+    console.log('✅ Fichier main.js de secours créé dans dist/ pour Railway');
+  } else {
+    // Copier main.js vers dist/ pour Railway
+    try {
+      fs.copyFileSync(mainJsPath, rootMainJsPath);
+      console.log('✅ main.js copié vers dist/ pour Railway');
+    } catch (error) {
+      console.error(`❌ Erreur lors de la copie vers dist/main.js: ${error.message}`);
+    }
   }
+}
+
+// Vérifier que dist/main.js existe pour Railway
+if (!fs.existsSync(rootMainJsPath)) {
+  console.log('❌ main.js manquant dans dist/ pour Railway');
+  if (fs.existsSync(mainJsPath)) {
+    console.log('🔄 Copie de dist/src/main.js vers dist/main.js...');
+    try {
+      fs.copyFileSync(mainJsPath, rootMainJsPath);
+      console.log('✅ main.js copié avec succès vers dist/ pour Railway');
+    } catch (error) {
+      console.error(`❌ Erreur lors de la copie: ${error.message}`);
+    }
+  } else {
+    console.error('❌ Impossible de créer dist/main.js car dist/src/main.js n\'existe pas');
+  }
+} else {
+  console.log('✅ main.js existe dans dist/ pour Railway');
 }
 
 // Vérifier si un serveur de secours existe

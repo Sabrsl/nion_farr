@@ -11,7 +11,7 @@
     "build": "nest build",
     "build:verbose": "nest build --verbose",
     "build:debug": "echo '📋 Debug du build...' && rimraf dist && mkdir -p dist && nest build --verbose && echo '📋 Contenu du répertoire dist:' && ls -la dist/",
-    "build:railway": "npm run clean:source-js && rimraf dist && nest build --verbose && echo '🔍 Verification structure dist/' && ls -la dist/ && node scripts/check-dist.js && npm run check:main-js",
+    "build:railway": "npm run clean:source-js && rimraf dist && nest build --verbose && echo '🔍 Verification structure dist/' && ls -la dist/ && node scripts/check-dist.js && npm run check:main-js && cp dist/src/main.js dist/main.js && echo '✅ Copié dist/src/main.js vers dist/main.js'",
     "build:clean": "rimraf dist && nest build",
     "postbuild": "node scripts/check-dist.js && npm run check:main-js",
     "clean:source-js": "node scripts/clean-source-js.js",
@@ -22,7 +22,7 @@
     "start:prod": "node dist/src/main.js",
     "start:render": "cross-env NODE_OPTIONS=\"--max-old-space-size=128\" npm run build && cross-env NODE_OPTIONS=\"--max-old-space-size=128\" cross-env MEMORY_OPTIMIZED=true node dist/src/main.js",
     "start:low-memory": "cross-env NODE_OPTIONS=\"--max-old-space-size=128\" cross-env MEMORY_OPTIMIZED=true node dist/src/main.js",
-    "start:railway": "cross-env NODE_OPTIONS=\"--max-old-space-size=256\" cross-env MEMORY_OPTIMIZED=true RAILWAY_DEPLOYMENT=true PORT=8080 node dist/src/main.js || (echo '⚠️ Fallback au serveur simple' && node server-simple.js)",
+    "start:railway": "cross-env NODE_OPTIONS=\"--max-old-space-size=256\" cross-env MEMORY_OPTIMIZED=true RAILWAY_DEPLOYMENT=true PORT=8080 node -e \"const fs=require('fs');const path=require('path');const mainJsInRoot=path.join(__dirname,'dist','main.js');const mainJsInSrc=path.join(__dirname,'dist','src','main.js');if(fs.existsSync(mainJsInRoot)){console.log('✅ Utilisation de dist/main.js');require(mainJsInRoot);}else if(fs.existsSync(mainJsInSrc)){console.log('✅ Utilisation de dist/src/main.js');require(mainJsInSrc);}else{console.log('⚠️ Aucun fichier main.js trouvé, utilisation du serveur simple');require('./server-simple.js');}\" || (echo '⚠️ Fallback au serveur simple' && node server-simple.js)",
     "start:railway:simple": "cross-env NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT=8080 node server-simple.js",
     "start:backup": "node server.js",
     "verify:railway": "node scripts/verify-railway-start.js",
@@ -57,7 +57,7 @@
     "check:dist": "node src/check-dist.js",
     "monitor:memory": "node src/scripts/memory-monitor.js",
     "build:fixed": "rimraf dist && tsc -p tsconfig.build.json && cp -r src/**/*.js dist/ && echo 'Build terminé avec copy manuel des fichiers JS'",
-    "check:main-js": "node -e \"const fs=require('fs');const path=require('path');const mainJsPath=path.join(__dirname,'dist','src','main.js');const srcMainJsPath=path.join(__dirname,'src','main.js');if(!fs.existsSync(mainJsPath)){console.log('⚠️ main.js manquant dans dist/src/');if(fs.existsSync(srcMainJsPath)){console.log('⚠️ Le dossier dist/src/ doit être créé manuellement');if(!fs.existsSync(path.join(__dirname,'dist','src'))){fs.mkdirSync(path.join(__dirname,'dist','src'), { recursive: true });console.log('✅ Dossier dist/src/ créé');}console.log('🔄 Copie du fichier JS source...');fs.copyFileSync(srcMainJsPath,mainJsPath);console.log('✅ main.js copié avec succès');}else{console.log('❌ main.js également manquant dans src/, création d\\'un fallback...');require('./src/direct-copy.js');}}else{console.log('✅ main.js existe dans dist/src/');}\""
+    "check:main-js": "node -e \"const fs=require('fs');const path=require('path');const mainJsPath=path.join(__dirname,'dist','src','main.js');const distMainJsPath=path.join(__dirname,'dist','main.js');const srcMainJsPath=path.join(__dirname,'src','main.js');if(!fs.existsSync(mainJsPath)){console.log('⚠️ main.js manquant dans dist/src/');if(fs.existsSync(srcMainJsPath)){console.log('⚠️ Le dossier dist/src/ doit être créé manuellement');if(!fs.existsSync(path.join(__dirname,'dist','src'))){fs.mkdirSync(path.join(__dirname,'dist','src'), { recursive: true });console.log('✅ Dossier dist/src/ créé');}console.log('🔄 Copie du fichier JS source...');fs.copyFileSync(srcMainJsPath,mainJsPath);console.log('✅ main.js copié avec succès');if(!fs.existsSync(distMainJsPath)){console.log('🔄 Copie vers dist/main.js pour Railway...');fs.copyFileSync(mainJsPath,distMainJsPath);console.log('✅ main.js copié avec succès vers dist/main.js');}}else{console.log('❌ main.js également manquant dans src/, création d\\'un fallback...');require('./src/direct-copy.js');}}else{console.log('✅ main.js existe dans dist/src/');if(!fs.existsSync(distMainJsPath)){console.log('🔄 Copie vers dist/main.js pour Railway...');fs.copyFileSync(mainJsPath,distMainJsPath);console.log('✅ main.js copié avec succès vers dist/main.js');}}\""
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.1",

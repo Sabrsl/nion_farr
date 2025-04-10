@@ -10,6 +10,7 @@ const path = require('path');
 const sourceFile = path.join(__dirname, 'main.js');
 const destDir = path.join(__dirname, '..', 'dist', 'src');
 const destFile = path.join(destDir, 'main.js');
+const rootDestFile = path.join(__dirname, '..', 'dist', 'main.js');
 
 console.log('🔄 Copie de main.js vers dist/src/...');
 
@@ -17,6 +18,13 @@ console.log('🔄 Copie de main.js vers dist/src/...');
 if (!fs.existsSync(destDir)) {
   console.log('📁 Création du dossier dist/src/...');
   fs.mkdirSync(destDir, { recursive: true });
+}
+
+// Vérifier si le dossier dist existe pour le fichier racine
+const rootDestDir = path.join(__dirname, '..', 'dist');
+if (!fs.existsSync(rootDestDir)) {
+  console.log('📁 Création du dossier dist/...');
+  fs.mkdirSync(rootDestDir, { recursive: true });
 }
 
 // Vérifier si le fichier source existe
@@ -134,10 +142,14 @@ server.listen(PORT, '0.0.0.0', () => {
   }
 }
 
-// Copier le fichier
+// Copier le fichier vers dist/src/main.js
 try {
   fs.copyFileSync(sourceFile, destFile);
   console.log(`✅ Fichier copié avec succès: ${sourceFile} -> ${destFile}`);
+  
+  // Copier également vers dist/main.js pour Railway
+  fs.copyFileSync(sourceFile, rootDestFile);
+  console.log(`✅ Fichier copié avec succès pour Railway: ${sourceFile} -> ${rootDestFile}`);
   
   // Afficher le contenu du dossier dist/src
   console.log('📂 Contenu du dossier dist/src/:');
@@ -148,11 +160,18 @@ try {
     console.log(`   - ${file} (${Math.round(stats.size / 1024)} KB)`);
   });
   
-  // Vérifier que le fichier existe bien
+  // Vérifier que les fichiers existent bien
   if (fs.existsSync(destFile)) {
     console.log('✅ Vérification: dist/src/main.js existe bien.');
   } else {
     console.error('❌ ERROR: dist/src/main.js n\'existe toujours pas après la copie!');
+    process.exit(1);
+  }
+  
+  if (fs.existsSync(rootDestFile)) {
+    console.log('✅ Vérification: dist/main.js existe bien.');
+  } else {
+    console.error('❌ ERROR: dist/main.js n\'existe toujours pas après la copie!');
     process.exit(1);
   }
 } catch (error) {
