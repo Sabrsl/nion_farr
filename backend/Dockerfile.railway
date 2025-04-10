@@ -26,8 +26,20 @@ RUN mkdir -p logs
 
 # Exécuter un build complet sans scripts additionnels
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build:railway && \
-    echo "📂 Contenu du dossier dist après build:" && \
+    npm run build:railway
+
+# 👉 Copie manuelle du fichier main.js généré par NestJS
+RUN echo "📂 Fichiers générés dans dist/src :" && ls -la dist/src && \
+    if [ -f "dist/src/main.js" ]; then \
+    echo "✅ Copie dist/src/main.js vers dist/main.js" && \
+    cp dist/src/main.js dist/main.js; \
+  else \
+    echo "❌ dist/src/main.js introuvable, build échoué ?" && \
+    ls -la dist/src/; \
+  fi
+
+# Vérification du build    
+RUN echo "📂 Contenu du dossier dist après build:" && \
     ls -la dist/ && \
     if [ -d "dist/src" ]; then \
       echo "📂 Contenu du dossier dist/src après build:" && \
@@ -155,7 +167,12 @@ fi\n\
 echo "✅ Version de NODE: $(node --version)"\n\
 echo "✅ Version de NPM: $(npm --version)"\n\
 \n\
-# Vérifier si main.js existe\n\
+# Vérifier les deux emplacements possibles pour main.js\n\
+if [ ! -f "dist/main.js" ] && [ -f "dist/src/main.js" ]; then\n\
+  echo "📦 main.js non trouvé à la racine, mais présent dans dist/src — tentative de copie..."\n\
+  cp dist/src/main.js dist/main.js\n\
+fi\n\
+\n\
 if [ -f "dist/main.js" ]; then\n\
   echo "✅ Démarrage de l'\''application principale..."\n\
   NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log || (\n\
@@ -165,7 +182,7 @@ if [ -f "dist/main.js" ]; then\n\
     NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js\n\
   )\n\
 else\n\
-  echo "❌ main.js manquant! Démarrage du serveur de secours..."\n\
+  echo "❌ main.js toujours manquant! Démarrage du serveur de secours..."\n\
   NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js\n\
 fi' > start.sh && \
     chmod +x start.sh
@@ -258,14 +275,6 @@ process.on('unhandledRejection', (reason) => {\n\
   console.error('Unhandled rejection:', reason);\n\
 });" > dist/main.js && \
     chmod +x dist/main.js
-
-# Copie manuelle du fichier main.js si nécessaire
-RUN if [ -f "dist/src/main.js" ]; then \
-    echo "✅ Copie de dist/src/main.js vers dist/main.js" && \
-    cp dist/src/main.js dist/main.js; \
-  else \
-    echo "⚠️ dist/src/main.js introuvable, build incomplet ?"; \
-  fi
 
 # Vérification finale des fichiers générés
 RUN echo "📋 Vérification finale:" && \

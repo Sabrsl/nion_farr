@@ -149,6 +149,12 @@ fi
 echo "✅ Version de NODE: $(node --version)"
 echo "✅ Version de NPM: $(npm --version)"
 
+# Vérifier les deux emplacements possibles pour main.js
+if [ ! -f "dist/main.js" ] && [ -f "dist/src/main.js" ]; then
+  echo "📦 main.js non trouvé à la racine, mais présent dans dist/src — tentative de copie..."
+  cp dist/src/main.js dist/main.js
+fi
+
 # Vérifier si main.js existe (dans l'un des deux emplacements)
 if [ -f "dist/main.js" ]; then
   echo "✅ Utilisation de dist/main.js pour le démarrage..."
@@ -163,12 +169,6 @@ if [ -f "dist/main.js" ]; then
       echo "❌ dist/src/main.js manquant également, démarrage du serveur de secours..."
       NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js
     fi
-  )
-elif [ -f "dist/src/main.js" ]; then
-  echo "✅ Utilisation de dist/src/main.js pour le démarrage..."
-  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/src/main.js 2>&1 | tee logs/app.log || (
-    echo "❌ Échec du démarrage avec dist/src/main.js, utilisation du serveur de secours..."
-    NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js
   )
 else
   echo "❌ Aucun fichier main.js trouvé! Démarrage du serveur de secours..."
