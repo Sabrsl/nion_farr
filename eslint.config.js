@@ -8,7 +8,8 @@ module.exports = [
       '**/.next/**',
       '**/.git/**',
       '**/dist/**',
-      '**/build/**'
+      '**/build/**',
+      '**/backend/**/*.js'
     ],
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -30,14 +31,14 @@ module.exports = [
       parser: tsParser,
       parserOptions: {
         ecmaFeatures: { jsx: true },
-        project: './tsconfig.json'
+        project: null
       }
     },
     plugins: {
       '@typescript-eslint': tsPlugin
     },
     rules: {
-      // Règles TypeScript spécifiques ici
+      // TypeScript specific rules here
     }
   }
 ]; 

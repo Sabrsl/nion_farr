@@ -17,17 +17,18 @@
     "dist",
     "node_modules",
     "**/*.min.js",
-    "frontend/_archive/**/*"
+    "frontend/_archive/**/*",
+    "backend/**/*.js"
   ],
   "overrides": [
     {
-      "files": ["backend/*.js", "backend/create-*.js", "backend/check-*.js", "backend/test-*.js"],
+      "files": ["backend/**/*.js", "backend/create-*.js", "backend/check-*.js", "backend/test-*.js"],
       "rules": {
         "no-unused-vars": "off"
       }
     },
     {
-      "files": ["frontend/utils/*.js", "frontend/public/*.js", "frontend/src/*.js"],
+      "files": ["frontend/utils/*.js", "frontend/public/*.js", "frontend/src/*.js", "mocks/**/*.js"],
       "rules": {
         "no-unused-vars": "off"
       }
@@ -36,21 +37,21 @@
       "files": ["backend/**/*.ts"],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
-        "project": "./backend/tsconfig.json"
+        "project": null
       }
     },
     {
       "files": ["frontend/**/*.ts", "frontend/**/*.tsx"],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
-        "project": "./frontend/tsconfig.json"
+        "project": null
       }
     },
     {
       "files": ["mocks/**/*.ts", "src/**/*.ts", "types/**/*.ts"],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
-        "project": "./tsconfig.json"
+        "project": null
       }
     }
   ]

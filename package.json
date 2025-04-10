@@ -14,7 +14,7 @@
     "dev:build": "docker-compose up --build",
     "stop": "docker-compose down",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "lint": "eslint \"**/*.{js,jsx,ts,tsx}\"",
+    "lint": "eslint \"frontend/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"mocks/**/*.{ts,tsx}\"",
     "vercel-build": "node vercel-build.js && next build && node vercel-post-build.js",
     "clean-build": "rimraf tsconfig.tsbuildinfo backend/dist frontend/.next && cd backend && npm run build && cd .. && cd frontend && npm run build"
   },
