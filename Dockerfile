@@ -19,14 +19,16 @@ COPY backend/ ./
 RUN echo "📂 Contenu du dossier source:" && \
     ls -la && \
     echo "📂 Contenu du dossier src:" && \
-    ls -la src
+    ls -la src && \
+    echo "📂 Contenu du fichier main.ts:" && \
+    cat src/main.ts | head -20
 
 # Créer le dossier de logs
 RUN mkdir -p logs
 
 # Exécuter un build complet avec plus de logs
-RUN echo "🔨 Lancement du build..." && \
-    npm run build --verbose && \
+RUN echo "🔨 Lancement du build NestJS..." && \
+    npm run build:verbose && \
     echo "📂 Contenu du dossier dist après build:" && \
     ls -la dist/ && \
     if [ -f "dist/main.js" ]; then \
@@ -35,7 +37,15 @@ RUN echo "🔨 Lancement du build..." && \
       echo "🔍 Premières lignes de main.js:" && \
       head -n 20 dist/main.js; \
     else \
-      echo "❌ main.js manquant!"; \
+      echo "❌ main.js manquant! Tentative de compilation directe..." && \
+      echo "Module résolution: $(node -e 'console.log(require(\"typescript\").ModuleResolutionKind)')" && \
+      tsc src/main.ts --outDir dist/ --target es2017 --module commonjs && \
+      if [ -f "dist/main.js" ]; then \
+        echo "✅ Compilation directe réussie!" && \
+        stat -c %s dist/main.js; \
+      else \
+        echo "❌ Échec de la compilation directe!"; \
+      fi; \
     fi
 
 # Créer un script de démarrage amélioré
@@ -57,8 +67,8 @@ if [ -f "dist/main.js" ]; then\n\
   echo "✅ main.js présent, taille: $(stat -c %s dist/main.js) octets"\n\
   file dist/main.js\n\
 else\n\
-  echo "❌ main.js manquant! Tentative de reconstruction..."\n\
-  npm run build\n\
+  echo "❌ main.js manquant! Tentative de compilation directe..."\n\
+  tsc src/main.ts --outDir dist/ --target es2017 --module commonjs\n\
   ls -la dist/\n\
 fi\n\
 \n\
