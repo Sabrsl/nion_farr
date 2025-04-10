@@ -1,33 +1,38 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "baseUrl": "./",
-    "paths": {
-      "*": ["*", "backend/*", "frontend/*"]
-    },
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
     "skipLibCheck": true,
+    "strict": false,
     "forceConsistentCasingInFileNames": true,
-    "strict": true
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["frontend/*"],
+      "@/components/*": ["frontend/components/*"],
+      "@/styles/*": ["frontend/styles/*"],
+      "@/lib/*": ["frontend/lib/*"],
+      "@/contexts/*": ["frontend/contexts/*"],
+      "@/hooks/*": ["frontend/hooks/*"]
+    }
   },
   "include": [
-    "backend/**/*.ts",
     "frontend/**/*.ts",
     "frontend/**/*.tsx",
-    "mocks/**/*.ts",
     "src/**/*.ts",
-    "types/**/*.ts"
+    "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "**/node_modules/*"
-  ],
-  "references": [
-    { "path": "./backend" },
-    { "path": "./frontend" }
+    "**/.next",
+    "**/dist"
   ]
 } 
