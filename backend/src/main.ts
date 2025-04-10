@@ -49,7 +49,7 @@ async function bootstrap() {
     // Variables d'environnement
     const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
     const environment = configService.get<string>('NODE_ENV') || 'development';
-    const port = parseInt(process.env.PORT, 10) || 3000;
+    const port = parseInt(process.env.PORT || '3000', 10);
     
     // Configuration Sentry en production - disabled for memory optimization
     if (environment === 'production' && !memoryConfig.isConstrained) {
@@ -130,7 +130,7 @@ async function bootstrap() {
     const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
     const appUrl = configService.get<string>('APP_URL') || `http://localhost:${port}`;
     
-    console.log(`Serveur NionFar API démarré sur ${port}`);
+    console.log(`Serveur NionFar API démarré sur le port ${port}`);
     console.log(`🚀 Environnement: ${environment} (${memoryConfig.deploymentPlatform})`);
     console.log(`🔗 URL: ${appUrl}`);
     
