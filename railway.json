@@ -6,9 +6,8 @@
   },
   "deploy": {
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3,
-    "startCommand": "npm run start:railway",
+    "restartPolicyMaxRetries": 5,
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 10
+    "healthcheckTimeout": 30
   }
 } 

@@ -21,4 +21,19 @@ export class HealthController {
   async checkDetailed() {
     return this.healthService.checkDetailed();
   }
+
+  @Get('ping')
+  @ApiOperation({ summary: 'Simple ping test that does not require database' })
+  @ApiResponse({ status: 200, description: 'Pong response' })
+  ping() {
+    return {
+      status: 'ok',
+      message: 'pong',
+      timestamp: new Date().toISOString(),
+      railway: process.env.RAILWAY_DEPLOYMENT === 'true',
+      render: process.env.IS_RENDER === 'true',
+      environment: process.env.NODE_ENV,
+      memoryOptimized: process.env.MEMORY_OPTIMIZED === 'true',
+    };
+  }
 } 

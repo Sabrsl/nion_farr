@@ -15,18 +15,37 @@ RUN npm config set package-lock false && \
 # Copier le code source
 COPY backend/ ./
 
-# Créer un script de démarrage avec fallback
+# Créer le dossier de logs
+RUN mkdir -p logs
+
+# Créer un script de démarrage amélioré
 RUN echo '#!/bin/bash\n\
 echo "🚀 Démarrage du serveur NionFar API..."\n\
-echo "Frontend URL configuré: $FRONTEND_URL"\n\
-echo "CORS autorisés: $CORS_ALLOWED_ORIGINS"\n\
-NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true node dist/main.js || (\n\
-  echo "❌ Échec du démarrage de l'\''application principale, utilisation du serveur de secours"\n\
+echo "📝 Variables d'\''environnement configurées:"\n\
+echo "- Frontend URL: $FRONTEND_URL"\n\
+echo "- CORS autorisés: $CORS_ALLOWED_ORIGINS"\n\
+echo "- Port: $PORT"\n\
+echo "- Railway deployment: $RAILWAY_DEPLOYMENT"\n\
+echo "- MongoDB URI configuré: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; else echo "non"; fi)"\n\
+echo "- JWT secrets configurés: $(if [ -n "$JWT_SECRET" ] && [ -n "$JWT_REFRESH_SECRET" ]; then echo "oui"; else echo "non"; fi)"\n\
+\n\
+echo "👉 Vérification du build..."\n\
+if [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then\n\
+  echo "❌ Fichiers de build manquants, tentative de reconstruction..."\n\
+  npm run build\n\
+fi\n\
+\n\
+echo "✅ Démarrage de l'\''application principale..."\n\
+NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true node dist/main.js 2>&1 | tee logs/app.log || (\n\
+  echo "❌ Échec du démarrage de l'\''application principale, examen des logs..."\n\
+  tail -n 50 logs/app.log\n\
+  echo "🔄 Utilisation du serveur de secours pour maintenir les healthchecks"\n\
   NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false node server.js\n\
 )' > start.sh && \
-    chmod +x start.sh && \
-    ls -la && \
-    npm run build && \
+    chmod +x start.sh
+
+# Construire l'application
+RUN npm run build && \
     ls -la dist/
 
 # Exposer le port (Railway réaffecte PORT via la variable d'environnement)
