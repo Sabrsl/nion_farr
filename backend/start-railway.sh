@@ -174,49 +174,45 @@ fi
 # Essayer de démarrer le serveur principal
 echo "🚀 Tentative de démarrage du serveur principal..."
 
-# 1. Essayer d'utiliser le serveur NestJS compilé si présent
-if [ -f "dist/main.js" ]; then
-  echo "✅ Utilisation du serveur NestJS compilé (dist/main.js)"
-  # Utiliser une variable pour stocker le code de retour
-  NODE_ENV=production RAILWAY_DEPLOYMENT=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log
-  NESTJS_EXIT_CODE=$?
-  
-  # Afficher les logs précédents
-  echo "📄 Logs de démarrage (dist/main.js) :"
-  tail -n 100 logs/app.log
-  
-  if [ $NESTJS_EXIT_CODE -ne 0 ]; then
-    echo "❌ Échec du serveur NestJS (code de sortie: $NESTJS_EXIT_CODE)"
-    
-    # 2. Si le serveur principal échoue, essayer le serveur de secours standard
-    if [ -f "server.js" ]; then
-      echo "✅ Utilisation du serveur de secours (server.js)"
-      NODE_ENV=production RAILWAY_DEPLOYMENT=true PORT="$PORT" node server.js 2>&1 | tee logs/backup.log || (
-        echo "❌ Échec du serveur de secours"
-        
-        # 3. En dernier recours, utiliser le serveur ultra-simple
-        echo "🚨 Utilisation du serveur ultra-simple en dernier recours"
-        NODE_ENV=production PORT="$PORT" node server-simple.js
-      )
-    else
-      # Si server.js n'existe pas, aller directement au serveur ultra-simple
-      echo "⚠️ server.js non trouvé, utilisation du serveur ultra-simple"
-      NODE_ENV=production PORT="$PORT" node server-simple.js
-    fi
-  fi
+# Vérifier si dist/main.js existe
+if [ -f ./dist/main.js ]; then
+  echo "✅ Fichier main.js trouvé, démarrage normal"
+  npm run start:railway
 else
-  # Si dist/main.js n'existe pas, essayer le serveur de secours
-  echo "⚠️ dist/main.js non trouvé, tentative avec le serveur de secours"
+  echo "⚠️ Fichier main.js non trouvé, utilisation du serveur de secours"
   
-  if [ -f "server.js" ]; then
-    echo "✅ Utilisation du serveur de secours (server.js)"
-    NODE_ENV=production RAILWAY_DEPLOYMENT=true PORT="$PORT" node server.js 2>&1 | tee logs/backup.log || (
-      echo "❌ Échec du serveur de secours, utilisation du serveur ultra-simple"
-      NODE_ENV=production PORT="$PORT" node server-simple.js
-    )
+  # Vérifier si node_modules est correctement installé
+  if [ ! -d ./node_modules/express ]; then
+    echo "📦 Installation des dépendances minimales..."
+    npm install --no-save express cors
+  fi
+  
+  # Vérifier si server-simple.js existe
+  if [ -f ./server-simple.js ]; then
+    echo "🔄 Démarrage du serveur de secours..."
+    node server-simple.js
   else
-    # En dernier recours, utiliser le serveur ultra-simple
-    echo "⚠️ Aucun serveur standard trouvé, utilisation du serveur ultra-simple"
-    NODE_ENV=production PORT="$PORT" node server-simple.js
+    echo "❌ Aucun fichier de démarrage trouvé! Création d'un serveur minimal..."
+    
+    # Créer un serveur minimal directement
+    node -e "
+      const express = require('express');
+      const app = express();
+      const PORT = process.env.PORT || 3000;
+      
+      app.get('/health', (req, res) => {
+        res.status(200).json({ status: 'emergency', timestamp: new Date().toISOString() });
+      });
+      
+      app.get('/*', (req, res) => {
+        res.status(503).json({ 
+          error: 'NionFar API starting in emergency mode',
+          path: req.path,
+          message: 'Application deployment incomplete. Please check logs.'
+        });
+      });
+      
+      app.listen(PORT, () => console.log('Emergency server started on port ' + PORT));
+    "
   fi
 fi 
