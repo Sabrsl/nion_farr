@@ -39,24 +39,71 @@ RUN echo "🔨 Lancement du build NestJS..." && \
     fi
 
 # Créer script de secours server.js simple si nécessaire
-RUN if [ ! -f "server.js" ]; then \
-    echo "⚠️ Création d'un serveur de secours server.js" && \
-    echo "/**\n * Serveur de secours simple pour Railway\n */\n\
-const http = require('http');\n\
+RUN echo "/**\n * Serveur de secours simple pour Railway\n */\n\
+const express = require('express');\n\
+const app = express();\n\
 const PORT = process.env.PORT || 3000;\n\
 \n\
-const server = http.createServer((req, res) => {\n\
-  if (req.url === '/health/ping') {\n\
-    res.writeHead(200, { 'Content-Type': 'application/json' });\n\
-    res.end(JSON.stringify({ status: 'ok', message: 'pong' }));\n\
-    return;\n\
+console.log('🚨 Démarrage du serveur de secours avec les variables:');\n\
+console.log(`PORT: ${PORT}`);\n\
+console.log(`NODE_ENV: ${process.env.NODE_ENV}`);\n\
+console.log(`RAILWAY_DEPLOYMENT: ${process.env.RAILWAY_DEPLOYMENT}`);\n\
+\n\
+// CORS - Résout les problèmes de CORS pendant les tests\n\
+app.use((req, res, next) => {\n\
+  res.header('Access-Control-Allow-Origin', '*');\n\
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');\n\
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');\n\
+  if (req.method === 'OPTIONS') {\n\
+    return res.sendStatus(200);\n\
   }\n\
-  res.writeHead(200);\n\
-  res.end('Server running');\n\
+  next();\n\
 });\n\
 \n\
-server.listen(PORT, () => console.log(`Serveur de secours en écoute sur ${PORT}`));" > server.js; \
-  fi
+// Routes de santé\n\
+app.get('/health', (req, res) => {\n\
+  res.json({ status: 'ok', message: 'Service en état de fonctionnement' });\n\
+});\n\
+\n\
+app.get('/health/ping', (req, res) => {\n\
+  res.json({ \n\
+    status: 'ok', \n\
+    message: 'pong',\n\
+    timestamp: new Date().toISOString(),\n\
+    environment: process.env.NODE_ENV,\n\
+    railway: process.env.RAILWAY_DEPLOYMENT === 'true',\n\
+    version: '1.0'\n\
+  });\n\
+});\n\
+\n\
+// Route d'API\n\
+app.get('/', (req, res) => {\n\
+  res.send('NionFar API Server');\n\
+});\n\
+\n\
+app.get('/api', (req, res) => {\n\
+  res.json({ message: 'API en mode secours' });\n\
+});\n\
+\n\
+// Gestion des erreurs\n\
+app.use((err, req, res, next) => {\n\
+  console.error(err.stack);\n\
+  res.status(500).json({ error: 'Erreur serveur' });\n\
+});\n\
+\n\
+// Démarrer le serveur\n\
+app.listen(PORT, '0.0.0.0', () => {\n\
+  console.log(`🚀 Serveur de secours en écoute sur ${PORT}`);\n\
+});\n\
+\n\
+// Gestion des erreurs process\n\
+process.on('uncaughtException', (err) => {\n\
+  console.error('Erreur non capturée:', err);\n\
+});\n\
+process.on('unhandledRejection', (reason) => {\n\
+  console.error('Rejet non géré:', reason);\n\
+});" > server.js && \
+    chmod +x server.js
 
 # Créer un script de démarrage simple avec correction de syntaxe
 RUN echo '#!/bin/bash\n\
@@ -81,6 +128,9 @@ else\n\
   echo "✅ PORT est correctement défini à $PORT"\n\
 fi\n\
 \n\
+echo "✅ Version de NODE: $(node --version)"\n\
+echo "✅ Version de NPM: $(npm --version)"\n\
+\n\
 # Vérifier si main.js existe\n\
 if [ -f "dist/main.js" ]; then\n\
   echo "✅ Démarrage de l'\''application principale..."\n\
@@ -103,17 +153,11 @@ const express = require('express');\n\
 const app = express();\n\
 const PORT = process.env.PORT || 3000;\n\
 \n\
+console.log('🚨 Démarrage du serveur express fallback...', { port: PORT, env: process.env.NODE_ENV });\n\
+\n\
 // Configuration CORS\n\
 app.use((req, res, next) => {\n\
-  const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS ? \n\
-    process.env.CORS_ALLOWED_ORIGINS.split(',') : \n\
-    [process.env.FRONTEND_URL || '*'];\n\
-  \n\
-  const origin = req.headers.origin;\n\
-  if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {\n\
-    res.header('Access-Control-Allow-Origin', origin);\n\
-  }\n\
-  \n\
+  res.header('Access-Control-Allow-Origin', '*');\n\
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');\n\
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');\n\
   \n\
@@ -124,8 +168,15 @@ app.use((req, res, next) => {\n\
   next();\n\
 });\n\
 \n\
-// Healthcheck endpoint\n\
+// Logging middleware\n\
+app.use((req, res, next) => {\n\
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);\n\
+  next();\n\
+});\n\
+\n\
+// Healthcheck endpoint - Route publique (pas d'authentification requise)\n\
 app.get('/health/ping', (req, res) => {\n\
+  console.log('Health ping route requested');\n\
   res.json({ \n\
     status: 'ok', \n\
     message: 'pong',\n\
@@ -135,9 +186,18 @@ app.get('/health/ping', (req, res) => {\n\
   });\n\
 });\n\
 \n\
+// Regular health route\n\
+app.get('/health', (req, res) => {\n\
+  res.json({ status: 'ok' });\n\
+});\n\
+\n\
 // API routes\n\
+app.get('/', (req, res) => {\n\
+  res.send('NionFar API');\n\
+});\n\
+\n\
 app.get('/api', (req, res) => {\n\
-  res.json({ message: 'API is running' });\n\
+  res.json({ message: 'API is running in fallback mode' });\n\
 });\n\
 \n\
 // Start server\n\
@@ -157,7 +217,7 @@ process.on('unhandledRejection', (reason) => {\n\
     chmod +x dist/main.js
 
 # Exposer le port (Railway réaffecte PORT via la variable d'environnement)
-EXPOSE 3000
+EXPOSE 3000 8080
 
 # Utiliser dumb-init pour gérer correctement les signaux
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
