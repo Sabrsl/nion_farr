@@ -6,7 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validate } from './config/env.validation';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './app.controller';
+import { AppController, RootController } from './app.controller';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './health/health.module';
@@ -132,7 +132,7 @@ import { IpModule } from './ip/ip.module';
     QueueModule,
     IpModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, RootController],
   providers: [
     AppService,
     SyncControlService,

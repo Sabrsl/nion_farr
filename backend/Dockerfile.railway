@@ -201,10 +201,11 @@ app.get('/health/ping', (req, res) => {\n\
 // Route racine pour Railway healthcheck\n\
 app.get('/', (req, res) => {\n\
   console.log('Root route requested');\n\
-  res.json({ \n\
+  res.status(200).json({ \n\
     status: 'ok', \n\
     message: 'NionFar API is running',\n\
-    timestamp: new Date().toISOString()\n\
+    timestamp: new Date().toISOString(),\n\
+    mode: 'fallback'\n\
   });\n\
 });\n\
 \n\

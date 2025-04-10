@@ -128,14 +128,24 @@ async function bootstrap() {
     }
 
     // Ajouter une route de base pour le healthcheck de Railway
-    app.getHttpAdapter().get('/', (req, res) => {
-      console.log('ROOT / route called - healthcheck');
+    const httpAdapter = app.getHttpAdapter();
+    httpAdapter.get('/', (req, res) => {
+      console.log('ROOT / route called - healthcheck from outside');
       return res.json({
         status: 'ok',
         message: 'NionFar API is up and running',
         timestamp: new Date().toISOString(),
         environment,
         deploymentPlatform: memoryConfig.deploymentPlatform
+      });
+    });
+
+    // Ajouter une route GET spécifique pour le healthcheck Railway
+    httpAdapter.get('/health-railway', (req, res) => {
+      return res.json({
+        status: 'ok',
+        message: 'Healthcheck passed',
+        timestamp: new Date().toISOString()
       });
     });
 

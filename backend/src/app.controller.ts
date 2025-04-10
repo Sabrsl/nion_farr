@@ -26,4 +26,34 @@ export class AppController {
       environment: process.env.NODE_ENV || 'development'
     };
   }
+}
+
+@ApiTags('Root')
+@Controller()
+export class RootController {
+  @Public()
+  @Get()
+  @ApiOperation({ summary: 'Route racine de l\'API (healthcheck Railway)' })
+  @ApiResponse({ status: 200, description: 'API en fonctionnement' })
+  getRoot() {
+    return {
+      status: 'ok',
+      message: 'NionFar API is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      railway: process.env.RAILWAY_DEPLOYMENT === 'true'
+    };
+  }
+
+  @Public()
+  @Get('railway-health')
+  @ApiOperation({ summary: 'Route de healthcheck spécifique à Railway' })
+  @ApiResponse({ status: 200, description: 'API en fonctionnement' })
+  getRailwayHealth() {
+    return {
+      status: 'ok',
+      message: 'Railway healthcheck passed',
+      timestamp: new Date().toISOString()
+    };
+  }
 } 
