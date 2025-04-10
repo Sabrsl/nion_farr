@@ -456,14 +456,35 @@ class AuthService {
             console.log("🔄 Tentative de connexion via proxy API local");
             const proxyUrl = '/api/auth/login';
             
+            console.log("🔄 Envoi de la requête vers le proxy local:", proxyUrl);
+            
             const proxyResponse = await fetch(proxyUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
               },
-              body: JSON.stringify(requestBody)
+              body: JSON.stringify(requestBody),
+              credentials: 'same-origin'
             });
+            
+            if (!proxyResponse.ok) {
+              const errorText = await proxyResponse.text();
+              console.error(`❌ Erreur proxy (${proxyResponse.status}):`, errorText.substring(0, 150));
+              
+              // Si erreur "Cannot GET", c'est probablement que la route API n'existe pas
+              if (errorText.includes('Cannot GET')) {
+                console.error("⚠️ Erreur de route API - la route n'existe pas");
+                // Tentative directe vers le backend
+                return await this.tryDirectBackendLogin(requestBody, autoRedirect, redirectUrl);
+              }
+              
+              return {
+                success: false,
+                error: `Erreur du serveur: ${proxyResponse.status} ${proxyResponse.statusText}`
+              };
+            }
             
             const proxyData = await proxyResponse.json();
             
@@ -495,6 +516,9 @@ class AuthService {
             }
           } catch (proxyError) {
             console.error("❌ La tentative via proxy a également échoué:", proxyError);
+            
+            // Si toutes les autres tentatives échouent, essayer une connexion directe au backend
+            return await this.tryDirectBackendLogin(requestBody, autoRedirect, redirectUrl);
           }
           
           // Fournir un message d'erreur plus explicite pour les problèmes de CORS/connectivité
@@ -1075,6 +1099,80 @@ class AuthService {
     } catch (error) {
       console.error('Erreur lors de la récupération des tokens CSRF:', error);
       return false;
+    }
+  }
+
+  private async tryDirectBackendLogin(requestBody: any, autoRedirect: boolean, redirectUrl?: string): Promise<LoginResponse> {
+    console.log("🔄 Tentative de connexion directe au backend");
+    
+    // Convertir les chemins relatifs en URLs absolues
+    const backendUrl = this.apiUrl.startsWith('http') 
+      ? this.apiUrl 
+      : `https://nionfar.up.railway.app/api`;
+    
+    const loginUrl = `${backendUrl}/auth/login`;
+    console.log("🔗 URL de connexion directe:", loginUrl);
+    
+    try {
+      const response = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': window.location.origin
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Erreur connexion directe (${response.status}):`, errorText.substring(0, 150));
+        return {
+          success: false,
+          error: `Erreur du serveur: ${response.status} ${response.statusText}`
+        };
+      }
+      
+      const data = await response.json();
+      
+      if ((data.accessToken || data.token)) {
+        console.log("✅ Connexion directe réussie");
+        
+        // Stocker le token
+        const token = data.accessToken || data.token;
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        this.token = token;
+        
+        // Stocker les données utilisateur
+        if (data.user) {
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+          this.user = data.user;
+          
+          // Redirection si nécessaire
+          if (autoRedirect) {
+            const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+            this.forceRedirectAfterLogin(targetUrl);
+          }
+        }
+        
+        return {
+          success: true,
+          user: data.user,
+          token: token
+        };
+      }
+      
+      return {
+        success: false,
+        error: "Réponse du serveur incomplète"
+      };
+      
+    } catch (error) {
+      console.error("❌ La tentative de connexion directe a échoué:", error);
+      return {
+        success: false,
+        error: "Toutes les tentatives de connexion ont échoué. Veuillez réessayer plus tard."
+      };
     }
   }
 }
