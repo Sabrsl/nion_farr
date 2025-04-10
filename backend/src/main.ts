@@ -87,8 +87,10 @@ async function bootstrap() {
     const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const allowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS')?.split(',') || [frontendUrl];
     
+    // Configuration CORS plus permissive pour assurer la compatibilité avec Vercel
+    console.log(`🔒 Configuration CORS pour: ${frontendUrl}`);
     app.enableCors({
-      origin: allowedOrigins,
+      origin: ['https://nion-farr.vercel.app', 'http://localhost:3000', ...allowedOrigins],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
