@@ -14,6 +14,7 @@ const path = require('path');
 
 // Variables
 const PORT = process.env.PORT || 3000;
+console.log(`🚨 DIAGNOSTIC: process.env.PORT=${process.env.PORT}, utilisant le port ${PORT}`);
 
 // Fonction pour écrire des logs
 function writeLog(message) {
@@ -127,6 +128,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, '0.0.0.0', () => {
   writeLog(`🔄 Serveur de secours en écoute sur le port ${PORT}`);
   writeLog(`👉 Healthcheck disponible sur: http://0.0.0.0:${PORT}/health`);
+  writeLog(`🚨 DIAGNOSTIC FINAL: Écoutant sur PORT=${PORT}, variable d'env PORT=${process.env.PORT}`);
 });
 
 // Gestion des erreurs

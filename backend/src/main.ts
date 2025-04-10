@@ -50,6 +50,7 @@ async function bootstrap() {
     const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
     const environment = configService.get<string>('NODE_ENV') || 'development';
     const port = parseInt(process.env.PORT || '3000', 10);
+    console.log(`🚨 DIAGNOSTIC NESTJS: process.env.PORT=${process.env.PORT}, utilisant le port ${port}`);
     
     // Configuration Sentry en production - disabled for memory optimization
     if (environment === 'production' && !memoryConfig.isConstrained) {
@@ -127,6 +128,7 @@ async function bootstrap() {
 
     // Démarrage du serveur
     await app.listen(port, '0.0.0.0');
+    console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
     
     // Afficher l'information sur le déploiement
     const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
