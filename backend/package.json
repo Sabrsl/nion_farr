@@ -22,6 +22,8 @@
     "prepare:railway": "node scripts/prepare-railway.js",
     "validate:railway": "node scripts/validate-railway.js",
     "check:railway": "node scripts/check-deployment.js",
+    "check:railway-env": "node scripts/check-railway-env.js",
+    "disable:render": "node scripts/check-railway-env.js",
     "export:render-env": "node -e \"console.log(require('fs').readFileSync('.env', 'utf8').split('\\n').filter(line => !line.startsWith('#') && line.trim()).join('\\n'))\" > render-env-export.txt",
     "backup:before-migration": "npm run export:render-env && node src/scripts/backup.ts",
     "start:pm2": "pm2 start ecosystem.config.js --env production",

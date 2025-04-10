@@ -125,7 +125,14 @@ async function bootstrap() {
 
     // Démarrage du serveur
     await app.listen(port, '0.0.0.0');
+    
+    // Afficher l'information sur le déploiement
+    const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
+    const appUrl = configService.get<string>('APP_URL') || `http://localhost:${port}`;
+    
     console.log(`Serveur NionFar API démarré sur ${port}`);
+    console.log(`🚀 Environnement: ${environment} (${memoryConfig.deploymentPlatform})`);
+    console.log(`🔗 URL: ${appUrl}`);
     
     if (memoryConfig.isConstrained) {
       console.log(`🧠 Mode d'optimisation mémoire activé - certaines fonctionnalités sont désactivées`);
@@ -133,6 +140,9 @@ async function bootstrap() {
 
     // Start memory monitoring 
     startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
+
+    // Log CORS configuration
+    console.log(`🔒 CORS configuré pour: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
 
   } catch (error) {
     console.error('Error during bootstrap:', error);

@@ -1,174 +1,180 @@
-# Guide de migration de Render vers Railway
+# Migration du backend Nionfar de Render vers Railway
 
-Ce document détaille les étapes pour migrer l'API NionFar de Render vers Railway, en garantissant une transition sans downtime, sans perte de données et en préservant toutes les fonctionnalités existantes.
+Ce document détaille la procédure de migration du backend Nionfar depuis Render vers Railway, en veillant à ce que le processus soit fiable et réversible.
 
-## Prérequis
+## Phase 1: Préparation
 
-- Un compte Railway (plan gratuit est suffisant pour commencer)
-- Git et CLI Railway installés sur votre machine
-- Accès au dépôt GitHub du projet
-- Accès au dashboard Render actuel
+### Configuration de l'environnement Railway
 
-## Étape 1: Préparation avant migration
-
-1. **Sauvegardez les variables d'environnement actuelles de Render**
-
-```bash
-cd backend
-npm run export:render-env
-```
-
-2. **Créez une sauvegarde de la base de données MongoDB**
-
-```bash
-npm run backup:before-migration
-```
-
-3. **Vérifiez que le build fonctionne correctement**
-
-```bash
-npm run build
-```
-
-4. **Préparez les fichiers de configuration pour Railway**
-
-```bash
-cp .env .env.railway
-```
-
-Modifiez le fichier `.env.railway` pour adapter les variables d'environnement à Railway. Veillez particulièrement à :
-- Configurer `MONGODB_URI` avec la même connexion MongoDB
-- Conserver les secrets JWT identiques pour assurer la continuité des sessions
-- Définir `RAILWAY_DEPLOYMENT=true` et `IS_RENDER=false`
-- Configurer `APP_URL=https://nionfar.up.railway.app` (URL du déploiement Railway)
-
-## Étape 2: Configuration du projet Railway
-
-### Via CLI Railway
-
-1. **Logguez-vous à Railway**
-
-```bash
-railway login
-```
-
-2. **Initialisez un nouveau projet Railway**
-
-```bash
-railway init
-```
-
-3. **Liez votre projet GitHub**
-
-```bash
-railway link
-```
-
-4. **Configurez les variables d'environnement**
-
-```bash
-# Importez les variables depuis votre fichier .env.railway
-railway env import .env.railway
-```
-
-### Via l'interface Web Railway
-
-1. Créez un nouveau projet sur [Railway](https://railway.app/dashboard)
-2. Choisissez "Deploy from GitHub repository"
-3. Sélectionnez votre dépôt GitHub
-4. Configurez les variables d'environnement en vous basant sur le fichier `.env.railway`
-5. Configurez le projet:
-   - Build command: `npm install && npm run build`
-   - Start command: `npm run start:railway`
-
-## Étape 3: Déploiement et validation
-
-1. **Déployez l'application**
-
-Soit via un push Git, soit en déclenchant manuellement un déploiement dans l'interface Railway.
-
-2. **Validez le déploiement**
-
-```bash
-npm run validate:railway
-```
-
-Ce script vérifiera que les endpoints critiques fonctionnent correctement, notamment `/api/services/categories/count`.
-
-## Étape 4: Transition en production
-
-### Stratégie de transition sans downtime
-
-1. **Période de test parallèle**
-   - Gardez Render actif pendant que Railway fonctionne
-   - Testez toutes les fonctionnalités critiques sur Railway (URL: https://nionfar.up.railway.app)
-   - Vérifiez les performances et la stabilité
-
-2. **Mise à jour des DNS (si applicable)**
-   - Si vous utilisez un domaine personnalisé, préparez un changement de DNS vers Railway
-
-3. **Bascule du trafic**
-   - Une fois que tout est confirmé fonctionnel, redirigez le trafic vers Railway
-   - Mettez Render en pause (ne le supprimez pas immédiatement)
-
-### Rollback en cas de problème
-
-Si des problèmes sont détectés sur Railway:
-
-1. Réactivez votre service Render
-2. Restaurez les DNS (si modifiés)
-3. Diagnostiquez et corrigez les problèmes sur Railway
-
-## Étape 5: Finalisation
-
-Après une période de stabilité (recommandé: 1-2 semaines):
-
-1. Suspendez définitivement le service Render
-2. Optimisez votre configuration Railway selon les performances observées
-3. Envisagez un plan payant Railway si nécessaire pour les performances
-
-## Différences entre Render et Railway
-
-### Limites à connaître
-
-| Fonctionnalité | Render (Free) | Railway (Free) |
-|----------------|---------------|----------------|
-| RAM            | 512 MB        | 512 MB         |
-| CPU            | Partagé, limité | Partagé, limité |
-| Execution      | Suspendu après inactivité | Toujours actif (limité à 500 heures/mois) |
-| Stockage       | Limité        | 1 GB           |
-| Base de données | MongoDB Atlas séparé | Option intégrée (mais nous gardons Atlas) |
-
-### Adaptations dans le code
-
-Nous avons optimisé le code pour fonctionner dans les deux environnements:
-
-1. Détection d'environnement Railway
-2. Optimisation mémoire adaptée
-3. Configuration MongoDB optimisée
-
-## Suivi et monitoring
-
-1. **Surveillez les métriques Railway**
-   - Utilisation mémoire
-   - Temps de réponse
-   - Logs d'erreurs
-
-2. **Monitoring MongoDB**
-   - Vérifiez les performances des requêtes
-   - Surveillez la taille de la base de données
-
-## Support et dépannage
-
-Si vous rencontrez des problèmes durant la migration:
-
-1. Vérifiez les logs Railway via l'interface web ou la commande:
+1. **Créer un projet Railway**
    ```bash
-   railway logs
+   # Installation de l'interface CLI Railway (si nécessaire)
+   npm install -g @railway/cli
+   
+   # Login à Railway
+   railway login
+   
+   # Lier le dépôt au projet Railway
+   railway link
    ```
 
-2. Consultez la documentation Railway: https://docs.railway.app/
-3. Problèmes courants:
-   - Variables d'environnement manquantes
-   - Problèmes de connexion MongoDB
-   - Limites de ressources atteintes 
+2. **Copier les variables d'environnement**
+   ```bash
+   # Exporter les variables depuis Render
+   npm run export:render-env
+   
+   # Vérifier et adapter pour Railway
+   node scripts/adapt-env-for-railway.js
+   
+   # Importer dans Railway
+   railway variables set --from=.env.railway
+   ```
+
+3. **Configuration de la base de données**
+   - Assurez-vous que la base de données MongoDB est accessible par Railway
+   - Vérifiez les restrictions d'accès IP et ajustez-les si nécessaire
+   - Testez la connexion depuis un environnement de développement configuré avec les paramètres Railway
+
+### Adaptation du code
+
+1. **Ajout des fichiers de configuration Railway**
+   - `railway.json` - Configuration du projet
+   - `nixpacks.toml` - Optimisation de build
+   - `Dockerfile.railway` (si nécessaire)
+
+2. **Ajout de la détection de plateforme**
+   - Modifier `src/config/environment.ts` pour détecter Railway
+   - Adapter les configurations spécifiques à la plateforme
+
+3. **Tests en environnement local**
+   ```bash
+   # Tester avec la configuration Railway
+   npm run start:railway-local
+   
+   # Vérifier les points d'API critiques
+   npm run test:railway-endpoints
+   ```
+
+## Phase 2: Déploiement en parallèle
+
+### Premier déploiement Railway
+
+1. **Déploiement initial**
+   ```bash
+   # Déployer sur Railway
+   railway up
+   ```
+
+2. **Vérification initiale**
+   - Vérifier que l'application démarre correctement
+   - Vérifier l'endpoint `/health`
+   - Examiner les logs pour détecter des problèmes
+
+3. **Configuration des domaines**
+   - Configurer un sous-domaine de staging pour Railway (ex: `api-railway.nionfar.sn`)
+   - Vérifier la configuration SSL/TLS
+
+### Tests en parallèle
+
+1. **Tests automatisés**
+   ```bash
+   # Exécuter les tests contre Railway
+   npm run test:e2e -- --api-url=https://api-railway.nionfar.sn
+   ```
+
+2. **Tests de charge comparatifs**
+   ```bash
+   # Tester les performances comparatives
+   npm run benchmark:compare -- --render-url=https://api.nionfar.sn --railway-url=https://api-railway.nionfar.sn
+   ```
+
+3. **Validation manuelle**
+   - Tester l'application frontend contre l'API Railway
+   - Vérifier les fonctionnalités critiques
+   - Comparer les temps de réponse
+
+## Phase 3: Migration complète
+
+### Sauvegarde avant basculement
+
+1. **Backup des données**
+   ```bash
+   npm run backup:before-migration
+   ```
+
+2. **Capture des configurations Render**
+   ```bash
+   npm run export:render-config
+   ```
+
+### Basculement des domaines
+
+1. **Basculement DNS**
+   - Modifier les enregistrements DNS pour pointer `api.nionfar.sn` vers Railway
+   - Réduire le TTL avant le changement pour accélérer la propagation
+   - Conserver l'accès à Render via un sous-domaine alternatif (ex: `api-render.nionfar.sn`)
+
+2. **Vérification du basculement**
+   ```bash
+   # Vérifier la propagation DNS
+   npm run check:dns -- --domain=api.nionfar.sn
+   
+   # Vérifier que les requêtes sont bien servies par Railway
+   npm run check:serving-platform -- --domain=api.nionfar.sn
+   ```
+
+3. **Surveillance post-basculement**
+   - Surveiller intensivement les métriques pendant les 24 premières heures
+   - Suivre les taux d'erreur et les temps de réponse
+   - Être prêt à revenir à Render en cas de problème critique
+
+## Phase 4: Désactivation de Render
+
+Après au moins une semaine de fonctionnement stable sur Railway:
+
+1. **Suspend (ne pas supprimer) le service Render**
+   - Documentation détaillée dans [DISABLE-RENDER.md](./DISABLE-RENDER.md)
+
+2. **Conserver les accès et sauvegardes**
+   - Maintenir les accès administratifs à Render
+   - Conserver toutes les sauvegardes et configurations
+   - Documenter la procédure de restauration
+
+## Procédure de rollback
+
+En cas de problème majeur nécessitant un retour à Render:
+
+1. **Réactiver le service Render** (si suspendu)
+   - Se connecter au dashboard Render
+   - Réactiver le service suspendu
+
+2. **Basculer le DNS**
+   - Modifier les enregistrements DNS pour pointer à nouveau vers Render
+   - Vérifier la propagation
+
+3. **Vérifier la restauration**
+   ```bash
+   # Vérifier que le service Render répond correctement
+   npm run check:health -- --url=https://api-render.nionfar.sn
+   ```
+
+4. **Analyse post-mortem**
+   - Documenter les problèmes rencontrés avec Railway
+   - Établir un plan pour les résoudre avant une nouvelle tentative de migration
+
+## Comparaison des plateformes
+
+| Aspect | Render | Railway |
+|--------|--------|---------|
+| Coût mensuel | €xx.xx | €xx.xx |
+| Mémoire allouée | X GB | Y GB |
+| Auto-scaling | Oui/Non | Oui/Non |
+| Temps de démarrage | ~Xmin | ~Ymin |
+| Temps de déploiement | ~Xmin | ~Ymin |
+| Temps de réponse moyen | Xms | Yms |
+
+## Contacts et support
+
+- **Railway Support**: [support.railway.app](https://support.railway.app)
+- **Documentation Railway**: [docs.railway.app](https://docs.railway.app)
+- **Contact interne**: tech@nionfar.sn 

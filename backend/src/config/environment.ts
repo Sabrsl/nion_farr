@@ -18,7 +18,7 @@ export const isMemoryConstrainedEnvironment = (): boolean => {
   const hasSmallHeapSize = process.env.NODE_OPTIONS?.includes('--max-old-space-size=128') || 
                            process.env.NODE_OPTIONS?.includes('--max-old-space-size=256');
   
-  // Check for Render free tier
+  // Check for Render free tier - désactivé si IS_RENDER est false
   const isRenderFreeTier = process.env.IS_RENDER === 'true' && 
     process.env.RENDER_SERVICE_TYPE === 'web' &&
     !process.env.RENDER_SERVICE_PAID;
@@ -41,6 +41,7 @@ export const isMemoryConstrainedEnvironment = (): boolean => {
 export const getMemoryConfig = () => {
   const isConstrained = isMemoryConstrainedEnvironment();
   const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
+  const isRender = process.env.IS_RENDER === 'true';
   
   return {
     isConstrained,
@@ -58,5 +59,7 @@ export const getMemoryConfig = () => {
     // Heap usage thresholds for warnings and critical alerts
     memoryWarningThreshold: isRailway ? 80 : 75, // percentage
     memoryCriticalThreshold: isRailway ? 90 : 85, // percentage
+    // Pour identifier facilement l'environnement dans les logs
+    deploymentPlatform: isRailway ? 'Railway' : (isRender ? 'Render' : 'Other'),
   };
 }; 

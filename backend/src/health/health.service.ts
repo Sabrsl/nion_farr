@@ -3,10 +3,12 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import * as os from 'os';
+import { getMemoryConfig } from '../config/environment';
 
 @Injectable()
 export class HealthService {
   private readonly logger = new Logger(HealthService.name);
+  private readonly memoryConfig = getMemoryConfig();
 
   constructor(
     @InjectConnection() private readonly connection: Connection,
@@ -55,6 +57,9 @@ export class HealthService {
       const nodeVersion = process.version;
       const environment = this.configService.get<string>('NODE_ENV') || 'development';
       
+      // Récupérer les informations de déploiement
+      const deploymentInfo = this.getDeploymentInfo();
+      
       // Vérifier les collections MongoDB
       const collections = dbStatus ? await this.connection.db.listCollections().toArray() : [];
       const collectionNames = collections.map(c => c.name);
@@ -72,6 +77,7 @@ export class HealthService {
             heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
             heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
             rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
+            heapUsagePercent: `${Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100)}%`,
           },
           cpu: {
             loadAverage: cpuUsage,
@@ -80,6 +86,9 @@ export class HealthService {
         application: {
           nodeVersion,
           environment,
+          deploymentPlatform: this.memoryConfig.deploymentPlatform,
+          memoryOptimized: this.memoryConfig.isConstrained,
+          deployment: deploymentInfo,
         },
       };
     } catch (error) {
@@ -90,5 +99,35 @@ export class HealthService {
         error: error.message,
       };
     }
+  }
+  
+  /**
+   * Récupère les informations de déploiement selon la plateforme
+   */
+  private getDeploymentInfo() {
+    const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
+    const isRender = process.env.IS_RENDER === 'true';
+    
+    if (isRailway) {
+      return {
+        platform: 'Railway',
+        projectId: process.env.RAILWAY_PROJECT_ID,
+        serviceName: process.env.RAILWAY_SERVICE_NAME,
+        environment: process.env.RAILWAY_ENVIRONMENT_NAME,
+        publicDomain: process.env.RAILWAY_PUBLIC_DOMAIN,
+      };
+    }
+    
+    if (isRender) {
+      return {
+        platform: 'Render',
+        serviceType: process.env.RENDER_SERVICE_TYPE,
+        serviceId: process.env.RENDER_SERVICE_ID,
+      };
+    }
+    
+    return {
+      platform: 'Local/Other',
+    };
   }
 } 
