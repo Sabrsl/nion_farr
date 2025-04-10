@@ -15,8 +15,28 @@ RUN npm config set package-lock false && \
 # Copier le code source
 COPY backend/ ./
 
+# Debugging: afficher la structure du code source
+RUN echo "📂 Contenu du dossier source:" && \
+    ls -la && \
+    echo "📂 Contenu du dossier src:" && \
+    ls -la src
+
 # Créer le dossier de logs
 RUN mkdir -p logs
+
+# Exécuter un build complet avec plus de logs
+RUN echo "🔨 Lancement du build..." && \
+    npm run build --verbose && \
+    echo "📂 Contenu du dossier dist après build:" && \
+    ls -la dist/ && \
+    if [ -f "dist/main.js" ]; then \
+      echo "✅ main.js présent, taille:" && \
+      stat -c %s dist/main.js && \
+      echo "🔍 Premières lignes de main.js:" && \
+      head -n 20 dist/main.js; \
+    else \
+      echo "❌ main.js manquant!"; \
+    fi
 
 # Créer un script de démarrage amélioré
 RUN echo '#!/bin/bash\n\
@@ -30,15 +50,17 @@ echo "- MongoDB URI configuré: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; els
 echo "- JWT secrets configurés: $(if [ -n "$JWT_SECRET" ] && [ -n "$JWT_REFRESH_SECRET" ]; then echo "oui"; else echo "non"; fi)"\n\
 \n\
 echo "👉 Vérification du build..."\n\
-if [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then\n\
-  echo "❌ Fichiers de build manquants, tentative de reconstruction..."\n\
-  npm run build\n\
-fi\n\
-\n\
-echo "📁 Contenu du dossier dist/ :"\n\
+echo "📂 Contenu du dossier dist/ :"\n\
 ls -la dist/\n\
 echo "📄 Vérification des fichiers critiques:"\n\
-file dist/main.js\n\
+if [ -f "dist/main.js" ]; then\n\
+  echo "✅ main.js présent, taille: $(stat -c %s dist/main.js) octets"\n\
+  file dist/main.js\n\
+else\n\
+  echo "❌ main.js manquant! Tentative de reconstruction..."\n\
+  npm run build\n\
+  ls -la dist/\n\
+fi\n\
 \n\
 echo "🔄 DIAGNOSTIC PORT: La variable PORT est définie à: $PORT"\n\
 \n\
@@ -59,10 +81,6 @@ NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=tru
   NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js\n\
 )' > start.sh && \
     chmod +x start.sh
-
-# Construire l'application
-RUN npm run build && \
-    ls -la dist/
 
 # Créer script de secours start-railway.sh
 COPY backend/start-railway.sh ./
