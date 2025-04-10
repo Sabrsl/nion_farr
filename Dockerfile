@@ -26,17 +26,23 @@ RUN mkdir -p logs
 
 # Exécuter un build complet sans scripts additionnels
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build:railway && \
-    echo "📂 Contenu du dossier dist après build:" && \
-    ls -la dist/ && \
-    if [ -f "dist/main.js" ]; then \
-      echo "✅ main.js présent, taille:" && \
-      stat -c %s dist/main.js && \
-      echo "🔍 Premières lignes de main.js:" && \
-      head -n 20 dist/main.js; \
+    npm run build:railway
+
+# Vérifier si main.js existe et le copier si nécessaire
+RUN echo "📂 Vérification du fichier main.js..." && \
+    if [ -f "dist/src/main.js" ]; then \
+      echo "✅ dist/src/main.js trouvé, copie vers dist/main.js..." && \
+      cp -f dist/src/main.js dist/main.js && \
+      echo "✅ Copie réussie"; \
     else \
-      echo "❌ main.js manquant!"; \
-    fi
+      echo "⚠️ dist/src/main.js non trouvé, vérification de dist/main.js..."; \
+    fi && \
+    if [ ! -f "dist/main.js" ]; then \
+      echo "❌ main.js manquant, exécution de check-dist.js..." && \
+      node scripts/check-dist.js; \
+    fi && \
+    echo "📂 Contenu final du dossier dist:" && \
+    ls -la dist/
 
 # Créer un serveur de secours uniquement si main.js n'a pas été généré
 RUN if [ ! -f "dist/main.js" ]; then \
