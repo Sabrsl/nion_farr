@@ -55,4 +55,4 @@ EXPOSE 3000
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 # Script de démarrage avec gestion des échecs
-CMD ["node", "dist/main.js"] 
+CMD ["./start.sh"] 
