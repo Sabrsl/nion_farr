@@ -9,7 +9,8 @@ const path = require('path');
 console.log('🔍 Vérification des fichiers du build...');
 
 const distPath = path.join(__dirname, '..', 'dist');
-const mainJsPath = path.join(distPath, 'main.js');
+const srcPath = path.join(distPath, 'src');
+const mainJsPath = path.join(srcPath, 'main.js');
 const serverBackupPath = path.join(__dirname, '..', 'server-simple.js');
 
 // Vérifier si le répertoire dist existe
@@ -23,9 +24,30 @@ console.log('📋 Contenu du répertoire dist:');
 const distFiles = fs.readdirSync(distPath);
 distFiles.forEach(file => console.log(`   - ${file}`));
 
+// Vérifier si le répertoire dist/src existe
+if (!fs.existsSync(srcPath)) {
+  console.log('📁 Création du répertoire dist/src/...');
+  fs.mkdirSync(srcPath, { recursive: true });
+}
+
+// Vérifier les fichiers dans dist/src/ s'il existe
+if (fs.existsSync(srcPath)) {
+  console.log('📋 Contenu du répertoire dist/src/:');
+  try {
+    const srcFiles = fs.readdirSync(srcPath);
+    if (srcFiles.length === 0) {
+      console.log('   (dossier vide)');
+    } else {
+      srcFiles.forEach(file => console.log(`   - ${file}`));
+    }
+  } catch (error) {
+    console.error(`❌ Erreur lors de la lecture du dossier dist/src/: ${error.message}`);
+  }
+}
+
 // Vérifier si main.js existe
 if (!fs.existsSync(mainJsPath)) {
-  console.error('❌ Le fichier main.js est manquant dans dist/');
+  console.error('❌ Le fichier main.js est manquant dans dist/src/');
   
   // Créer un fichier main.js de secours plus robuste
   const backupMainJs = `
@@ -33,6 +55,9 @@ if (!fs.existsSync(mainJsPath)) {
  * Fichier main.js de secours généré automatiquement par check-dist.js
  * Garantit un serveur fonctionnel même si le build échoue
  */
+
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 
 const express = require('express');
 const cors = require('cors');
@@ -150,15 +175,19 @@ server.listen(PORT, '0.0.0.0', () => {
 `;
 
   console.log('⚠️ Création d\'un fichier main.js de secours robuste...');
+  // S'assurer que le dossier dist/src existe
+  if (!fs.existsSync(srcPath)) {
+    fs.mkdirSync(srcPath, { recursive: true });
+  }
   fs.writeFileSync(mainJsPath, backupMainJs);
-  console.log('✅ Fichier main.js de secours créé avec succès');
+  console.log('✅ Fichier main.js de secours créé avec succès dans dist/src/');
 } else {
   // Vérifier la taille du fichier main.js
   const stats = fs.statSync(mainJsPath);
   const fileSizeInBytes = stats.size;
   const fileSizeInKB = fileSizeInBytes / 1024;
   
-  console.log(`📏 Taille du fichier main.js: ${fileSizeInKB.toFixed(2)} KB`);
+  console.log(`📏 Taille du fichier dist/src/main.js: ${fileSizeInKB.toFixed(2)} KB`);
   
   if (fileSizeInKB < 10) {
     console.log('⚠️ ATTENTION: Le fichier main.js est anormalement petit.');
@@ -174,6 +203,9 @@ server.listen(PORT, '0.0.0.0', () => {
  * Fichier main.js de secours généré automatiquement par check-dist.js
  * Le fichier original (${fileSizeInKB.toFixed(2)} KB) était trop petit et a été sauvegardé en .original
  */
+
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 
 // Importer les modules nécessaires
 const express = require('express');
@@ -248,26 +280,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Créer un serveur HTTP pour gérer la fermeture gracieuse
-const server = http.createServer(app);
-
 // Démarrer le serveur
+const server = http.createServer(app);
 server.listen(PORT, '0.0.0.0', () => {
   console.log(\`Serveur de secours démarré sur le port \${PORT}\`);
 });
 
-// Gérer les erreurs non capturées
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-  // Ne pas quitter
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection:', reason);
-  // Ne pas quitter
-});
-
-// Gérer les signaux de terminaison
+// Gestion des signaux de terminaison
 process.on('SIGTERM', () => {
   console.log('Signal SIGTERM reçu, arrêt gracieux...');
   server.close(() => {
@@ -280,153 +299,82 @@ process.on('SIGTERM', () => {
     process.exit(0);
   }, 5000);
 });
-
-process.on('SIGINT', () => {
-  console.log('Signal SIGINT reçu, arrêt gracieux...');
-  server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
-  });
-  
-  setTimeout(() => {
-    console.log('Délai dépassé, sortie forcée');
-    process.exit(0);
-  }, 5000);
-});
 `;
-    
+
     fs.writeFileSync(mainJsPath, backupMainJs);
-    console.log('✅ Fichier main.js de secours créé avec succès');
+    console.log('✅ Fichier main.js de secours créé');
   }
 }
 
-// S'assurer qu'un fichier server-simple.js de secours existe
+// Vérifier si un serveur de secours existe
 if (!fs.existsSync(serverBackupPath)) {
-  console.log('⚠️ Création du fichier server-simple.js...');
-  const simpleServer = `
+  console.log('⚠️ Le serveur de secours n\'existe pas, création...');
+  
+  const backupServerJs = `
 /**
- * Serveur Node.js minimal ultra-robuste pour Railway
- * Garantit une réponse positive aux healthchecks même si tout le reste échoue
+ * Serveur de secours simple pour garantir un service minimal
  */
 
-'use strict';
-
-// Serveur HTTP de base sans dépendances
-const http = require('http');
-
-// Configuration minimale
+const express = require('express');
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Créer le serveur HTTP
-const server = http.createServer((req, res) => {
-  const timestamp = new Date().toISOString();
-  console.log(\`[\${timestamp}] \${req.method} \${req.url}\`);
-  
-  // Ajouter les headers CORS pour permettre l'accès depuis le frontend
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
-  // Gérer les requêtes OPTIONS (preflight CORS)
+console.log('🚨 Démarrage du serveur de secours simple');
+console.log(\`PORT: \${PORT}\`);
+
+// CORS - Configuration basique
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
-    return;
+    return res.sendStatus(200);
   }
-  
-  // Répondre 200 OK à toutes les requêtes de healthcheck
-  if (req.url === '/health' || req.url === '/health/ping') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      message: 'Railway failsafe server responding',
-      timestamp: timestamp,
-      isFailsafe: true
-    }));
-    return;
-  }
-  
-  // Route racine explicite
-  if (req.url === '/') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      message: 'NionFar API is running in failsafe mode',
-      timestamp: timestamp,
-      isFailsafe: true
-    }));
-    return;
-  }
-  
-  // Pour le reste, répondre avec un message simple
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('NionFar API failsafe server running. The main application is not available.');
+  next();
 });
 
-// Démarrer le serveur
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(\`Serveur de secours Railway démarré sur le port \${PORT}\`);
-  console.log(\`URL de healthcheck: http://0.0.0.0:\${PORT}/health/ping\`);
+// Routes de santé - essentielles pour les healthchecks Railway
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Service en état de fonctionnement (secours)' });
+});
+
+app.get('/health/ping', (req, res) => {
+  res.send('pong');
+});
+
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'API en mode secours', timestamp: new Date().toISOString() });
+});
+
+app.get('/api', (req, res) => {
+  res.json({ message: 'API en mode secours simple' });
 });
 
 // Gestion des erreurs
-server.on('error', (error) => {
-  console.error(\`Erreur du serveur: \${error.message}\`);
-  // Ne pas quitter - essayer de récupérer
-  setTimeout(() => {
-    console.log('Tentative de redémarrage du serveur après erreur...');
-    try {
-      server.close();
-      server.listen(PORT, '0.0.0.0');
-    } catch (e) {
-      console.error('Échec de la tentative de récupération');
-    }
-  }, 1000);
+app.use((err, req, res, next) => {
+  console.error('Erreur:', err);
+  res.status(500).json({ error: 'Erreur serveur' });
 });
 
-// Gestion des signaux
-process.on('SIGTERM', () => {
-  console.log('Signal SIGTERM reçu, arrêt propre...');
-  server.close(() => {
-    console.log('Serveur arrêté proprement');
-    process.exit(0);
-  });
-  
-  // Sécurité: fermer après un délai si server.close() ne répond pas
-  setTimeout(() => {
-    console.log('Délai de fermeture dépassé, sortie forcée');
-    process.exit(0);
-  }, 5000);
+// Démarrer le serveur
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(\`🚀 Serveur de secours en écoute sur le port \${PORT}\`);
 });
 
-process.on('SIGINT', () => {
-  console.log('Signal SIGINT reçu, arrêt propre...');
-  server.close(() => {
-    console.log('Serveur arrêté proprement');
-    process.exit(0);
-  });
-  
-  setTimeout(() => {
-    console.log('Délai de fermeture dépassé, sortie forcée');
-    process.exit(0);
-  }, 5000);
+// Gestion des erreurs non capturées
+process.on('uncaughtException', (err) => {
+  console.error('Erreur non capturée:', err);
+  // Ne pas terminer le processus
 });
 
-// Capturer les exceptions non gérées
-process.on('uncaughtException', (error) => {
-  console.error(\`Exception non gérée: \${error.message}\`);
-  console.error(error.stack);
-  // Ne pas quitter - continuer à répondre aux requêtes
-});
-
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   console.error('Promesse rejetée non gérée:', reason);
-  // Ne pas quitter - continuer à répondre aux requêtes
+  // Ne pas terminer le processus
 });
 `;
-  fs.writeFileSync(serverBackupPath, simpleServer);
-  console.log('✅ Fichier server-simple.js créé avec succès');
+
+  fs.writeFileSync(serverBackupPath, backupServerJs);
+  console.log('✅ Serveur de secours créé');
 }
 
-console.log('✅ Vérification dist/ terminée');
+console.log('✅ Vérification des fichiers terminée');

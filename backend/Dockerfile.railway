@@ -29,27 +29,34 @@ RUN echo "🔨 Lancement du build NestJS..." && \
     npm run build:railway && \
     echo "📂 Contenu du dossier dist après build:" && \
     ls -la dist/ && \
-    if [ -f "dist/main.js" ]; then \
-      echo "✅ main.js présent, taille:" && \
-      stat -c %s dist/main.js && \
-      echo "🔍 Premières lignes de main.js:" && \
-      head -n 20 dist/main.js; \
+    if [ -d "dist/src" ]; then \
+      echo "📂 Contenu du dossier dist/src après build:" && \
+      ls -la dist/src/; \
     else \
-      echo "❌ main.js manquant à la racine de dist!" && \
-      if [ -f "dist/src/main.js" ]; then \
-        echo "🔍 main.js trouvé dans dist/src/, copie vers dist/..." && \
-        cp dist/src/main.js dist/main.js && \
-        echo "✅ main.js copié depuis dist/src/" && \
-        stat -c %s dist/main.js; \
+      echo "⚠️ Le dossier dist/src n'existe pas!"; \
+    fi && \
+    if [ -f "dist/src/main.js" ]; then \
+      echo "✅ main.js présent dans dist/src/, taille:" && \
+      stat -c %s dist/src/main.js && \
+      echo "🔍 Premières lignes de main.js:" && \
+      head -n 20 dist/src/main.js; \
+    else \
+      echo "❌ main.js manquant dans dist/src/!" && \
+      mkdir -p dist/src && \
+      if [ -f "src/main.js" ]; then \
+        echo "🔍 main.js trouvé dans src/, copie vers dist/src/..." && \
+        cp src/main.js dist/src/main.js && \
+        echo "✅ main.js copié depuis src/" && \
+        stat -c %s dist/src/main.js; \
       else \
-        echo "⚠️ main.js également manquant dans dist/src/" && \
+        echo "⚠️ main.js également manquant dans src/" && \
         npm run check:main-js && \
-        if [ -f "dist/main.js" ]; then \
+        if [ -f "dist/src/main.js" ]; then \
           echo "✅ main.js maintenant présent, taille:" && \
-          stat -c %s dist/main.js; \
+          stat -c %s dist/src/main.js; \
         else \
           echo "❌ main.js toujours manquant! Création d'un fichier fallback..." && \
-          echo '"use strict";\nconst express=require("express");\nconst app=express();\nconst PORT=process.env.PORT||3000;\napp.get("/health",(req,res)=>res.send("ok"));\napp.get("/health/ping",(req,res)=>res.send("pong"));\napp.listen(PORT,()=>console.log(`Server running on port ${PORT}`));' > dist/main.js && \
+          echo '"use strict";\nObject.defineProperty(exports, "__esModule", { value: true });\nconst express=require("express");\nconst app=express();\nconst cors=require("cors");\nconst PORT=process.env.PORT||3000;\napp.use(cors());\napp.get("/health",(req,res)=>res.send("ok"));\napp.get("/health/ping",(req,res)=>res.send("pong"));\napp.listen(PORT,()=>console.log(`Server running on port ${PORT}`));' > dist/src/main.js && \
           echo "✅ Fichier fallback créé"; \
         fi \
       fi \

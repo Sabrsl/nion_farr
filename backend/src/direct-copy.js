@@ -1,5 +1,5 @@
 /**
- * Script pour copier manuellement main.js dans le dossier dist
+ * Script pour copier manuellement main.js dans le dossier dist/src
  * Utilisé comme solution de contournement pour le bug de build NestJS
  */
 
@@ -8,14 +8,14 @@ const path = require('path');
 
 // Chemin vers les fichiers
 const sourceFile = path.join(__dirname, 'main.js');
-const destDir = path.join(__dirname, '..', 'dist');
+const destDir = path.join(__dirname, '..', 'dist', 'src');
 const destFile = path.join(destDir, 'main.js');
 
-console.log('🔄 Copie de main.js vers dist/...');
+console.log('🔄 Copie de main.js vers dist/src/...');
 
-// Vérifier si le dossier dist existe
+// Vérifier si le dossier dist/src existe
 if (!fs.existsSync(destDir)) {
-  console.log('📁 Création du dossier dist/...');
+  console.log('📁 Création du dossier dist/src/...');
   fs.mkdirSync(destDir, { recursive: true });
 }
 
@@ -139,8 +139,8 @@ try {
   fs.copyFileSync(sourceFile, destFile);
   console.log(`✅ Fichier copié avec succès: ${sourceFile} -> ${destFile}`);
   
-  // Afficher le contenu du dossier dist
-  console.log('📂 Contenu du dossier dist/:');
+  // Afficher le contenu du dossier dist/src
+  console.log('📂 Contenu du dossier dist/src/:');
   const files = fs.readdirSync(destDir);
   files.forEach(file => {
     const filePath = path.join(destDir, file);
@@ -150,9 +150,9 @@ try {
   
   // Vérifier que le fichier existe bien
   if (fs.existsSync(destFile)) {
-    console.log('✅ Vérification: dist/main.js existe bien.');
+    console.log('✅ Vérification: dist/src/main.js existe bien.');
   } else {
-    console.error('❌ ERROR: dist/main.js n\'existe toujours pas après la copie!');
+    console.error('❌ ERROR: dist/src/main.js n\'existe toujours pas après la copie!');
     process.exit(1);
   }
 } catch (error) {

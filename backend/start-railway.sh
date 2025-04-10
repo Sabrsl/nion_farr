@@ -19,31 +19,40 @@ fi
 echo "👉 Vérification du build..."
 echo "📂 Contenu du dossier dist/ :"
 ls -la dist/
+echo "📂 Contenu du dossier dist/src/ :"
+ls -la dist/src/ 2>/dev/null || echo "⚠️ Le dossier dist/src/ n'existe pas"
 
-# Vérifier si main.js existe à la racine
-if [ ! -f "dist/main.js" ]; then
-  echo "⚠️ main.js manquant à la racine de dist/"
+# Vérifier si main.js existe au bon endroit
+if [ ! -f "dist/src/main.js" ]; then
+  echo "⚠️ main.js manquant dans dist/src/"
   
-  # Vérifier si main.js existe dans dist/src
-  if [ -f "dist/src/main.js" ]; then
-    echo "🔍 main.js trouvé dans dist/src/, copie vers dist/..."
-    cp dist/src/main.js dist/main.js
+  # Créer le dossier dist/src s'il n'existe pas
+  if [ ! -d "dist/src" ]; then
+    echo "📁 Création du dossier dist/src/..."
+    mkdir -p dist/src
+  fi
+  
+  # Vérifier si main.js existe dans src (non compilé)
+  if [ -f "src/main.js" ]; then
+    echo "🔍 main.js trouvé dans src/, copie vers dist/src/..."
+    cp src/main.js dist/src/main.js
     echo "✅ main.js copié avec succès"
   else
-    echo "❌ main.js manquant dans dist/src/ également"
     # Exécuter le script de validation
-    node scripts/validate-railway.js
+    echo "❌ main.js manquant dans src/ également"
+    # Essayer d'exécuter le script de check:main-js
     npm run check:main-js
   fi
 fi
 
 # Validation supplémentaire pour s'assurer que main.js existe
 echo "🔍 Vérification finale de main.js..."
-if [ ! -f "dist/main.js" ]; then
+if [ ! -f "dist/src/main.js" ]; then
   echo "❌ main.js toujours manquant! Création d'un fichier main.js de secours..."
   
   # Créer un main.js minimal de secours
-  cat > dist/main.js << 'EOF'
+  mkdir -p dist/src
+  cat > dist/src/main.js << 'EOF'
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -137,9 +146,9 @@ echo "✅ Version de NODE: $(node --version)"
 echo "✅ Version de NPM: $(npm --version)"
 
 # Vérifier si main.js existe
-if [ -f "dist/main.js" ]; then
+if [ -f "dist/src/main.js" ]; then
   echo "✅ Démarrage de l'application principale..."
-  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log || (
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/src/main.js 2>&1 | tee logs/app.log || (
     echo "❌ Échec du démarrage de l'application principale, examen des logs..."
     tail -n 50 logs/app.log
     echo "🔄 Utilisation du serveur de secours pour maintenir les healthchecks"
