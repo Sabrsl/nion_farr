@@ -64,6 +64,14 @@ NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=tru
 RUN npm run build && \
     ls -la dist/
 
+# Créer script de secours start-railway.sh
+COPY backend/start-railway.sh ./
+RUN chmod +x start-railway.sh
+
+# S'assurer que server-simple.js existe (sera créé par start-railway.sh si nécessaire)
+COPY backend/server-simple.js ./
+RUN chmod +x server-simple.js
+
 # Exposer le port (Railway réaffecte PORT via la variable d'environnement)
 EXPOSE 3000
 
