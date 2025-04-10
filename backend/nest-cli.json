@@ -6,6 +6,10 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": false,
+    "assets": ["**/*.hbs", "assets/**/*"],
+    "watchAssets": true,
+    "builder": "tsc",
+    "typeCheck": true,
     "tsConfigPath": "tsconfig.build.json",
     "plugins": [{
       "name": "@nestjs/swagger",

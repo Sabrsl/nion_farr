@@ -11,7 +11,7 @@
     "build": "nest build",
     "build:verbose": "nest build --verbose",
     "build:debug": "echo '📋 Debug du build...' && rimraf dist && mkdir -p dist && nest build --verbose && echo '📋 Contenu du répertoire dist:' && ls -la dist/",
-    "build:railway": "npm run clean:source-js && rimraf dist && nest build --verbose && node src/direct-copy.js && node scripts/check-dist.js && npm run check:main-js",
+    "build:railway": "npm run clean:source-js && rimraf dist && nest build --verbose && echo '🔍 Verification structure dist/' && ls -la dist/ && ([ -f dist/src/main.js ] && echo '🔄 Copie main.js depuis dist/src' && cp dist/src/main.js dist/main.js || echo '✅ Pas besoin de copier main.js') && node src/direct-copy.js && node scripts/check-dist.js && npm run check:main-js",
     "build:clean": "rimraf dist && nest build",
     "postbuild": "node scripts/check-dist.js && npm run check:main-js",
     "clean:source-js": "node scripts/clean-source-js.js",

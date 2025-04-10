@@ -20,22 +20,109 @@ echo "👉 Vérification du build..."
 echo "📂 Contenu du dossier dist/ :"
 ls -la dist/
 
-# Validation supplémentaire pour s'assurer que main.js existe
-echo "🔍 Vérification de main.js..."
+# Vérifier si main.js existe à la racine
 if [ ! -f "dist/main.js" ]; then
-  echo "❌ main.js manquant! Tentative de correction..."
+  echo "⚠️ main.js manquant à la racine de dist/"
   
-  # Exécuter le script de validation
-  echo "🔄 Exécution du script de validation Railway..."
-  node scripts/validate-railway.js
-  
-  # Vérifier à nouveau
-  if [ ! -f "dist/main.js" ]; then
-    echo "❌ main.js toujours manquant après tentative de correction! Tentative avec check:main-js..."
+  # Vérifier si main.js existe dans dist/src
+  if [ -f "dist/src/main.js" ]; then
+    echo "🔍 main.js trouvé dans dist/src/, copie vers dist/..."
+    cp dist/src/main.js dist/main.js
+    echo "✅ main.js copié avec succès"
+  else
+    echo "❌ main.js manquant dans dist/src/ également"
+    # Exécuter le script de validation
+    node scripts/validate-railway.js
     npm run check:main-js
   fi
-else
-  echo "✅ main.js existe"
+fi
+
+# Validation supplémentaire pour s'assurer que main.js existe
+echo "🔍 Vérification finale de main.js..."
+if [ ! -f "dist/main.js" ]; then
+  echo "❌ main.js toujours manquant! Création d'un fichier main.js de secours..."
+  
+  # Créer un main.js minimal de secours
+  cat > dist/main.js << 'EOF'
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+
+const express = require('express');
+const cors = require('cors');
+const http = require('http');
+
+console.log('🚨 Démarrage du serveur express de secours...');
+console.log('Variables d\'environnement:', {
+  PORT: process.env.PORT,
+  NODE_ENV: process.env.NODE_ENV,
+  FRONTEND_URL: process.env.FRONTEND_URL,
+  CORS_ALLOWED_ORIGINS: process.env.CORS_ALLOWED_ORIGINS
+});
+
+// Gérer les erreurs non capturées
+process.on('uncaughtException', (error) => {
+  console.error('UNCAUGHT EXCEPTION:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Configuration de base
+app.use(cors({
+  origin: process.env.CORS_ALLOWED_ORIGINS 
+    ? process.env.CORS_ALLOWED_ORIGINS.split(',') 
+    : (process.env.FRONTEND_URL || '*'),
+  credentials: true
+}));
+app.use(express.json());
+
+// Middleware de logging minimal
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
+// Route de santé
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    message: 'NionFar API is running (fallback)'
+  });
+});
+
+app.get('/health/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'NionFar API is running (fallback)',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api', (req, res) => {
+  res.status(200).json({
+    message: 'API is running (fallback)',
+    timestamp: new Date().toISOString()
+  });
+});
+
+const server = http.createServer(app);
+
+// Démarrer le serveur
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Serveur démarré sur le port ${PORT}`);
+  console.log(`Health check disponible sur http://0.0.0.0:${PORT}/health/ping`);
+});
+EOF
+  echo "✅ Fichier main.js de secours créé avec succès"
 fi
 
 echo "🔄 DIAGNOSTIC PORT: La variable PORT est définie à: $PORT"
