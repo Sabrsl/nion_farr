@@ -34,6 +34,8 @@ export class HealthController {
       render: process.env.IS_RENDER === 'true',
       environment: process.env.NODE_ENV,
       memoryOptimized: process.env.MEMORY_OPTIMIZED === 'true',
+      port: process.env.PORT || 'non défini',
+      hostname: '0.0.0.0', // On écoute sur toutes les interfaces
     };
   }
 } 

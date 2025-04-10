@@ -35,6 +35,11 @@ if [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then\n\
   npm run build\n\
 fi\n\
 \n\
+echo "📁 Contenu du dossier dist/ :"\n\
+ls -la dist/\n\
+echo "📄 Vérification des fichiers critiques:"\n\
+file dist/main.js\n\
+\n\
 echo "🔄 DIAGNOSTIC PORT: La variable PORT est définie à: $PORT"\n\
 \n\
 echo "✅ Démarrage de l'\''application principale..."\n\

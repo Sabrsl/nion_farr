@@ -14,6 +14,7 @@ import { startMemoryMonitoring, setupGracefulShutdown } from './scripts/memory-m
 import { isMemoryConstrainedEnvironment, getMemoryConfig } from './config/environment';
 
 async function bootstrap() {
+  console.log("🟢 Lancement main.ts avec PORT:", process.env.PORT);
   console.log('Démarrage du serveur NionFar API...');
   
   // Setup graceful shutdown handlers
