@@ -277,4 +277,66 @@ function getFolderSize(folderPath) {
   }
   
   return totalSize;
-} 
+}
+
+/**
+ * Fonction principale
+ */
+async function main() {
+  console.log('🚀 Préparation du déploiement Railway...');
+  
+  // ... existing code ...
+  
+  // Vérifier si dist/main.js existe et le créer si nécessaire
+  console.log('📂 Vérification de la présence du fichier main.js dans dist/');
+  const distPath = path.join(__dirname, '..', 'dist');
+  const srcMainJsPath = path.join(distPath, 'src', 'main.js');
+  const distMainJsPath = path.join(distPath, 'main.js');
+  
+  if (!fs.existsSync(distPath)) {
+    console.log('⚠️ Le dossier dist/ n\'existe pas, création...');
+    fs.mkdirSync(distPath, { recursive: true });
+  }
+  
+  if (fs.existsSync(srcMainJsPath)) {
+    console.log('✅ main.js trouvé dans dist/src/, copie vers dist/...');
+    fs.copyFileSync(srcMainJsPath, distMainJsPath);
+    console.log('✅ main.js copié avec succès vers dist/main.js');
+  } else {
+    console.log('⚠️ main.js non trouvé dans dist/src/, vérification du build...');
+    await runCommand('npm run build:clean');
+    
+    // Vérifier à nouveau après le build
+    if (fs.existsSync(srcMainJsPath)) {
+      console.log('✅ main.js généré avec succès, copie vers dist/...');
+      fs.copyFileSync(srcMainJsPath, distMainJsPath);
+      console.log('✅ main.js copié avec succès vers dist/main.js');
+    } else {
+      console.error('❌ Impossible de générer main.js, création d\'un fichier de secours...');
+      // Utiliser le fichier de secours de check-dist.js
+      await runCommand('node scripts/check-dist.js');
+    }
+  }
+  
+  // ... existing code ...
+}
+
+/**
+ * Helper pour exécuter des commandes shell
+ */
+async function runCommand(command) {
+  try {
+    console.log(`🔄 Exécution de la commande: ${command}`);
+    execSync(command, { stdio: 'inherit' });
+    return true;
+  } catch (error) {
+    console.error(`❌ Erreur lors de l'exécution de la commande: ${error.message}`);
+    return false;
+  }
+}
+
+// Exécuter la fonction principale
+main().catch(error => {
+  console.error(`❌ Erreur dans le script de préparation Railway: ${error.message}`);
+  process.exit(1);
+}); 

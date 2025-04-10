@@ -26,7 +26,7 @@ RUN mkdir -p logs
 
 # Exécuter un build complet sans scripts additionnels
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build:clean && \
+    npm run build:railway && \
     echo "📂 Contenu du dossier dist après build:" && \
     ls -la dist/ && \
     if [ -f "dist/main.js" ]; then \
