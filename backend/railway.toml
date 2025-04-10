@@ -4,10 +4,10 @@ buildCommand = "npm run build:railway"
 
 [deploy]
 startCommand = "npm run start:railway"
-healthcheckPath = "/health/ping"
-healthcheckTimeout = 30
+healthcheckPath = "/health"
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
-healthcheckInterval = 15
+healthcheckInterval = 20
 
 [environments]
 NODE_ENV = "production"

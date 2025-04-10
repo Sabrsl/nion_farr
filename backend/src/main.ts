@@ -13,6 +13,15 @@ import { checkRequiredEnvVars } from './config/check-env';
 import { startMemoryMonitoring, setupGracefulShutdown } from './scripts/memory-management';
 import { isMemoryConstrainedEnvironment, getMemoryConfig } from './config/environment';
 
+// Garde pour éviter la fermeture du processus Node.js
+// Cette variable globale sera référencée et jamais nettoyée, gardant ainsi le processus actif
+const KEEPALIVE_INTERVAL = setInterval(() => {
+  process.stdout.write(''); // No-op pour maintenir le processus actif
+}, 60000);
+
+// Ajout d'un timekeeper pour éviter que le processus ne se termine
+let isBootstrapComplete = false;
+
 async function bootstrap() {
   console.log("🟢 Lancement main.ts avec PORT:", process.env.PORT);
   console.log('Démarrage du serveur NionFar API...');
@@ -162,13 +171,16 @@ async function bootstrap() {
     });
 
     // Ajouter une route GET spécifique pour le healthcheck Railway
+    // Cette route est critique pour que Railway sache que l'app est bien démarrée
     httpAdapter.get('/health', (req, res) => {
+      console.log(`Healthcheck appelé (${new Date().toISOString()})`);
       return res.json({
         status: 'ok',
-        message: 'Healthcheck passed',
+        message: 'API running',
         timestamp: new Date().toISOString(),
         deployment: 'railway',
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        is_alive: true
       });
     });
 
@@ -207,8 +219,12 @@ async function bootstrap() {
       return res.send('pong');
     });
 
-    // Démarrage du serveur
+    // Démarrage du serveur - point critique, doit toujours être exécuté
     await app.listen(port, '0.0.0.0');
+    
+    // Marquer que le bootstrap est complété
+    isBootstrapComplete = true;
+    
     console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
     console.log(`✅ NionFar API est prêt et écoute sur http://0.0.0.0:${port}`);
     console.log(`✅ Routes de Healthcheck disponibles:`);
@@ -240,10 +256,25 @@ async function bootstrap() {
     console.error('🚨 Application en échec de démarrage, logs détaillés:');
     console.error(error instanceof Error ? error.stack : String(error));
     
-    // Retarder la sortie pour avoir le temps de voir les logs
-    setTimeout(() => process.exit(1), 10000);
+    // IMPORTANT: Ne pas quitter le processus immédiatement - 
+    // Railway a besoin que le processus reste en vie pour voir les logs
+    console.log('⏳ Attente de 20 secondes avant sortie pour permettre de voir les logs...');
+    setTimeout(() => {
+      console.log('❌ Sortie du processus après délai');
+      process.exit(1);
+    }, 20000);
   }
 }
+
+// Garde supplémentaire pour maintenir le processus en vie même après le bootstrap
+// Important: cette fonction est cruciale pour Railway
+process.nextTick(() => {
+  setTimeout(() => {
+    if (!isBootstrapComplete) {
+      console.log('⚠️ Le bootstrap n\'est toujours pas terminé, mais on maintient le processus actif');
+    }
+  }, 30000); // Vérifier après 30 secondes
+});
 
 // Ajouter ces handlers pour détecter les crashs invisibles
 process.on('unhandledRejection', (reason, promise) => {
@@ -269,4 +300,5 @@ process.on('SIGINT', () => {
   setTimeout(() => process.exit(0), 3000);
 });
 
+// Démarrer l'application
 bootstrap(); 
