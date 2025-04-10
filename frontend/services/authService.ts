@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { NextRouter } from 'next/router';
-import tokenStorage from '../utils/tokenStorage';
 
 // Constantes pour le stockage des données d'authentification
 const AUTH_TOKEN_KEY = 'auth_token';
@@ -363,7 +362,7 @@ class AuthService {
         console.log("🔄 Tentative via proxy API local");
         const proxyUrl = '/api/auth/login';
         
-        console.log("�� URL de proxy local:", proxyUrl);
+        console.log("🔗 URL de proxy local:", proxyUrl);
         
         const proxyResponse = await fetch(proxyUrl, {
           method: 'POST',
@@ -385,7 +384,9 @@ class AuthService {
           // Stocker le token
           const token = data.accessToken || data.token;
           if (token) {
-            tokenStorage.setToken(token);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(AUTH_TOKEN_KEY, token);
+            }
             this.token = token;
           }
           
@@ -508,7 +509,9 @@ class AuthService {
       console.error('Erreur lors de la déconnexion:', error);
     } finally {
       // Supprimer le token côté client dans tous les cas
-      tokenStorage.removeToken();
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+      }
     }
     this.user = null;
     this.token = null;
@@ -761,7 +764,7 @@ class AuthService {
       }
       
       // Récupérer et vérifier le token
-      const storedToken = tokenStorage.getToken();
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
       if (storedToken) {
         this.token = storedToken;
         console.log('✅ Token trouvé dans le localStorage:', storedToken.substring(0, 10) + '...');
