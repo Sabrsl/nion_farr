@@ -3,6 +3,18 @@ const http = require("http");
 const server = http.createServer((req, res) => {
   console.log(`Requête reçue: ${req.method} ${req.url}`);
   
+  // Ajouter les headers CORS pour permettre l'accès depuis n'importe quelle origine
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "X-Requested-With,content-type,Authorization");
+  
+  // Gérer les requêtes OPTIONS de CORS preflight
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+  
   if (req.url === "/health" || req.url === "/health/ping") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ 

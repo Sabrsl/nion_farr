@@ -92,11 +92,13 @@ async function bootstrap() {
     // Configuration CORS plus permissive pour assurer la compatibilité avec Vercel
     console.log(`🔒 Configuration CORS pour: ${frontendUrl}`);
     app.enableCors({
-      origin: ['https://nion-farr.vercel.app', 'http://localhost:3000', ...allowedOrigins],
+      origin: true, // Permet toutes les origines en développement, sera filtré par les headers en production
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin'],
       credentials: true,
       maxAge: 3600,
+      preflightContinue: false,
+      optionsSuccessStatus: 204
     });
 
     // Compression

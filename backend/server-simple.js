@@ -16,6 +16,19 @@ const server = http.createServer((req, res) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${req.method} ${req.url}`);
   
+  // Ajouter les headers CORS pour permettre l'accès depuis le frontend
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Gérer les requêtes OPTIONS (preflight CORS)
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+  
   // Répondre 200 OK à toutes les requêtes de healthcheck
   if (req.url === '/health' || req.url === '/health/ping') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
