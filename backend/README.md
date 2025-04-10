@@ -74,7 +74,7 @@ Configurez ces variables dans l'interface Render (Dashboard > Environment):
 NODE_ENV=production
 PORT=3000
 API_PREFIX=api
-APP_URL=https://nionfar-backend.onrender.com
+APP_URL=https://nionfar.up.railway.app
 FRONTEND_URL=https://nion-farr.vercel.app
 
 # MongoDB

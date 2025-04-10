@@ -351,97 +351,164 @@ class AuthService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes de timeout
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRF-Token': localStorage.getItem('csrf_token') || '',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-        mode: 'cors'
-      });
-      
-      clearTimeout(timeoutId);
-      
-      // Traiter la réponse texte d'abord
-      const responseText = await response.text();
-      console.log(`📥 Réponse du serveur (${response.status}):`, responseText.substring(0, 150) + (responseText.length > 150 ? '...' : ''));
-      
-      // Analyser la réponse JSON de manière sécurisée
-      let data;
       try {
-        data = responseText ? JSON.parse(responseText) : {};
-      } catch (e) {
-        console.error("❌ Erreur parsing JSON:", e);
-        return { 
-          success: false, 
-          error: "Réponse invalide du serveur: " + responseText.substring(0, 100) 
-        };
-      }
-      
-      if (!response.ok) {
-        console.error("❌ Erreur de connexion:", data);
-        return { 
-          success: false, 
-          error: data.message || "Identifiants incorrects" 
-        };
-      }
-      
-      console.log("✅ Connexion réussie:", {
-        success: data.success,
-        userId: data.user?.id,
-        tokenPresent: !!data.accessToken || !!data.token,
-        hasUserData: !!data.user
-      });
-      
-      // Stocker le token si présent (vérifier les deux formats possibles)
-      const token = data.accessToken || data.token;
-      if (token) {
-        localStorage.setItem(AUTH_TOKEN_KEY, token);
-        this.token = token;
-      }
-      
-      // Stocker le token CSRF s'il est fourni par le serveur
-      if (data.csrfToken) {
-        localStorage.setItem('csrf_token', data.csrfToken);
-      }
-      
-      // Stocker les données utilisateur complètes si présentes
-      if (data.user) {
-        // S'assurer que les données utilisateur sont stockées correctement
-        const userData = {
-          ...data.user,
-          // Convertir les propriétés booléennes en vrai booléens si elles sont des chaînes
-          isFreelancer: typeof data.user.isFreelancer === 'string' 
-            ? data.user.isFreelancer === 'true' 
-            : !!data.user.isFreelancer,
-          role: data.user.role || (data.user.isFreelancer ? 'freelance' : 'client')
-        };
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': localStorage.getItem('csrf_token') || '',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+          mode: 'cors'
+        });
         
-        // Stocker les données utilisateur complètes y compris services, commandes, etc.
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
-        console.log("👤 Données utilisateur stockées:", JSON.stringify(userData).substring(0, 100) + '...');
+        clearTimeout(timeoutId);
         
-        // Mettre à jour l'utilisateur courant
-        this.user = userData;
+        // Traiter la réponse texte d'abord
+        const responseText = await response.text();
+        console.log(`📥 Réponse du serveur (${response.status}):`, responseText.substring(0, 150) + (responseText.length > 150 ? '...' : ''));
         
-        // Redirection automatique si activée
-        if (autoRedirect) {
-          // Rediriger vers la page appropriée selon le rôle
-          const targetUrl = userData.isFreelancer ? '/dashboard' : (redirectUrl || '/');
-          this.forceRedirectAfterLogin(targetUrl);
+        // Analyser la réponse JSON de manière sécurisée
+        let data;
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch (e) {
+          console.error("❌ Erreur parsing JSON:", e);
+          return { 
+            success: false, 
+            error: "Réponse invalide du serveur: " + responseText.substring(0, 100) 
+          };
         }
+        
+        if (!response.ok) {
+          console.error("❌ Erreur de connexion:", data);
+          return { 
+            success: false, 
+            error: data.message || "Identifiants incorrects" 
+          };
+        }
+        
+        console.log("✅ Connexion réussie:", {
+          success: data.success,
+          userId: data.user?.id,
+          tokenPresent: !!data.accessToken || !!data.token,
+          hasUserData: !!data.user
+        });
+        
+        // Stocker le token si présent (vérifier les deux formats possibles)
+        const token = data.accessToken || data.token;
+        if (token) {
+          localStorage.setItem(AUTH_TOKEN_KEY, token);
+          this.token = token;
+        }
+        
+        // Stocker le token CSRF s'il est fourni par le serveur
+        if (data.csrfToken) {
+          localStorage.setItem('csrf_token', data.csrfToken);
+        }
+        
+        // Stocker les données utilisateur complètes si présentes
+        if (data.user) {
+          // S'assurer que les données utilisateur sont stockées correctement
+          const userData = {
+            ...data.user,
+            // Convertir les propriétés booléennes en vrai booléens si elles sont des chaînes
+            isFreelancer: typeof data.user.isFreelancer === 'string' 
+              ? data.user.isFreelancer === 'true' 
+              : !!data.user.isFreelancer,
+            role: data.user.role || (data.user.isFreelancer ? 'freelance' : 'client')
+          };
+          
+          // Stocker les données utilisateur complètes y compris services, commandes, etc.
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+          console.log("👤 Données utilisateur stockées:", JSON.stringify(userData).substring(0, 100) + '...');
+          
+          // Mettre à jour l'utilisateur courant
+          this.user = userData;
+          
+          // Redirection automatique si activée
+          if (autoRedirect) {
+            // Rediriger vers la page appropriée selon le rôle
+            const targetUrl = userData.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+            this.forceRedirectAfterLogin(targetUrl);
+          }
+        }
+        
+        return { 
+          success: true, 
+          user: data.user, 
+          token: token || data.token 
+        };
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.error("🔥 Erreur fetch lors de la connexion:", fetchError);
+        
+        // Vérifier si l'erreur est due à un problème de CORS ou de connectivité
+        if (fetchError.name === 'TypeError' && fetchError.message === 'Failed to fetch') {
+          console.error("⚠️ Erreur CORS ou problème de connexion au serveur");
+          
+          // Tentative alternative via proxy API local
+          try {
+            console.log("🔄 Tentative de connexion via proxy API local");
+            const proxyUrl = '/api/auth/login';
+            
+            const proxyResponse = await fetch(proxyUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(requestBody)
+            });
+            
+            const proxyData = await proxyResponse.json();
+            
+            if (proxyResponse.ok && (proxyData.accessToken || proxyData.token)) {
+              console.log("✅ Connexion via proxy réussie");
+              
+              // Stocker le token
+              const token = proxyData.accessToken || proxyData.token;
+              localStorage.setItem(AUTH_TOKEN_KEY, token);
+              this.token = token;
+              
+              // Stocker les données utilisateur
+              if (proxyData.user) {
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(proxyData.user));
+                this.user = proxyData.user;
+                
+                // Redirection si nécessaire
+                if (autoRedirect) {
+                  const targetUrl = proxyData.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+                  this.forceRedirectAfterLogin(targetUrl);
+                }
+              }
+              
+              return {
+                success: true,
+                user: proxyData.user,
+                token: token
+              };
+            }
+          } catch (proxyError) {
+            console.error("❌ La tentative via proxy a également échoué:", proxyError);
+          }
+          
+          // Fournir un message d'erreur plus explicite pour les problèmes de CORS/connectivité
+          return {
+            success: false,
+            error: "Impossible de se connecter au serveur. Vérifiez votre connexion internet ou réessayez plus tard. Si le problème persiste, contactez le support."
+          };
+        }
+        
+        return {
+          success: false,
+          error: fetchError instanceof Error ? fetchError.message : "Une erreur inattendue est survenue lors de la connexion"
+        };
       }
-      
-      return { 
-        success: true, 
-        user: data.user, 
-        token: token || data.token 
-      };
     } catch (error) {
       console.error("🔥 Erreur lors de la connexion:", error);
       return { 

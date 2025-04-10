@@ -21,17 +21,75 @@ export default async function handler(
       
       console.log(`[API] Redirection vers le backend: ${apiEndpoint}`);
       
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(req.body)
-      });
-      
-      const data = await response.json();
-      return res.status(response.status).json(data);
+      try {
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app'
+          },
+          body: JSON.stringify(req.body)
+        });
+        
+        // Vérifier si la réponse est correcte
+        if (response.ok) {
+          const data = await response.json();
+          return res.status(response.status).json(data);
+        } else {
+          // Gérer les erreurs HTTP
+          try {
+            const errorData = await response.json();
+            return res.status(response.status).json({
+              success: false,
+              error: errorData.message || 'Erreur lors de la connexion',
+              details: errorData.details || { general: 'Le serveur a retourné une erreur' }
+            });
+          } catch (parseError) {
+            // Si la réponse n'est pas du JSON valide
+            return res.status(response.status).json({
+              success: false,
+              error: `Erreur ${response.status}: ${response.statusText}`,
+              details: { general: 'Réponse invalide du serveur' }
+            });
+          }
+        }
+      } catch (fetchError) {
+        console.error("[API Proxy] Erreur lors de la connexion au backend:", fetchError);
+        
+        // Réessayer avec une configuration alternative si disponible
+        if (process.env.NEXT_PUBLIC_API_URL_FALLBACK) {
+          try {
+            console.log("[API Proxy] Tentative avec l'URL de secours");
+            const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL_FALLBACK}/auth/login`;
+            
+            const fallbackResponse = await fetch(fallbackUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(req.body)
+            });
+            
+            if (fallbackResponse.ok) {
+              const data = await fallbackResponse.json();
+              return res.status(fallbackResponse.status).json(data);
+            }
+          } catch (fallbackError) {
+            console.error("[API Proxy] Échec de la tentative avec l'URL de secours:", fallbackError);
+          }
+        }
+        
+        // Si aucune URL de secours ou si celle-ci a également échoué
+        return res.status(502).json({
+          success: false,
+          error: "Impossible de se connecter au serveur d'authentification",
+          details: { 
+            general: "Le serveur d'authentification est temporairement indisponible. Veuillez réessayer plus tard." 
+          }
+        });
+      }
     }
 
     const { email, password } = req.body;

@@ -24,7 +24,7 @@ const StatusPage: React.FC = () => {
     });
     
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
       console.log('Vérification du statut du serveur à:', backendUrl);
       
       const controller = new AbortController();
@@ -179,7 +179,7 @@ const StatusPage: React.FC = () => {
                 <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                   <div>
                     <dt className="text-sm font-medium text-gray-500">URL du backend</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api'}</dd>
+                    <dd className="mt-1 text-sm text-gray-900">{process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api'}</dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Environnement</dt>

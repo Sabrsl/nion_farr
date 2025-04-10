@@ -7,7 +7,7 @@ const nextConfig = {
   
   // Configuration des images
   images: {
-    domains: ['nion-farr.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
+    domains: ['nion-farr.vercel.app', 'nionfar.up.railway.app', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
     unoptimized: true,
   },
@@ -55,7 +55,7 @@ const nextConfig = {
   
   // Configuration du proxy API pour les requêtes backend
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api',
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
     NEXT_PUBLIC_ENVIRONMENT: process.env.NEXT_PUBLIC_ENVIRONMENT || 'production',
   },
@@ -104,7 +104,7 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nionfar-backend.onrender.com',
+            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nionfar.up.railway.app',
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -127,7 +127,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: (process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api') + '/:path*',
+        destination: (process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api') + '/:path*',
       },
     ];
   },

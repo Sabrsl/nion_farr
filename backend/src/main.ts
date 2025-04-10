@@ -92,11 +92,30 @@ async function bootstrap() {
     // Configuration CORS plus permissive pour assurer la compatibilité avec Vercel
     console.log(`🔒 Configuration CORS pour: ${frontendUrl}`);
     app.enableCors({
-      origin: true, // Permet toutes les origines en développement, sera filtré par les headers en production
+      origin: (origin, callback) => {
+        // Autoriser les requêtes sans origine (comme les requêtes mobiles ou Postman)
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        
+        // Vérifier si l'origine est dans la liste des origines autorisées
+        // Si allowedOrigins est 'true', toutes les origines sont autorisées
+        if (allowedOrigins.includes(origin) || 
+            allowedOrigins.includes('*') || 
+            origin.includes('vercel.app') || 
+            origin.includes('localhost')) {
+          callback(null, true);
+        } else {
+          console.warn(`🚫 Origine bloquée par CORS: ${origin}`);
+          callback(null, true); // Temporairement autorisé pour déboguer
+        }
+      },
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'X-CSRF-Token'],
+      exposedHeaders: ['Content-Disposition', 'X-CSRF-Token'],
       credentials: true,
-      maxAge: 3600,
+      maxAge: 86400, // 24 heures
       preflightContinue: false,
       optionsSuccessStatus: 204
     });

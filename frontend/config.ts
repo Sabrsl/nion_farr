@@ -1,5 +1,5 @@
 // Configuration de l'application
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
 
 // Autres paramètres de configuration
 export const APP_NAME = 'Nionfar';

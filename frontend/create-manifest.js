@@ -17,7 +17,7 @@ const basicManifest = {
   routes: [
     {
       src: "/api/(.*)",
-      dest: "https://nionfar-backend.onrender.com/api/$1"
+      dest: "https://nionfar.up.railway.app/api/$1"
     },
     {
       src: "/(.*)",

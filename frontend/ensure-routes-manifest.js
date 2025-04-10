@@ -31,7 +31,7 @@ const basicManifest = {
   rewrites: [
     {
       source: "/api/:path*",
-      destination: "https://nionfar-backend.onrender.com/api/:path*"
+      destination: "https://nionfar.up.railway.app/api/:path*"
     }
   ],
   dynamicRoutes: []
