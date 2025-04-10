@@ -1,155 +1,87 @@
 /**
- * Serveur de secours minimal pour Railway
- * Utilisé uniquement si l'application principale échoue
+ * Serveur de secours simple pour Railway
+ * À utiliser quand le build de NestJS échoue
  */
 
-'use strict';
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 8080;
 
-console.log('🔄 Serveur de secours démarré');
-console.log('Environment:', process.env.NODE_ENV);
+console.log('🚀 Démarrage du serveur de secours NionFar...');
+console.log(`📊 Variables d'environnement: PORT=${PORT}`);
 
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+// Middleware pour les logs
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
-// Variables
-const PORT = process.env.PORT || 3000;
-console.log(`🚨 DIAGNOSTIC: process.env.PORT=${process.env.PORT}, utilisant le port ${PORT}`);
-
-// Fonction pour écrire des logs
-function writeLog(message) {
-  const timestamp = new Date().toISOString();
-  const logEntry = `[${timestamp}] ${message}\n`;
-  console.log(logEntry);
+// Configuration CORS simple
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
-  try {
-    fs.appendFileSync(path.join(__dirname, 'logs', 'backup-server.log'), logEntry);
-  } catch (err) {
-    console.error('Impossible d\'écrire dans le fichier de log:', err);
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
   }
-}
+  next();
+});
 
-// Essayer de capturer pourquoi l'application principale a échoué
-try {
-  if (fs.existsSync(path.join(__dirname, 'dist', 'main.js'))) {
-    writeLog('✅ Le fichier main.js existe');
-  } else {
-    writeLog('❌ Le fichier main.js n\'existe pas!');
-  }
-  
-  // Liste les fichiers du dossier dist
-  writeLog('📂 Contenu du dossier dist:');
-  if (fs.existsSync(path.join(__dirname, 'dist'))) {
-    const files = fs.readdirSync(path.join(__dirname, 'dist'));
-    writeLog(files.join(', '));
-  } else {
-    writeLog('❌ Le dossier dist n\'existe pas!');
-  }
-  
-  // Vérifier les variables d'environnement critiques
-  writeLog('🔑 Variables d\'environnement:');
-  writeLog(`PORT=${process.env.PORT}`);
-  writeLog(`NODE_ENV=${process.env.NODE_ENV}`);
-  writeLog(`RAILWAY_DEPLOYMENT=${process.env.RAILWAY_DEPLOYMENT}`);
-  writeLog(`MONGODB_URI existe: ${Boolean(process.env.MONGODB_URI)}`);
-  writeLog(`JWT_SECRET existe: ${Boolean(process.env.JWT_SECRET)}`);
-  writeLog(`FRONTEND_URL=${process.env.FRONTEND_URL}`);
-  writeLog(`CORS_ALLOWED_ORIGINS=${process.env.CORS_ALLOWED_ORIGINS}`);
-} catch (err) {
-  writeLog(`❌ Erreur lors de la vérification: ${err.message}`);
-}
+// Routes de healthcheck
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Serveur de secours NionFar actif',
+    timestamp: new Date().toISOString(),
+    fallback: true
+  });
+});
 
-// Créer un serveur HTTP simple
-const server = http.createServer((req, res) => {
-  writeLog(`📝 ${req.method} ${req.url}`);
-  
-  // Endpoint de santé
-  if (req.url === '/health' || req.url === '/health/ping') {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
-      status: 'ok',
-      message: 'Backup server responding',
-      timestamp: new Date().toISOString(),
-      isBackupServer: true
-    }));
-    return;
-  }
-  
-  // Redirection vers l'API
-  if (req.url.startsWith('/api')) {
-    res.statusCode = 503;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ 
-      status: 'error',
-      message: 'API Service temporarily unavailable - backup server running',
-      timestamp: new Date().toISOString() 
-    }));
-    return;
-  }
-  
-  // Page d'accueil
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'text/html');
-  res.end(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>NionFar API - Backup Server</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-          h1 { color: #333; }
-          .container { max-width: 800px; margin: 0 auto; }
-          .status { padding: 20px; background: #f8f8f8; border-left: 4px solid #e74c3c; }
-          .info { margin-top: 20px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>NionFar API</h1>
-          <div class="status">
-            <h2>Mode de secours actif</h2>
-            <p>Le serveur principal est actuellement indisponible.</p>
-            <p>Le serveur de secours est actif pour maintenir les healthchecks.</p>
-          </div>
-          <div class="info">
-            <p>Timestamp: ${new Date().toISOString()}</p>
-            <p>Environnement: ${process.env.NODE_ENV || 'development'}</p>
-            <p>Port: ${PORT}</p>
-            <p>CORS configuré pour: ${process.env.CORS_ALLOWED_ORIGINS || 'Non défini'}</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `);
+app.get('/health/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+// Route racine
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Serveur de secours NionFar',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API route de base
+app.get('/api', (req, res) => {
+  res.status(200).json({
+    message: 'API en mode maintenance',
+    maintenance: true,
+    fallback: true
+  });
 });
 
 // Démarrer le serveur
-server.listen(PORT, '0.0.0.0', () => {
-  writeLog(`🔄 Serveur de secours en écoute sur le port ${PORT}`);
-  writeLog(`👉 Healthcheck disponible sur: http://0.0.0.0:${PORT}/health`);
-  writeLog(`🚨 DIAGNOSTIC FINAL: Écoutant sur PORT=${PORT}, variable d'env PORT=${process.env.PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Serveur de secours démarré sur port ${PORT}`);
+  console.log(`✅ Healthcheck disponible sur http://0.0.0.0:${PORT}/health`);
 });
 
 // Gestion des erreurs
-server.on('error', (error) => {
-  writeLog(`❌ Erreur du serveur: ${error.message}`);
-  process.exit(1);
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
 });
 
-// Gestion de l'arrêt gracieux
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+// Gestion de l'arrêt
 process.on('SIGTERM', () => {
-  writeLog('👋 Signal SIGTERM reçu, arrêt du serveur de secours...');
-  server.close(() => {
-    writeLog('👍 Serveur de secours arrêté proprement');
-    process.exit(0);
-  });
+  console.log('Signal SIGTERM reçu. Arrêt du serveur...');
+  setTimeout(() => process.exit(0), 1000);
 });
 
 process.on('SIGINT', () => {
-  writeLog('👋 Signal SIGINT reçu, arrêt du serveur de secours...');
-  server.close(() => {
-    writeLog('👍 Serveur de secours arrêté proprement');
-    process.exit(0);
-  });
+  console.log('Signal SIGINT reçu. Arrêt du serveur...');
+  setTimeout(() => process.exit(0), 1000);
 }); 
