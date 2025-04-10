@@ -28,7 +28,7 @@ RUN mkdir -p logs
 
 # Exécuter un build complet avec plus de logs
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build && \
+    npm run build:railway && \
     echo "📂 Contenu du dossier dist après build:" && \
     ls -la dist/ && \
     if [ -f "dist/main.js" ]; then \
@@ -61,7 +61,7 @@ if [ -f "dist/main.js" ]; then\n\
 else\n\
   echo "❌ main.js manquant!"\n\
   echo "Tentative de rebuild..."\n\
-  npm run build\n\
+  npm run build:railway\n\
   ls -la dist/\n\
 fi\n\
 \n\
