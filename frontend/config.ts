@@ -1,5 +1,14 @@
 // Configuration de l'application
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+export const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'https://nionfar.up.railway.app';
+export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app';
+
+// Log pour le débogage en développement
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('API_BASE_URL:', API_BASE_URL);
+  console.log('BACKEND_URL:', BACKEND_URL);
+  console.log('APP_BASE_URL:', APP_BASE_URL);
+}
 
 // Autres paramètres de configuration
 export const APP_NAME = 'Nionfar';

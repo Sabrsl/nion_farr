@@ -1,8 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User } from '../types';
+import { API_BASE_URL } from '../config';
 
 // Clé constante pour le localStorage
 const USER_STORAGE_KEY = 'nionfarUser';
+
+// Ajouter un flag pour déterminer si nous utilisons des URLs absolues ou relatives
+const USE_ABSOLUTE_URLS = process.env.NEXT_PUBLIC_FORCE_ABSOLUTE_URLS === 'true' || true;
+
+// Fonction pour construire les URLs d'API
+const buildApiUrl = (path: string) => {
+  if (USE_ABSOLUTE_URLS) {
+    return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  }
+  return path; // URL relative
+};
 
 export interface AuthContextType {
   user: User | null;
@@ -125,7 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // En production, effectuer une requête API réelle
       try {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch(buildApiUrl('/auth/login'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -185,7 +197,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Appeler l'API pour déconnecter l'utilisateur côté serveur
       try {
-        await fetch('/api/auth/logout', {
+        await fetch(buildApiUrl('/auth/logout'), {
           method: 'POST'
         });
       } catch (error) {
@@ -216,7 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Appeler l'API pour inscrire l'utilisateur
       try {
-        const response = await fetch('/api/auth/register', {
+        const response = await fetch(buildApiUrl('/auth/register'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -288,7 +300,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Appeler l'API pour mettre à jour l'utilisateur
       try {
-        const response = await fetch('/api/user/profile', {
+        const response = await fetch(buildApiUrl('/user/profile'), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'

@@ -15,6 +15,91 @@ export default async function handler(
   }
 
   try {
+    // En production, nous allons rediriger cette requête vers le backend réel
+    if (process.env.NODE_ENV === 'production') {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+      const apiEndpoint = `${apiUrl}/auth/register`;
+      
+      console.log(`[API] Redirection de l'inscription vers le backend: ${apiEndpoint}`);
+      
+      try {
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(req.body || {}),
+          credentials: 'include'
+        });
+        
+        // Vérifier si la réponse est correcte
+        if (response.ok) {
+          const data = await response.json();
+          return res.status(response.status).json(data);
+        } else {
+          // Gérer les erreurs HTTP
+          try {
+            const errorData = await response.json();
+            return res.status(response.status).json({
+              success: false,
+              error: errorData.message || 'Erreur lors de l\'inscription',
+              details: errorData.details || { general: 'Le serveur a retourné une erreur' }
+            });
+          } catch (parseError) {
+            // Si la réponse n'est pas du JSON valide
+            const errorText = await response.text();
+            console.error(`[API] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
+            
+            return res.status(response.status).json({
+              success: false,
+              error: `Erreur ${response.status}: ${response.statusText}`,
+              details: { general: 'Réponse invalide du serveur' }
+            });
+          }
+        }
+      } catch (fetchError) {
+        console.error("[API Proxy] Erreur lors de la connexion au backend pour l'inscription:", fetchError);
+        
+        // Réessayer avec une configuration alternative si disponible
+        if (process.env.NEXT_PUBLIC_API_URL_FALLBACK) {
+          try {
+            console.log("[API Proxy] Tentative avec l'URL de secours pour l'inscription");
+            const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL_FALLBACK}/auth/register`;
+            
+            const fallbackResponse = await fetch(fallbackUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: JSON.stringify(req.body || {}),
+              credentials: 'include'
+            });
+            
+            if (fallbackResponse.ok) {
+              const data = await fallbackResponse.json();
+              return res.status(fallbackResponse.status).json(data);
+            }
+          } catch (fallbackError) {
+            console.error("[API Proxy] Échec de la tentative avec l'URL de secours pour l'inscription:", fallbackError);
+          }
+        }
+        
+        // Si aucune URL de secours ou si celle-ci a également échoué
+        return res.status(502).json({
+          success: false,
+          error: "Impossible de se connecter au serveur d'inscription",
+          details: { 
+            general: "Le serveur d'inscription est temporairement indisponible. Veuillez réessayer plus tard." 
+          }
+        });
+      }
+    }
+
     const { email, name, password, role = 'client' } = req.body;
 
     // Valider les champs requis
