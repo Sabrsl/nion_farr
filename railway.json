@@ -7,9 +7,9 @@
   "deploy": {
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5,
+    "startCommand": "./start.sh",
     "healthcheckPath": "/health/ping",
     "healthcheckTimeout": 10,
-    "startCommand": "./start.sh",
     "numReplicas": 1
   }
 } 
