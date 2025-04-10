@@ -259,6 +259,25 @@ process.on('unhandledRejection', (reason) => {\n\
 });" > dist/main.js && \
     chmod +x dist/main.js
 
+# Copie manuelle du fichier main.js si nécessaire
+RUN if [ -f "dist/src/main.js" ]; then \
+    echo "✅ Copie de dist/src/main.js vers dist/main.js" && \
+    cp dist/src/main.js dist/main.js; \
+  else \
+    echo "⚠️ dist/src/main.js introuvable, build incomplet ?"; \
+  fi
+
+# Vérification finale des fichiers générés
+RUN echo "📋 Vérification finale:" && \
+    echo "📂 Contenu de dist/:" && \
+    ls -la dist/ && \
+    if [ -f "dist/main.js" ]; then \
+      echo "✅ dist/main.js existe, taille:" && \
+      stat -c %s dist/main.js; \
+    else \
+      echo "❌ ERREUR: dist/main.js toujours manquant!"; \
+    fi
+
 # Exposer le port (Railway réaffecte PORT via la variable d'environnement)
 EXPOSE 3000 8080
 
