@@ -1,23 +1,71 @@
 #!/bin/bash
 
-# Vérifier l'environnement
-echo "🔍 Vérification de l'environnement Railway"
-echo "- NODE_ENV: $NODE_ENV"
-echo "- PORT: $PORT"
-echo "- RAILWAY_DEPLOYMENT: $RAILWAY_DEPLOYMENT"
-echo "- Présence de MongoDB: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; else echo "non"; fi)"
+echo "🚀 Démarrage du serveur NionFar API..."
+echo "📝 Variables d'environnement configurées:"
+echo "- Frontend URL: $FRONTEND_URL"
+echo "- CORS autorisés: $CORS_ALLOWED_ORIGINS"
+echo "- Port: $PORT"
+echo "- Railway deployment: $RAILWAY_DEPLOYMENT"
+echo "- MongoDB URI configuré: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; else echo "non"; fi)"
+
+# Nettoyer les fichiers .js générés qui causent des conflits
+echo "🧹 Nettoyage des fichiers .js problématiques..."
+if [ -f "scripts/clean-source-js.js" ]; then
+  node scripts/clean-source-js.js
+else
+  echo "⚠️ Script de nettoyage non trouvé, poursuite sans nettoyage."
+fi
+
+echo "👉 Vérification du build..."
+echo "📂 Contenu du dossier dist/ :"
+ls -la dist/
+
+# Validation supplémentaire pour s'assurer que main.js existe
+echo "🔍 Vérification de main.js..."
+if [ ! -f "dist/main.js" ]; then
+  echo "❌ main.js manquant! Tentative de correction..."
+  
+  # Exécuter le script de validation
+  echo "🔄 Exécution du script de validation Railway..."
+  node scripts/validate-railway.js
+  
+  # Vérifier à nouveau
+  if [ ! -f "dist/main.js" ]; then
+    echo "❌ main.js toujours manquant après tentative de correction! Tentative avec check:main-js..."
+    npm run check:main-js
+  fi
+else
+  echo "✅ main.js existe"
+fi
+
+echo "🔄 DIAGNOSTIC PORT: La variable PORT est définie à: $PORT"
+if [ -z "$PORT" ]; then
+  echo "⚠️ ATTENTION: La variable PORT n'est pas définie! Utilisation du port par défaut 3000."
+  export PORT=3000
+else
+  echo "✅ PORT est correctement défini à $PORT"
+fi
+
+echo "✅ Version de NODE: $(node --version)"
+echo "✅ Version de NPM: $(npm --version)"
+
+# Vérifier si main.js existe
+if [ -f "dist/main.js" ]; then
+  echo "✅ Démarrage de l'application principale..."
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log || (
+    echo "❌ Échec du démarrage de l'application principale, examen des logs..."
+    tail -n 50 logs/app.log
+    echo "🔄 Utilisation du serveur de secours pour maintenir les healthchecks"
+    NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js
+  )
+else
+  echo "❌ main.js manquant! Démarrage du serveur de secours..."
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js
+fi
 
 # Créer les répertoires nécessaires
 mkdir -p logs
 mkdir -p dist
-
-# Si PORT n'est pas défini, utiliser 3000
-if [ -z "$PORT" ]; then
-  echo "⚠️ PORT n'est pas défini, utilisation de 3000 par défaut"
-  export PORT=3000
-else
-  echo "✅ PORT est défini à $PORT"
-fi
 
 # Forcer un build pour s'assurer que dist/main.js existe
 echo "📦 Vérification du build NestJS..."

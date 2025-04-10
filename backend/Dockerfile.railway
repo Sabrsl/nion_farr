@@ -26,7 +26,7 @@ RUN mkdir -p logs
 
 # Exécuter un build complet sans scripts additionnels
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build:clean && \
+    npm run build:railway && \
     echo "📂 Contenu du dossier dist après build:" && \
     ls -la dist/ && \
     if [ -f "dist/main.js" ]; then \
@@ -35,7 +35,15 @@ RUN echo "🔨 Lancement du build NestJS..." && \
       echo "🔍 Premières lignes de main.js:" && \
       head -n 20 dist/main.js; \
     else \
-      echo "❌ main.js manquant!"; \
+      echo "❌ main.js manquant! Tentative de création..." && \
+      npm run check:main-js && \
+      if [ -f "dist/main.js" ]; then \
+        echo "✅ main.js maintenant présent, taille:" && \
+        stat -c %s dist/main.js; \
+      else \
+        echo "❌ main.js toujours manquant après tentative de correction!"; \
+        exit 1; \
+      fi \
     fi
 
 # Créer script de secours server.js simple si nécessaire

@@ -78,4 +78,10 @@ yarn-error.log*
 
 # Dossiers spécifiques au projet
 /middleware/.generated/
-.nionfar-cache/ 
+.nionfar-cache/
+
+# Fichiers JavaScript compilés dans le répertoire source
+# Ces fichiers sont générés par TypeScript et ne devraient pas être versionnés
+src/**/*.js
+!src/direct-copy.js
+!src/check-dist.js 
