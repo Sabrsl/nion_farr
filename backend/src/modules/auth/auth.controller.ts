@@ -1,4 +1,4 @@
-import { Body, Controller, Post, HttpCode, HttpStatus, Get, Param } from '@nestjs/common';
+import { Body, Controller, Post, HttpCode, HttpStatus, Get, Param, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -11,10 +11,19 @@ import { v4 as uuidv4 } from 'uuid';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly securityService: SecurityService
-  ) {}
+  ) {
+    this.logger.log('AuthController initialisé - routes disponibles :');
+    this.logger.log('POST /auth/register - Inscription d\'un nouvel utilisateur');
+    this.logger.log('POST /auth/login - Connexion d\'un utilisateur');
+    this.logger.log('POST /auth/refresh - Rafraîchir les tokens d\'authentification');
+    this.logger.log('GET /auth/verify-email/:token - Vérifier l\'email d\'un utilisateur');
+    this.logger.log('GET /auth/csrf-tokens - Obtenir un token CSRF');
+  }
 
   @Public()
   @Post('register')
@@ -22,6 +31,7 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'L\'utilisateur a été créé avec succès' })
   @ApiResponse({ status: 400, description: 'Requête invalide' })
   async register(@Body() registerDto: RegisterDto) {
+    this.logger.log(`Tentative d'inscription pour l'utilisateur: ${registerDto.email}`);
     return this.authService.register(registerDto);
   }
 
@@ -32,7 +42,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'L\'utilisateur a été connecté avec succès' })
   @ApiResponse({ status: 401, description: 'Identifiants invalides' })
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+    this.logger.log(`Tentative de connexion pour l'utilisateur: ${loginDto.email}`);
+    try {
+      const result = await this.authService.login(loginDto);
+      this.logger.log(`Connexion réussie pour l'utilisateur: ${loginDto.email}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Échec de connexion pour l'utilisateur ${loginDto.email}: ${error.message}`);
+      throw error;
+    }
   }
 
   @Public()
@@ -60,6 +78,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get CSRF tokens' })
   @ApiResponse({ status: 200, description: 'CSRF tokens generated successfully' })
   async getCsrfTokens() {
+    this.logger.log('Génération d\'un nouveau token CSRF');
     const token = this.securityService.generateCsrfToken();
     
     return {

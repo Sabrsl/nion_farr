@@ -22,7 +22,7 @@ const nextConfig = {
   // Configuration du compilateur
   compiler: {
     // Suppression des console.log en production
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: false, // Désactivé pour déboguer les problèmes d'API
     // Configuration explicite du JSX runtime
     reactRemoveProperties: true,
     styledComponents: true,
@@ -124,13 +124,41 @@ const nextConfig = {
   },
 
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+    console.log(`[Next.js Config] Configuration des redirections API vers: ${apiUrl}`);
+    
     return [
+      // Requêtes générales vers l'API
       {
         source: '/api/:path*',
-        destination: (process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api') + '/:path*',
+        destination: `${apiUrl}/:path*`,
+      },
+      // Cas spécifique pour auth/login
+      {
+        source: '/api/v1/auth/login',
+        destination: `${apiUrl}/auth/login`,
+      },
+      // Route spéciale pour CSRF tokens
+      {
+        source: '/api/security/csrf-tokens',
+        destination: `${apiUrl}/security/csrf-tokens`,
+      },
+    ];
+  },
+  
+  // Redirections pour les routes d'authentification
+  async redirects() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: '/api/:path*',
+        permanent: true,
       },
     ];
   },
 }
+
+// Afficher la configuration dans les logs
+console.log(`[Next.js Config] URL de l'API configurée: ${process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api'}`);
 
 module.exports = nextConfig 

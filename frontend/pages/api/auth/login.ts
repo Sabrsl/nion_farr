@@ -7,10 +7,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      success: false,
-      error: 'Méthode non autorisée' 
-    });
+    console.log(`[API] Méthode reçue incorrecte: ${req.method}, forçage à POST`);
+    // Au lieu de rejeter, on va forcer la méthode en POST
+    // Mais loggons quand même l'erreur pour le débogage
   }
 
   try {
@@ -22,14 +21,17 @@ export default async function handler(
       console.log(`[API] Redirection vers le backend: ${apiEndpoint}`);
       
       try {
+        // TOUJOURS utiliser POST peu importe la méthode originale
         const response = await fetch(apiEndpoint, {
-          method: 'POST',
+          method: 'POST', // Force POST
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app'
+            'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
+            'X-Requested-With': 'XMLHttpRequest' // Ajouter cet en-tête pour indiquer une requête AJAX
           },
-          body: JSON.stringify(req.body)
+          body: JSON.stringify(req.body || {}), // Protéger contre body null
+          credentials: 'include' // Ajouter cette option pour inclure les cookies
         });
         
         // Vérifier si la réponse est correcte
@@ -47,6 +49,9 @@ export default async function handler(
             });
           } catch (parseError) {
             // Si la réponse n'est pas du JSON valide
+            const errorText = await response.text();
+            console.error(`[API] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
+            
             return res.status(response.status).json({
               success: false,
               error: `Erreur ${response.status}: ${response.statusText}`,
@@ -67,9 +72,11 @@ export default async function handler(
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest' // Ajouter cet en-tête
               },
-              body: JSON.stringify(req.body)
+              body: JSON.stringify(req.body || {}),
+              credentials: 'include' // Ajouter cette option
             });
             
             if (fallbackResponse.ok) {

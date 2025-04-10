@@ -321,6 +321,12 @@ class AuthService {
     });
     
     try {
+      // S'assurer que l'URL de l'API est correctement définie
+      if (!this.apiUrl || this.apiUrl === '/api') {
+        console.warn("⚠️ URL de l'API mal configurée, utilisation de l'URL par défaut");
+        this.apiUrl = 'https://nionfar.up.railway.app/api';
+      }
+
       // Récupérer les tokens CSRF avant la connexion
       const csrfTokens = await this.fetchCsrfTokens();
       if (!csrfTokens) {
@@ -329,7 +335,7 @@ class AuthService {
       
       // Construction de l'URL
       const url = `${this.apiUrl}/auth/login`;
-      console.log("🔗 URL de connexion:", url);
+      console.log("🔗 URL de connexion complète:", url);
       
       // Création du corps de la requête avec le format attendu par le backend
       const requestBody: {email: string; password: string; username?: string} = {
@@ -353,259 +359,67 @@ class AuthService {
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes de timeout
 
       try {
-        const response = await fetch(url, {
+        // Tenter d'abord via notre API proxy locale pour éviter les problèmes CORS
+        console.log("🔄 Tentative via proxy API local");
+        const proxyUrl = '/api/auth/login';
+        
+        console.log("�� URL de proxy local:", proxyUrl);
+        
+        const proxyResponse = await fetch(proxyUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-Token': localStorage.getItem('csrf_token') || '',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           },
-          credentials: 'include',
           body: JSON.stringify(requestBody),
-          signal: controller.signal,
-          mode: 'cors'
+          credentials: 'same-origin'
         });
         
         clearTimeout(timeoutId);
         
-        // Traiter la réponse texte d'abord
-        const responseText = await response.text();
-        console.log(`📥 Réponse du serveur (${response.status}):`, responseText.substring(0, 150) + (responseText.length > 150 ? '...' : ''));
-        
-        // Analyser la réponse JSON de manière sécurisée
-        let data;
-        try {
-          data = responseText ? JSON.parse(responseText) : {};
-        } catch (e) {
-          console.error("❌ Erreur parsing JSON:", e);
-          return { 
-            success: false, 
-            error: "Réponse invalide du serveur: " + responseText.substring(0, 100) 
-          };
-        }
-        
-        if (!response.ok) {
-          console.error("❌ Erreur de connexion:", data);
-          return { 
-            success: false, 
-            error: data.message || "Identifiants incorrects" 
-          };
-        }
-        
-        console.log("✅ Connexion réussie:", {
-          success: data.success,
-          userId: data.user?.id,
-          tokenPresent: !!data.accessToken || !!data.token,
-          hasUserData: !!data.user
-        });
-        
-        // Stocker le token si présent (vérifier les deux formats possibles)
-        const token = data.accessToken || data.token;
-        if (token) {
-          tokenStorage.setToken(token);
-          this.token = token;
-        }
-        
-        // Stocker le token CSRF s'il est fourni par le serveur
-        if (data.csrfToken) {
-          localStorage.setItem('csrf_token', data.csrfToken);
-        }
-        
-        // Stocker les données utilisateur complètes si présentes
-        if (data.user) {
-          // S'assurer que les données utilisateur sont stockées correctement
-          const userData = {
-            ...data.user,
-            // Convertir les propriétés booléennes en vrai booléens si elles sont des chaînes
-            isFreelancer: typeof data.user.isFreelancer === 'string' 
-              ? data.user.isFreelancer === 'true' 
-              : !!data.user.isFreelancer,
-            role: data.user.role || (data.user.isFreelancer ? 'freelance' : 'client')
-          };
+        if (proxyResponse.ok) {
+          const data = await proxyResponse.json();
+          console.log("✅ Connexion via proxy réussie");
           
-          // Stocker les données utilisateur complètes y compris services, commandes, etc.
-          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
-          console.log("👤 Données utilisateur stockées:", JSON.stringify(userData).substring(0, 100) + '...');
-          
-          // Mettre à jour l'utilisateur courant
-          this.user = userData;
-          
-          // Redirection automatique si activée
-          if (autoRedirect) {
-            // Rediriger vers la page appropriée selon le rôle
-            const targetUrl = userData.isFreelancer ? '/dashboard' : (redirectUrl || '/');
-            this.forceRedirectAfterLogin(targetUrl);
-          }
-        }
-        
-        return { 
-          success: true, 
-          user: data.user, 
-          token: token || data.token 
-        };
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        console.error("🔥 Erreur fetch lors de la connexion:", fetchError);
-        
-        // Vérifier si l'erreur est due à un problème de CORS ou de connectivité
-        if (fetchError.name === 'TypeError' && fetchError.message === 'Failed to fetch') {
-          console.error("⚠️ Erreur CORS ou problème de connexion au serveur");
-          
-          // Tentative alternative via proxy API local
-          try {
-            console.log("🔄 Tentative de connexion via proxy API local");
-            const proxyUrl = '/api/auth/login';
-            
-            console.log("🔄 Envoi de la requête vers le proxy local:", proxyUrl);
-            
-            const proxyResponse = await fetch(proxyUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-              },
-              body: JSON.stringify(requestBody),
-              credentials: 'same-origin'
-            });
-            
-            if (!proxyResponse.ok) {
-              const errorText = await proxyResponse.text();
-              console.error(`❌ Erreur proxy (${proxyResponse.status}):`, errorText.substring(0, 150));
-              
-              // Si erreur "Cannot GET", c'est probablement une erreur de méthode HTTP
-              if (errorText.includes('Cannot GET')) {
-                console.error("⚠️ Erreur de méthode HTTP - le serveur a reçu une requête GET au lieu de POST");
-                
-                // Dernière tentative en utilisant un contournement pour forcer le POST
-                try {
-                  console.log("🔄 Tentative avec XMLHttpRequest pour forcer le POST");
-                  
-                  return new Promise((resolve) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', proxyUrl, true);
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.setRequestHeader('Accept', 'application/json');
-                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                    xhr.withCredentials = true;
-                    
-                    xhr.onload = function() {
-                      if (xhr.status >= 200 && xhr.status < 300) {
-                        try {
-                          const data = JSON.parse(xhr.responseText);
-                          console.log("✅ Connexion XHR réussie");
-                          
-                          // Stocker le token
-                          const token = data.accessToken || data.token;
-                          if (token) {
-                            localStorage.setItem(AUTH_TOKEN_KEY, token);
-                          }
-                          
-                          // Stocker les données utilisateur
-                          if (data.user) {
-                            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-                            
-                            // Redirection si nécessaire (via window.location pour éviter les problèmes avec React)
-                            if (autoRedirect) {
-                              const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
-                              setTimeout(() => {
-                                window.location.href = targetUrl;
-                              }, 500);
-                            }
-                          }
-                          
-                          resolve({
-                            success: true,
-                            user: data.user,
-                            token: token
-                          });
-                        } catch (e) {
-                          console.error("❌ Erreur de parsing JSON:", e);
-                          resolve({
-                            success: false,
-                            error: "Réponse invalide du serveur"
-                          });
-                        }
-                      } else {
-                        console.error(`❌ Erreur XHR (${xhr.status}):`, xhr.responseText);
-                        resolve({
-                          success: false,
-                          error: `Erreur du serveur: ${xhr.status}`
-                        });
-                      }
-                    };
-                    
-                    xhr.onerror = function() {
-                      console.error("❌ Erreur réseau XHR");
-                      resolve({
-                        success: false,
-                        error: "Erreur de connexion réseau"
-                      });
-                    };
-                    
-                    xhr.send(JSON.stringify(requestBody));
-                  });
-                } catch (xhrError) {
-                  console.error("❌ L'approche XHR a également échoué:", xhrError);
-                }
-              }
-              
-              return {
-                success: false,
-                error: `Erreur du serveur: ${proxyResponse.status} ${proxyResponse.statusText}`
-              };
-            }
-            
-            const proxyData = await proxyResponse.json();
-            
-            if (proxyResponse.ok && (proxyData.accessToken || proxyData.token)) {
-              console.log("✅ Connexion via proxy réussie");
-              
-              // Stocker le token
-              const token = proxyData.accessToken || proxyData.token;
-              localStorage.setItem(AUTH_TOKEN_KEY, token);
-              this.token = token;
-              
-              // Stocker les données utilisateur
-              if (proxyData.user) {
-                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(proxyData.user));
-                this.user = proxyData.user;
-                
-                // Redirection si nécessaire
-                if (autoRedirect) {
-                  const targetUrl = proxyData.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
-                  this.forceRedirectAfterLogin(targetUrl);
-                }
-              }
-              
-              return {
-                success: true,
-                user: proxyData.user,
-                token: token
-              };
-            }
-          } catch (proxyError) {
-            console.error("❌ La tentative via proxy a également échoué:", proxyError);
-            
-            // Si toutes les autres tentatives échouent, essayer une connexion directe au backend
-            return await this.tryDirectBackendLogin(requestBody, autoRedirect, redirectUrl);
+          // Stocker le token
+          const token = data.accessToken || data.token;
+          if (token) {
+            tokenStorage.setToken(token);
+            this.token = token;
           }
           
-          // Fournir un message d'erreur plus explicite pour les problèmes de CORS/connectivité
+          // Stocker les données utilisateur
+          if (data.user) {
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+            this.user = data.user;
+            
+            // Redirection si nécessaire
+            if (autoRedirect) {
+              const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+              this.forceRedirectAfterLogin(targetUrl);
+            }
+          }
+          
           return {
-            success: false,
-            error: "Impossible de se connecter au serveur. Vérifiez votre connexion internet ou réessayez plus tard. Si le problème persiste, contactez le support."
+            success: true,
+            user: data.user,
+            token: token
           };
+        } else {
+          // Si le proxy local a échoué, essayer directement avec l'API backend
+          console.warn(`❌ Échec de la connexion via proxy (${proxyResponse.status}), tentative directe`);
+          return this.tryDirectBackendLogin(requestBody, autoRedirect, redirectUrl);
         }
+      } catch (proxyError) {
+        clearTimeout(timeoutId);
+        console.error("❌ Erreur lors de la connexion via proxy:", proxyError);
         
-        return {
-          success: false,
-          error: fetchError instanceof Error ? fetchError.message : "Une erreur inattendue est survenue lors de la connexion"
-        };
+        // Si le proxy a échoué, essayer directement avec l'API backend
+        return this.tryDirectBackendLogin(requestBody, autoRedirect, redirectUrl);
       }
     } catch (error) {
-      console.error("🔥 Erreur lors de la connexion:", error);
+      console.error("🔥 Erreur générale lors de la connexion:", error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : "Une erreur inattendue est survenue" 
@@ -1144,7 +958,42 @@ class AuthService {
   // Méthode pour récupérer les tokens CSRF
   private async fetchCsrfTokens(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiUrl}/security/csrf-tokens`, {
+      // S'assurer que l'URL de l'API est correctement définie
+      const apiBaseUrl = this.apiUrl.startsWith('http') 
+        ? this.apiUrl 
+        : 'https://nionfar.up.railway.app/api';
+      
+      const csrfUrl = `${apiBaseUrl}/security/csrf-tokens`;
+      console.log("🔗 URL de récupération CSRF:", csrfUrl);
+      
+      try {
+        // Essayer d'abord via le proxy local
+        const proxyResponse = await fetch('/api/security/csrf-tokens', {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        if (proxyResponse.ok) {
+          const data = await proxyResponse.json();
+          if (data.token) {
+            localStorage.setItem('csrf_token', data.token);
+            console.log('✅ Token CSRF récupéré avec succès via proxy');
+            return true;
+          }
+        }
+        
+        // Si le proxy échoue, essayer directement
+        console.log("⚠️ Échec via proxy, tentative directe");
+      } catch (proxyError) {
+        console.error("❌ Erreur lors de la récupération via proxy:", proxyError);
+        // Continuer avec la méthode directe
+      }
+      
+      // Méthode directe
+      const response = await fetch(csrfUrl, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -1161,14 +1010,14 @@ class AuthService {
       
       if (data.token) {
         localStorage.setItem('csrf_token', data.token);
-        console.log('Token CSRF récupéré avec succès');
+        console.log('✅ Token CSRF récupéré avec succès via méthode directe');
       } else {
-        console.warn('Token CSRF manquant dans la réponse');
+        console.warn('⚠️ Token CSRF manquant dans la réponse');
       }
       
       return !!data.token;
     } catch (error) {
-      console.error('Erreur lors de la récupération des tokens CSRF:', error);
+      console.error('❌ Erreur lors de la récupération des tokens CSRF:', error);
       return false;
     }
   }
