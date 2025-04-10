@@ -215,10 +215,6 @@ app.get('/health', (req, res) => {\n\
 });\n\
 \n\
 // API routes\n\
-app.get('/', (req, res) => {\n\
-  res.send('NionFar API');\n\
-});\n\
-\n\
 app.get('/api', (req, res) => {\n\
   res.json({ message: 'API is running in fallback mode' });\n\
 });\n\
