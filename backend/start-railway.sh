@@ -19,6 +19,21 @@ else
   echo "✅ PORT est défini à $PORT"
 fi
 
+# Forcer un build pour s'assurer que dist/main.js existe
+echo "📦 Vérification du build NestJS..."
+if [ ! -f "dist/main.js" ] || [ ! -s "dist/main.js" ]; then
+  echo "📦 Build manquant ou vide — lancement de npm run build..."
+  npm run build
+fi
+
+# Afficher le contenu du dossier dist
+echo "📂 Contenu du dossier dist/ :"
+ls -la dist/
+
+# Vérification supplémentaire des imports
+echo "🔍 Vérification des imports dans main.js"
+grep -n "import " dist/main.js || echo "Aucun import trouvé (fichier compilé en JS)"
+
 # Vérifier si le serveur-simple.js existe, sinon le créer
 if [ ! -f "server-simple.js" ]; then
   echo "⚠️ Création d'un serveur simple de secours..."
@@ -62,8 +77,16 @@ echo "🚀 Tentative de démarrage du serveur principal..."
 # 1. Essayer d'utiliser le serveur NestJS compilé si présent
 if [ -f "dist/main.js" ]; then
   echo "✅ Utilisation du serveur NestJS compilé (dist/main.js)"
-  NODE_ENV=production RAILWAY_DEPLOYMENT=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log || (
-    echo "❌ Échec du serveur NestJS"
+  # Utiliser une variable pour stocker le code de retour
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log
+  NESTJS_EXIT_CODE=$?
+  
+  # Afficher les logs précédents
+  echo "📄 Logs de démarrage (dist/main.js) :"
+  tail -n 100 logs/app.log
+  
+  if [ $NESTJS_EXIT_CODE -ne 0 ]; then
+    echo "❌ Échec du serveur NestJS (code de sortie: $NESTJS_EXIT_CODE)"
     
     # 2. Si le serveur principal échoue, essayer le serveur de secours standard
     if [ -f "server.js" ]; then
@@ -80,7 +103,7 @@ if [ -f "dist/main.js" ]; then
       echo "⚠️ server.js non trouvé, utilisation du serveur ultra-simple"
       NODE_ENV=production PORT="$PORT" node server-simple.js
     fi
-  )
+  fi
 else
   # Si dist/main.js n'existe pas, essayer le serveur de secours
   echo "⚠️ dist/main.js non trouvé, tentative avec le serveur de secours"
