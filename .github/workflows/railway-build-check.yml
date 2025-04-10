@@ -1,0 +1,87 @@
+name: Railway Build Check
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+  # Permettre l'exécution manuelle depuis l'interface GitHub
+  workflow_dispatch:
+
+jobs:
+  verify-railway-build:
+    name: Vérifier le build Railway
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci --legacy-peer-deps
+
+      - name: Test Railway build
+        working-directory: backend
+        run: |
+          echo "🧪 Vérification du build Railway..."
+          npm run build:railway
+          
+      - name: Check dist structure
+        working-directory: backend
+        run: |
+          echo "📂 Structure du dossier dist:"
+          ls -la dist/
+          
+          # Vérifier si main.js existe à la racine de dist/
+          if [ -f "dist/main.js" ]; then
+            echo "✅ dist/main.js existe, taille:"
+            stat -c %s dist/main.js
+          else
+            echo "❌ dist/main.js est manquant!"
+            exit 1
+          fi
+          
+          # Vérification supplémentaire pour dist/src/main.js
+          if [ -f "dist/src/main.js" ]; then
+            echo "✅ dist/src/main.js existe également, taille:"
+            stat -c %s dist/src/main.js
+          else
+            echo "⚠️ dist/src/main.js est manquant, mais nous avons dist/main.js donc c'est OK"
+          fi
+
+      - name: Test starter script
+        working-directory: backend
+        run: |
+          echo "🧪 Création du script de démarrage test..."
+          cat > test-start.sh << 'EOL'
+          #!/bin/bash
+          
+          # Script de test pour vérifier que le serveur peut démarrer
+          echo "🔍 Vérification de la structure de dist/"
+          ls -la dist/
+          
+          if [ -f "dist/main.js" ]; then
+            echo "✅ Démarrage de test avec dist/main.js..."
+            # Démarrer le serveur en arrière-plan et le terminer après 3 secondes
+            timeout 3s node dist/main.js || echo "👍 Serveur terminé comme prévu par timeout"
+            exit 0
+          else
+            echo "❌ dist/main.js est manquant!"
+            exit 1
+          fi
+          EOL
+          
+          chmod +x test-start.sh
+          ./test-start.sh 

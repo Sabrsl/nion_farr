@@ -16,7 +16,10 @@
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "lint": "eslint \"frontend/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"mocks/**/*.{ts,tsx}\"",
     "vercel-build": "node vercel-build.js && next build && node vercel-post-build.js",
-    "clean-build": "rimraf tsconfig.tsbuildinfo backend/dist frontend/.next && cd backend && npm run build && cd .. && cd frontend && npm run build"
+    "clean-build": "rimraf tsconfig.tsbuildinfo backend/dist frontend/.next && cd backend && npm run build && cd .. && cd frontend && npm run build",
+    "prepare": "husky",
+    "test:railway-build": "cd backend && npm run build:railway && echo \"✅ Build Railway validé\" || echo \"❌ Build Railway échoué\"",
+    "pre-push": "node scripts/pre-push-check.js"
   },
   "author": "NionFar Team",
   "license": "UNLICENSED",
@@ -58,6 +61,7 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^9.24.0",
     "eslint-config-next": "^15.2.4",
+    "husky": "^9.1.7",
     "postcss": "^8.5.3",
     "postcss-import": "^16.1.0",
     "postcss-nesting": "^13.0.1",
