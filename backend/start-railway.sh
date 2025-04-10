@@ -32,18 +32,19 @@ ls -la dist/
 
 # Vérification de la taille du fichier main.js
 echo "🔍 Vérification de la taille de main.js"
-MAIN_JS_SIZE=$(stat -c %s dist/main.js 2>/dev/null || stat -f %z dist/main.js 2>/dev/null || echo "0")
-echo "Taille de main.js: $MAIN_JS_SIZE octets"
+if [ -f "dist/main.js" ]; then
+  MAIN_JS_SIZE=$(stat -c %s dist/main.js 2>/dev/null || stat -f %z dist/main.js 2>/dev/null || echo "0")
+  echo "Taille de main.js: $MAIN_JS_SIZE octets"
 
-# Si le fichier est trop petit (< 5KB), créer un fichier main.js de secours
-if [ "$MAIN_JS_SIZE" -lt 5000 ]; then
-  echo "⚠️ Le fichier main.js est trop petit ($MAIN_JS_SIZE octets) - création d'un fichier principal de secours"
-  
-  # Sauvegarder le fichier original
-  mv dist/main.js dist/main.js.original
-  
-  # Créer un fichier main.js minimal qui utilise express
-  cat > dist/main.js << 'MAIN_JS'
+  # Si le fichier est trop petit (< 5KB), créer un fichier main.js de secours
+  if [ "$MAIN_JS_SIZE" -lt 5000 ]; then
+    echo "⚠️ Le fichier main.js est trop petit ($MAIN_JS_SIZE octets) - création d'un fichier principal de secours"
+    
+    # Sauvegarder le fichier original
+    mv dist/main.js dist/main.js.original
+    
+    # Créer un fichier main.js minimal qui utilise express
+    cat > dist/main.js << 'MAIN_JS'
 /**
  * Serveur NestJS minimal de secours
  */
@@ -123,14 +124,15 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 MAIN_JS
 
-  # Rendre exécutable
-  chmod +x dist/main.js
-  echo "✅ Fichier main.js de secours créé"
+    # Rendre exécutable
+    chmod +x dist/main.js
+    echo "✅ Fichier main.js de secours créé"
+  else
+    echo "✅ La taille de main.js semble correcte"
+  fi
+else
+  echo "❌ Le fichier main.js n'existe pas!"
 fi
-
-# Vérification supplémentaire des imports
-echo "🔍 Vérification des imports dans main.js"
-grep -n "import " dist/main.js || echo "Aucun import trouvé (fichier compilé en JS)"
 
 # Vérifier si le serveur-simple.js existe, sinon le créer
 if [ ! -f "server-simple.js" ]; then
