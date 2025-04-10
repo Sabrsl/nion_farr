@@ -26,28 +26,16 @@ RUN mkdir -p logs
 
 # Exécuter un build complet sans scripts additionnels
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build:railway
-
-# 👉 Copie manuelle du fichier main.js généré par NestJS
-RUN echo "📂 Fichiers générés dans dist/src :" && ls -la dist/src && \
-    if [ -f "dist/src/main.js" ]; then \
-    echo "✅ Copie dist/src/main.js vers dist/main.js" && \
-    cp dist/src/main.js dist/main.js; \
-  else \
-    echo "❌ dist/src/main.js introuvable, build échoué ?" && \
-    ls -la dist/src/; \
-  fi
+    npm run build:railway && \
+    echo "📂 Contenu du dossier dist après build:" && \
+    ls -la dist/ && \
+    echo "📂 Contenu du dossier dist/src après build:" && \
+    ls -la dist/src/ && \
+    echo "🛠 Copie manuelle de dist/src/main.js vers dist/main.js si présent..." && \
+    if [ -f "dist/src/main.js" ]; then cp dist/src/main.js dist/main.js && echo "✅ Copie de main.js réussie."; else echo "❌ dist/src/main.js introuvable."; fi
 
 # Vérification du build    
-RUN echo "📂 Contenu du dossier dist après build:" && \
-    ls -la dist/ && \
-    if [ -d "dist/src" ]; then \
-      echo "📂 Contenu du dossier dist/src après build:" && \
-      ls -la dist/src/; \
-    else \
-      echo "⚠️ Le dossier dist/src n'existe pas!"; \
-    fi && \
-    if [ -f "dist/src/main.js" ]; then \
+RUN if [ -f "dist/src/main.js" ]; then \
       echo "✅ main.js présent dans dist/src/, taille:" && \
       stat -c %s dist/src/main.js && \
       echo "🔍 Premières lignes de main.js:" && \
