@@ -66,7 +66,7 @@ class AuthService {
 
   constructor() {
     // Initialiser l'URL de l'API en fonction de l'environnement
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app';
     
     console.log("🔧 Configuration AuthService:", { 
@@ -312,10 +312,11 @@ class AuthService {
 
   async login(credentials: LoginCredentials, autoRedirect = true, redirectUrl?: string): Promise<LoginResponse> {
     console.log("🔐 Tentative de connexion avec:", {
-      ...credentials,
-      password: '***',
+      emailOrPhone: credentials.emailOrPhone,
+      withPassword: !!credentials.password,
       autoRedirect,
-      redirectUrl
+      redirectUrl,
+      apiUrl: this.apiUrl
     });
     
     try {
@@ -327,6 +328,24 @@ class AuthService {
       
       // Construction de l'URL
       const url = `${this.apiUrl}/auth/login`;
+      console.log("🔗 URL de connexion:", url);
+      
+      // Création du corps de la requête avec le format attendu par le backend
+      const requestBody: {email: string; password: string; username?: string} = {
+        email: credentials.emailOrPhone,
+        password: credentials.password
+      };
+      
+      // En dev, on peut tenter avec différentes combinaisons pour supporter les deux formats
+      if (process.env.NEXT_PUBLIC_ENVIRONMENT === 'development') {
+        if (credentials.emailOrPhone.includes('@')) {
+          requestBody.email = credentials.emailOrPhone;
+        } else {
+          requestBody.username = credentials.emailOrPhone;
+        }
+      }
+      
+      console.log("📦 Envoi de la requête POST vers:", url);
       
       // Requête de connexion avec un timeout étendu
       const controller = new AbortController();
@@ -337,11 +356,13 @@ class AuthService {
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRF-Token': localStorage.getItem('csrf_token') || ''
+          'X-CSRF-Token': localStorage.getItem('csrf_token') || '',
+          'Accept': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(credentials),
-        signal: controller.signal
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+        mode: 'cors'
       });
       
       clearTimeout(timeoutId);

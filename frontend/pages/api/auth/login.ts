@@ -14,6 +14,26 @@ export default async function handler(
   }
 
   try {
+    // En production, nous allons rediriger cette requête vers le backend réel
+    if (process.env.NODE_ENV === 'production') {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+      const apiEndpoint = `${apiUrl}/auth/login`;
+      
+      console.log(`[API] Redirection vers le backend: ${apiEndpoint}`);
+      
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(req.body)
+      });
+      
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
     const { email, password } = req.body;
 
     // Validation des champs requis
