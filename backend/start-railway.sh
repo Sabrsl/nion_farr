@@ -91,6 +91,15 @@ app.get('/health/ping', (req, res) => {
   });
 });
 
+// Route racine
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'NionFar API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // API endpoint générique
 app.get('/api', (req, res) => {
   res.status(200).json({
@@ -155,6 +164,12 @@ const server = http.createServer((req, res) => {
     return;
   }
   
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', message: 'API is running', timestamp: new Date().toISOString() }));
+    return;
+  }
+  
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('NionFar API Simple Server');
 });
@@ -177,42 +192,34 @@ echo "🚀 Tentative de démarrage du serveur principal..."
 # Vérifier si dist/main.js existe
 if [ -f ./dist/main.js ]; then
   echo "✅ Fichier main.js trouvé, démarrage normal"
-  npm run start:railway
-else
-  echo "⚠️ Fichier main.js non trouvé, utilisation du serveur de secours"
   
-  # Vérifier si node_modules est correctement installé
-  if [ ! -d ./node_modules/express ]; then
-    echo "📦 Installation des dépendances minimales..."
-    npm install --no-save express cors
-  fi
+  # Démarrer le serveur NestJS
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/main.js &
+  SERVER_PID=$!
   
-  # Vérifier si server-simple.js existe
-  if [ -f ./server-simple.js ]; then
-    echo "🔄 Démarrage du serveur de secours..."
-    node server-simple.js
-  else
-    echo "❌ Aucun fichier de démarrage trouvé! Création d'un serveur minimal..."
+  # Attendre que le serveur soit prêt (5 secondes max)
+  echo "⏳ Attente du démarrage du serveur..."
+  sleep 5
+  
+  # Vérifier si le serveur répond
+  echo "🔍 Test de connectivité sur http://localhost:$PORT/health/ping"
+  if curl -s http://localhost:$PORT/health/ping > /dev/null; then
+    echo "✅ Serveur répond correctement au healthcheck!"
     
-    # Créer un serveur minimal directement
-    node -e "
-      const express = require('express');
-      const app = express();
-      const PORT = process.env.PORT || 3000;
-      
-      app.get('/health', (req, res) => {
-        res.status(200).json({ status: 'emergency', timestamp: new Date().toISOString() });
-      });
-      
-      app.get('/*', (req, res) => {
-        res.status(503).json({ 
-          error: 'NionFar API starting in emergency mode',
-          path: req.path,
-          message: 'Application deployment incomplete. Please check logs.'
-        });
-      });
-      
-      app.listen(PORT, () => console.log('Emergency server started on port ' + PORT));
-    "
+    # Afficher la réponse du healthcheck
+    echo "📊 Réponse du healthcheck:"
+    curl -s http://localhost:$PORT/health/ping
+    echo ""
+    
+    # Garder le processus en premier plan
+    wait $SERVER_PID
+  else
+    echo "❌ Le serveur ne répond pas au healthcheck après 5s"
+    echo "💡 Lancement du serveur de secours..."
+    kill $SERVER_PID 2>/dev/null
+    NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server-simple.js
   fi
+else
+  echo "❌ main.js manquant! Démarrage du serveur de secours..."
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server-simple.js
 fi 

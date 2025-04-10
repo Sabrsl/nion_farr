@@ -198,6 +198,16 @@ app.get('/health/ping', (req, res) => {\n\
   });\n\
 });\n\
 \n\
+// Route racine pour Railway healthcheck\n\
+app.get('/', (req, res) => {\n\
+  console.log('Root route requested');\n\
+  res.json({ \n\
+    status: 'ok', \n\
+    message: 'NionFar API is running',\n\
+    timestamp: new Date().toISOString()\n\
+  });\n\
+});\n\
+\n\
 // Regular health route\n\
 app.get('/health', (req, res) => {\n\
   res.json({ status: 'ok' });\n\

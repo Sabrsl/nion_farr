@@ -127,6 +127,18 @@ async function bootstrap() {
       SwaggerModule.setup('api/docs', app, document);
     }
 
+    // Ajouter une route de base pour le healthcheck de Railway
+    app.getHttpAdapter().get('/', (req, res) => {
+      console.log('ROOT / route called - healthcheck');
+      return res.json({
+        status: 'ok',
+        message: 'NionFar API is up and running',
+        timestamp: new Date().toISOString(),
+        environment,
+        deploymentPlatform: memoryConfig.deploymentPlatform
+      });
+    });
+
     // Démarrage du serveur
     await app.listen(port, '0.0.0.0');
     console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);

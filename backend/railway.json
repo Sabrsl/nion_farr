@@ -9,7 +9,8 @@
     "restartPolicyMaxRetries": 5,
     "startCommand": "./start.sh",
     "healthcheckPath": "/health/ping",
-    "healthcheckTimeout": 10,
+    "healthcheckTimeout": 30,
+    "healthcheckInterval": 15,
     "numReplicas": 1
   }
 } 
