@@ -1,22 +1,24 @@
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
 
-# Copier les fichiers package.json et package-lock.json
+# Copiez d'abord les fichiers package pour meilleur caching
 COPY package*.json ./
 
-# Installer les dépendances
+# Installez les dépendances
 RUN npm install
 
-# Copier le reste des fichiers
+# Copiez le reste des fichiers
 COPY . .
 
-# Exposer le port 3001
-EXPOSE 3001
+# Compilez l'application
+RUN npm run build
 
-# Commande pour démarrer l'application en mode développement
-CMD ["npm", "run", "start:dev"]
+# Nettoyez les dépendances de développement si nécessaire
+# RUN npm prune --production
 
-# Pour la production, remplacer la commande par:
-# RUN npm run build
-# CMD ["npm", "run", "start:prod"] 
+# Exposez le port que l'application utilisera
+EXPOSE 3000
+
+# Commande pour démarrer l'application
+CMD ["npm", "run", "start:railway"] 
