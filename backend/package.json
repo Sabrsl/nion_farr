@@ -11,7 +11,7 @@
     "build": "nest build",
     "build:verbose": "nest build --verbose",
     "build:debug": "echo '📋 Debug du build...' && rimraf dist && mkdir -p dist && nest build --verbose && echo '📋 Contenu du répertoire dist:' && ls -la dist/",
-    "build:railway": "rimraf dist && nest build --verbose && node scripts/check-dist.js",
+    "build:railway": "rimraf dist && nest build --verbose && node scripts/check-dist.js && npm run check:main-js",
     "build:clean": "rimraf dist && nest build",
     "postbuild": "node scripts/check-dist.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -54,7 +54,9 @@
     "test:jwt": "ts-node src/scripts/test-jwt.ts",
     "generate:secrets": "ts-node src/scripts/generate-secrets.ts",
     "check:dist": "node src/check-dist.js",
-    "monitor:memory": "node src/scripts/memory-monitor.js"
+    "monitor:memory": "node src/scripts/memory-monitor.js",
+    "build:fixed": "rimraf dist && tsc -p tsconfig.build.json && cp -r src/**/*.js dist/ && echo 'Build terminé avec copy manuel des fichiers JS'",
+    "check:main-js": "node -e \"const fs=require('fs');const path=require('path');const mainJsPath=path.join(__dirname,'dist','main.js');if(!fs.existsSync(mainJsPath)){console.log('⚠️ main.js manquant, copie du fichier JS source...');fs.copyFileSync(path.join(__dirname,'src','main.js'),mainJsPath);console.log('✅ main.js copié avec succès');}else{console.log('✅ main.js existe déjà');}\""
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.1",
