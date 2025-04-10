@@ -1,113 +1,163 @@
 /**
- * Script qui vérifie les variables d'environnement de Railway
- * et propose des actions pour désactiver proprement Render
+ * Script de vérification des variables d'environnement Railway
+ * Pour diagnostiquer les problèmes de déploiement
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-
 // Couleurs pour les logs
-const colors = {
-  reset: '\x1b[0m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m'
-};
+const RESET = '\x1b[0m';
+const RED = '\x1b[31m';
+const GREEN = '\x1b[32m';
+const YELLOW = '\x1b[33m';
+const BLUE = '\x1b[34m';
+const MAGENTA = '\x1b[35m';
+const CYAN = '\x1b[36m';
 
-console.log(`${colors.blue}=== Vérification de la configuration Railway et désactivation de Render ===${colors.reset}`);
+// Fonction pour afficher un message avec une couleur
+function colorize(color, message) {
+  return `${color}${message}${RESET}`;
+}
 
-// 1. Vérifier les fichiers de configuration
-console.log('\n1. Vérification des fichiers de configuration');
+// Tableau des vérifications
+const checks = [
+  {
+    name: 'FRONTEND_URL',
+    expected: 'https://nion-farr.vercel.app',
+    current: process.env.FRONTEND_URL,
+    critical: true,
+  },
+  {
+    name: 'CORS_ALLOWED_ORIGINS',
+    expected: 'https://nion-farr.vercel.app,https://nionfar.up.railway.app',
+    current: process.env.CORS_ALLOWED_ORIGINS,
+    critical: true,
+  },
+  {
+    name: 'APP_URL',
+    expected: 'https://nionfar.up.railway.app',
+    current: process.env.APP_URL,
+    critical: true,
+  },
+  {
+    name: 'PORT',
+    expected: '8080',
+    current: process.env.PORT,
+    critical: true,
+  },
+  {
+    name: 'NODE_ENV',
+    expected: 'production',
+    current: process.env.NODE_ENV,
+    critical: false,
+  },
+  {
+    name: 'API_PREFIX',
+    expected: 'api',
+    current: process.env.API_PREFIX,
+    critical: false,
+  },
+  {
+    name: 'RAILWAY_DEPLOYMENT',
+    expected: 'true',
+    current: process.env.RAILWAY_DEPLOYMENT,
+    critical: false,
+  },
+  {
+    name: 'MONGODB_URI',
+    expected: 'défini',
+    current: process.env.MONGODB_URI ? 'défini' : 'non défini',
+    critical: true,
+  },
+  {
+    name: 'JWT_SECRET',
+    expected: 'défini',
+    current: process.env.JWT_SECRET ? 'défini' : 'non défini',
+    critical: true,
+  },
+  {
+    name: 'JWT_REFRESH_SECRET',
+    expected: 'défini',
+    current: process.env.JWT_REFRESH_SECRET ? 'défini' : 'non défini',
+    critical: true,
+  },
+];
 
-// Vérifier .env.railway
-const envRailwayPath = path.join(process.cwd(), '.env.railway');
-if (fs.existsSync(envRailwayPath)) {
-  console.log(`${colors.green}✓ .env.railway existe${colors.reset}`);
+// Entête
+console.log(colorize(MAGENTA, '='.repeat(80)));
+console.log(colorize(MAGENTA, '     VÉRIFICATION DES VARIABLES D\'ENVIRONNEMENT RAILWAY'));
+console.log(colorize(MAGENTA, '='.repeat(80)));
+
+// Vérifier le fichier dist/main.js
+try {
+  const fs = require('fs');
+  const path = require('path');
+  const mainJsPath = path.join(__dirname, '..', 'dist', 'main.js');
   
-  // Lire le fichier .env.railway
-  const envContent = fs.readFileSync(envRailwayPath, 'utf8');
-  const envLines = envContent.split('\n');
-  
-  // Vérifier les variables essentielles
-  const essentialVars = [
-    'MONGODB_URI',
-    'JWT_SECRET',
-    'JWT_REFRESH_SECRET',
-    'PORT',
-    'RAILWAY_DEPLOYMENT',
-    'IS_RENDER'
-  ];
-  
-  const missingVars = [];
-  essentialVars.forEach(varName => {
-    const varLine = envLines.find(line => line.trim().startsWith(`${varName}=`));
-    if (!varLine || varLine.split('=')[1].trim() === '') {
-      missingVars.push(varName);
+  if (fs.existsSync(mainJsPath)) {
+    const stats = fs.statSync(mainJsPath);
+    const fileSizeInBytes = stats.size;
+    const fileSizeInKB = fileSizeInBytes / 1024;
+    
+    console.log(`\n${colorize(BLUE, '📁 Fichier main.js:')} ${fileSizeInKB.toFixed(2)} KB`);
+    
+    if (fileSizeInKB < 5) {
+      console.log(colorize(RED, `⚠️ ALERTE: Le fichier main.js est trop petit (${fileSizeInKB.toFixed(2)} KB)`));
+    } else {
+      console.log(colorize(GREEN, '✅ Taille du fichier main.js OK'));
     }
-  });
-  
-  if (missingVars.length > 0) {
-    console.log(`${colors.red}✗ Variables manquantes ou incomplètes: ${missingVars.join(', ')}${colors.reset}`);
   } else {
-    console.log(`${colors.green}✓ Toutes les variables essentielles sont présentes${colors.reset}`);
+    console.log(colorize(RED, '❌ Le fichier main.js n\'existe pas!'));
   }
+} catch (error) {
+  console.error(colorize(RED, `❌ Erreur lors de la vérification du fichier main.js: ${error.message}`));
+}
+
+// Afficher le tableau des résultats
+console.log('\n');
+console.log(colorize(BLUE, '📋 VARIABLES D\'ENVIRONNEMENT:'));
+console.log(colorize(CYAN, '='.repeat(80)));
+console.log(colorize(CYAN, `| ${'Variable'.padEnd(25)} | ${'État'.padEnd(10)} | ${'Attendu'.padEnd(35)} |`));
+console.log(colorize(CYAN, '='.repeat(80)));
+
+let criticalErrors = 0;
+let warnings = 0;
+
+checks.forEach(check => {
+  const match = check.current === check.expected;
+  const status = match ? colorize(GREEN, '✅ OK') : (check.critical ? colorize(RED, '❌ ERREUR') : colorize(YELLOW, '⚠️ ALERTE'));
   
-  // Vérifier spécifiquement IS_RENDER
-  const isRenderLine = envLines.find(line => line.trim().startsWith('IS_RENDER='));
-  if (isRenderLine && isRenderLine.includes('true')) {
-    console.log(`${colors.red}✗ IS_RENDER est défini à 'true', il devrait être 'false' pour Railway${colors.reset}`);
-    console.log(`  Correction: modifier IS_RENDER=true → IS_RENDER=false dans .env.railway`);
-  } else if (isRenderLine && isRenderLine.includes('false')) {
-    console.log(`${colors.green}✓ IS_RENDER est correctement défini à 'false'${colors.reset}`);
-  }
+  if (!match && check.critical) criticalErrors++;
+  if (!match && !check.critical) warnings++;
   
-  // Vérifier spécifiquement RAILWAY_DEPLOYMENT
-  const railwayDeploymentLine = envLines.find(line => line.trim().startsWith('RAILWAY_DEPLOYMENT='));
-  if (railwayDeploymentLine && railwayDeploymentLine.includes('false')) {
-    console.log(`${colors.red}✗ RAILWAY_DEPLOYMENT est défini à 'false', il devrait être 'true'${colors.reset}`);
-    console.log(`  Correction: modifier RAILWAY_DEPLOYMENT=false → RAILWAY_DEPLOYMENT=true dans .env.railway`);
-  } else if (railwayDeploymentLine && railwayDeploymentLine.includes('true')) {
-    console.log(`${colors.green}✓ RAILWAY_DEPLOYMENT est correctement défini à 'true'${colors.reset}`);
-  }
+  console.log(colorize(CYAN, `| ${check.name.padEnd(25)} | ${status.padEnd(20)} | ${check.expected.padEnd(35)} |`));
+});
+
+console.log(colorize(CYAN, '='.repeat(80)));
+
+// Résumé
+console.log('\n');
+console.log(colorize(BLUE, '📊 RÉSUMÉ:'));
+if (criticalErrors === 0 && warnings === 0) {
+  console.log(colorize(GREEN, '✅ Toutes les variables sont correctement configurées!'));
 } else {
-  console.log(`${colors.red}✗ .env.railway n'existe pas${colors.reset}`);
-}
-
-// 2. Vérifier les configurations spécifiques à Render
-console.log('\n2. Références à Render à vérifier:');
-
-// Vérifier le fichier environment.ts
-const environmentPath = path.join(process.cwd(), 'src/config/environment.ts');
-if (fs.existsSync(environmentPath)) {
-  const envContent = fs.readFileSync(environmentPath, 'utf8');
-  
-  if (envContent.includes('isRenderFreeTier') && envContent.includes('isRailwayDeployment')) {
-    console.log(`${colors.green}✓ environment.ts contient la détection de Railway${colors.reset}`);
-  } else {
-    console.log(`${colors.yellow}⚠ environment.ts doit être mis à jour pour détecter Railway${colors.reset}`);
+  if (criticalErrors > 0) {
+    console.log(colorize(RED, `❌ ${criticalErrors} erreur(s) critique(s) détectée(s)!`));
+  }
+  if (warnings > 0) {
+    console.log(colorize(YELLOW, `⚠️ ${warnings} alerte(s) non critique(s) détectée(s).`));
   }
 }
 
-// 3. Instructions pour désactiver proprement Render
-console.log('\n3. Instructions pour désactiver proprement Render:');
-console.log(`${colors.blue}   a) Sauvegardez toutes les variables d'environnement de Render${colors.reset}`);
-console.log('      npm run export:render-env');
-console.log(`${colors.blue}   b) Mettez en pause le service sur Render (ne le supprimez pas)${colors.reset}`);
-console.log('      - Accédez au dashboard Render');
-console.log('      - Allez dans "Settings"');
-console.log('      - Cliquez sur "Suspend Service"');
-console.log(`${colors.blue}   c) Désactivez les déploiements automatiques sur Render${colors.reset}`);
-console.log('      - Allez dans "Deploy" > "Settings"');
-console.log('      - Désactivez "Auto Deploy"');
+// Instructions
+if (criticalErrors > 0) {
+  console.log('\n');
+  console.log(colorize(BLUE, '🔧 INSTRUCTIONS POUR CORRIGER:'));
+  console.log(colorize(MAGENTA, '1. Connectez-vous à Railway (https://railway.app)'));
+  console.log(colorize(MAGENTA, '2. Accédez à votre projet "nionfar"'));
+  console.log(colorize(MAGENTA, '3. Sélectionnez votre service backend'));
+  console.log(colorize(MAGENTA, '4. Allez dans l\'onglet "Variables"'));
+  console.log(colorize(MAGENTA, '5. Modifiez les variables critiques indiquées ci-dessus'));
+  console.log(colorize(MAGENTA, '6. Cliquez sur "Deploy" pour appliquer les changements'));
+}
 
-// 4. Vérifier le retour en arrière potentiel
-console.log('\n4. Instructions en cas de besoin de revenir sur Render:');
-console.log(`${colors.blue}   a) Réactivez le service sur Render${colors.reset}`);
-console.log('      - Accédez au dashboard Render');
-console.log('      - Cliquez sur "Resume Service"');
-console.log(`${colors.blue}   b) Restaurez les variables d'environnement${colors.reset}`);
-console.log('      - Utilisez le fichier render-env-export.txt généré précédemment');
-
-console.log(`\n${colors.green}✅ Vérification terminée - Suivez les instructions pour une migration réussie${colors.reset}`); 
+// Sortir avec un code d'erreur si nécessaire
+process.exit(criticalErrors > 0 ? 1 : 0); 

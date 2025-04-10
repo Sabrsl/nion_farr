@@ -162,12 +162,49 @@ async function bootstrap() {
     });
 
     // Ajouter une route GET spécifique pour le healthcheck Railway
-    httpAdapter.get('/health-railway', (req, res) => {
+    httpAdapter.get('/health', (req, res) => {
       return res.json({
         status: 'ok',
         message: 'Healthcheck passed',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        deployment: 'railway',
+        uptime: process.uptime()
       });
+    });
+
+    // Route de healthcheck plus détaillée avec état de la mémoire
+    httpAdapter.get('/health/detailed', (req, res) => {
+      const memUsage = process.memoryUsage();
+      
+      return res.json({
+        status: 'ok',
+        message: 'Detailed healthcheck passed',
+        timestamp: new Date().toISOString(),
+        environment,
+        deployment: {
+          platform: memoryConfig.deploymentPlatform,
+          railway: process.env.RAILWAY_DEPLOYMENT === 'true',
+        },
+        system: {
+          uptime: process.uptime(),
+          memory: {
+            rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+            heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+            heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+            external: `${Math.round(memUsage.external / 1024 / 1024)}MB`,
+            percentUsed: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)
+          },
+          versions: {
+            node: process.version,
+            platform: process.platform
+          }
+        }
+      });
+    });
+
+    // Route de ping simplifiée pour les vérifications ultra-rapides
+    httpAdapter.get('/health/ping', (req, res) => {
+      return res.send('pong');
     });
 
     // Démarrage du serveur
@@ -199,18 +236,37 @@ async function bootstrap() {
 
   } catch (error) {
     console.error('Error during bootstrap:', error);
-    process.exit(1);
+    // Ne quitte pas brutalement, laisse Railway afficher les logs
+    console.error('🚨 Application en échec de démarrage, logs détaillés:');
+    console.error(error instanceof Error ? error.stack : String(error));
+    
+    // Retarder la sortie pour avoir le temps de voir les logs
+    setTimeout(() => process.exit(1), 10000);
   }
 }
 
+// Ajouter ces handlers pour détecter les crashs invisibles
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🛑 Unhandled Promise Rejection:', reason);
+  // Ne pas quitter le processus pour laisser Railway redémarrer si nécessaire
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('🛑 Uncaught Exception:', err);
+  console.error(err.stack);
+  // Retarder la sortie pour voir les logs
+  setTimeout(() => process.exit(1), 5000);
+});
+
+// Ajouter un handler SIGTERM pour graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('Signal SIGTERM reçu. Arrêt du serveur...');
-  process.exit(0);
+  console.log('Signal SIGTERM reçu. Arrêt gracieux du serveur...');
+  setTimeout(() => process.exit(0), 3000);
 });
 
 process.on('SIGINT', () => {
-  console.log('Signal SIGINT reçu. Arrêt du serveur...');
-  process.exit(0);
+  console.log('Signal SIGINT reçu. Arrêt gracieux du serveur...');
+  setTimeout(() => process.exit(0), 3000);
 });
 
 bootstrap(); 
