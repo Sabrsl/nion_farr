@@ -19,16 +19,14 @@ COPY backend/ ./
 RUN echo "📂 Contenu du dossier source:" && \
     ls -la && \
     echo "📂 Contenu du dossier src:" && \
-    ls -la src && \
-    echo "📂 Contenu du fichier main.ts:" && \
-    cat src/main.ts | head -20
+    ls -la src
 
 # Créer le dossier de logs
 RUN mkdir -p logs
 
-# Exécuter un build complet avec plus de logs
+# Exécuter un build complet sans scripts additionnels
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build:railway && \
+    npm run build:clean && \
     echo "📂 Contenu du dossier dist après build:" && \
     ls -la dist/ && \
     if [ -f "dist/main.js" ]; then \
@@ -40,7 +38,7 @@ RUN echo "🔨 Lancement du build NestJS..." && \
       echo "❌ main.js manquant!"; \
     fi
 
-# Créer un script de démarrage amélioré
+# Créer un script de démarrage simple 
 RUN echo '#!/bin/bash\n\
 echo "🚀 Démarrage du serveur NionFar API..."\n\
 echo "📝 Variables d'\''environnement configurées:"\n\
@@ -49,25 +47,12 @@ echo "- CORS autorisés: $CORS_ALLOWED_ORIGINS"\n\
 echo "- Port: $PORT"\n\
 echo "- Railway deployment: $RAILWAY_DEPLOYMENT"\n\
 echo "- MongoDB URI configuré: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; else echo "non"; fi)"\n\
-echo "- JWT secrets configurés: $(if [ -n "$JWT_SECRET" ] && [ -n "$JWT_REFRESH_SECRET" ]; then echo "oui"; else echo "non"; fi)"\n\
 \n\
 echo "👉 Vérification du build..."\n\
 echo "📂 Contenu du dossier dist/ :"\n\
 ls -la dist/\n\
-echo "📄 Vérification des fichiers critiques:"\n\
-if [ -f "dist/main.js" ]; then\n\
-  echo "✅ main.js présent, taille: $(stat -c %s dist/main.js) octets"\n\
-  file dist/main.js\n\
-else\n\
-  echo "❌ main.js manquant!"\n\
-  echo "Tentative de rebuild..."\n\
-  npm run build:railway\n\
-  ls -la dist/\n\
-fi\n\
 \n\
 echo "🔄 DIAGNOSTIC PORT: La variable PORT est définie à: $PORT"\n\
-\n\
-# Vérifier si PORT est vide ou non défini\n\
 if [ -z "$PORT" ]; then\n\
   echo "⚠️ ATTENTION: La variable PORT n'est pas définie! Utilisation du port par défaut 3000."\n\
   export PORT=3000\n\
@@ -85,11 +70,10 @@ NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=tru
 )' > start.sh && \
     chmod +x start.sh
 
-# Créer script de secours start-railway.sh
+# Copier les scripts de secours mais ne pas les exécuter 
 COPY backend/start-railway.sh ./
 RUN chmod +x start-railway.sh
 
-# S'assurer que server-simple.js existe (sera créé par start-railway.sh si nécessaire)
 COPY backend/server-simple.js ./
 RUN chmod +x server-simple.js
 

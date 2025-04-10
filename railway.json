@@ -7,7 +7,7 @@
   "deploy": {
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5,
-    "startCommand": "bash start-railway.sh",
+    "startCommand": "./start.sh",
     "healthcheckPath": "/health/ping",
     "healthcheckTimeout": 10,
     "numReplicas": 1

@@ -5,7 +5,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 console.log('🔍 Vérification des fichiers du build...');
 
@@ -13,21 +12,7 @@ console.log('🔍 Vérification des fichiers du build...');
 const distPath = path.join(process.cwd(), 'dist');
 if (!fs.existsSync(distPath)) {
   console.error('❌ ERREUR: Le dossier dist/ n\'existe pas!');
-  
-  // Tenter de reconstruire
-  console.log('⚠️ Tentative de reconstruction du build...');
-  try {
-    execSync('tsc -p tsconfig.build.json', { stdio: 'inherit' });
-    console.log('✅ Rebuild effectué. Vérification...');
-  } catch (err) {
-    console.error('❌ Échec du rebuild:', err.message);
-    process.exit(1);
-  }
-  
-  if (!fs.existsSync(distPath)) {
-    console.error('❌ ERREUR: Le dossier dist/ n\'existe toujours pas après rebuild!');
-    process.exit(1);
-  }
+  process.exit(1);
 }
 
 // Vérifier que main.js existe
@@ -38,21 +23,7 @@ if (!fs.existsSync(mainJsPath)) {
   fs.readdirSync(distPath).forEach(file => {
     console.log(`- ${file}`);
   });
-  
-  // Tenter de compiler spécifiquement main.ts
-  console.log('⚠️ Tentative de compilation spécifique de main.ts...');
-  try {
-    execSync('tsc -p tsconfig.build.json', { stdio: 'inherit' });
-    console.log('✅ Compilation effectuée. Vérification...');
-  } catch (err) {
-    console.error('❌ Échec de la compilation:', err.message);
-    process.exit(1);
-  }
-  
-  if (!fs.existsSync(mainJsPath)) {
-    console.error('❌ ERREUR: Le fichier main.js n\'existe toujours pas après compilation spécifique!');
-    process.exit(1);
-  }
+  process.exit(1);
 }
 
 // Vérifier la taille de main.js
