@@ -473,11 +473,81 @@ class AuthService {
               const errorText = await proxyResponse.text();
               console.error(`❌ Erreur proxy (${proxyResponse.status}):`, errorText.substring(0, 150));
               
-              // Si erreur "Cannot GET", c'est probablement que la route API n'existe pas
+              // Si erreur "Cannot GET", c'est probablement une erreur de méthode HTTP
               if (errorText.includes('Cannot GET')) {
-                console.error("⚠️ Erreur de route API - la route n'existe pas");
-                // Tentative directe vers le backend
-                return await this.tryDirectBackendLogin(requestBody, autoRedirect, redirectUrl);
+                console.error("⚠️ Erreur de méthode HTTP - le serveur a reçu une requête GET au lieu de POST");
+                
+                // Dernière tentative en utilisant un contournement pour forcer le POST
+                try {
+                  console.log("🔄 Tentative avec XMLHttpRequest pour forcer le POST");
+                  
+                  return new Promise((resolve) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', proxyUrl, true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.setRequestHeader('Accept', 'application/json');
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    xhr.withCredentials = true;
+                    
+                    xhr.onload = function() {
+                      if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                          const data = JSON.parse(xhr.responseText);
+                          console.log("✅ Connexion XHR réussie");
+                          
+                          // Stocker le token
+                          const token = data.accessToken || data.token;
+                          if (token) {
+                            localStorage.setItem(AUTH_TOKEN_KEY, token);
+                          }
+                          
+                          // Stocker les données utilisateur
+                          if (data.user) {
+                            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+                            
+                            // Redirection si nécessaire (via window.location pour éviter les problèmes avec React)
+                            if (autoRedirect) {
+                              const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+                              setTimeout(() => {
+                                window.location.href = targetUrl;
+                              }, 500);
+                            }
+                          }
+                          
+                          resolve({
+                            success: true,
+                            user: data.user,
+                            token: token
+                          });
+                        } catch (e) {
+                          console.error("❌ Erreur de parsing JSON:", e);
+                          resolve({
+                            success: false,
+                            error: "Réponse invalide du serveur"
+                          });
+                        }
+                      } else {
+                        console.error(`❌ Erreur XHR (${xhr.status}):`, xhr.responseText);
+                        resolve({
+                          success: false,
+                          error: `Erreur du serveur: ${xhr.status}`
+                        });
+                      }
+                    };
+                    
+                    xhr.onerror = function() {
+                      console.error("❌ Erreur réseau XHR");
+                      resolve({
+                        success: false,
+                        error: "Erreur de connexion réseau"
+                      });
+                    };
+                    
+                    xhr.send(JSON.stringify(requestBody));
+                  });
+                } catch (xhrError) {
+                  console.error("❌ L'approche XHR a également échoué:", xhrError);
+                }
               }
               
               return {
@@ -1114,19 +1184,101 @@ class AuthService {
     console.log("🔗 URL de connexion directe:", loginUrl);
     
     try {
+      // S'assurer de toujours utiliser POST et non GET
       const response = await fetch(loginUrl, {
-        method: 'POST',
+        method: 'POST', // Insistez sur POST
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Origin': window.location.origin
+          'Origin': window.location.origin,
+          'X-Requested-With': 'XMLHttpRequest' // Indique une requête AJAX
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody), // Corps de la requête pour POST
+        mode: 'cors',
+        credentials: 'include'
       });
       
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`❌ Erreur connexion directe (${response.status}):`, errorText.substring(0, 150));
+        
+        // Si on reçoit une erreur "Cannot GET", c'est que le navigateur ou un middleware a changé notre méthode
+        if (errorText.includes('Cannot GET')) {
+          console.error("⚠️ Erreur de méthode HTTP - le serveur a reçu une requête GET au lieu de POST");
+          
+          // Dernière tentative en utilisant un contournement pour forcer le POST
+          try {
+            console.log("🔄 Tentative avec XMLHttpRequest pour forcer le POST");
+            
+            return new Promise((resolve) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open('POST', loginUrl, true);
+              xhr.setRequestHeader('Content-Type', 'application/json');
+              xhr.setRequestHeader('Accept', 'application/json');
+              xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+              xhr.withCredentials = true;
+              
+              xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  try {
+                    const data = JSON.parse(xhr.responseText);
+                    console.log("✅ Connexion XHR réussie");
+                    
+                    // Stocker le token
+                    const token = data.accessToken || data.token;
+                    if (token) {
+                      localStorage.setItem(AUTH_TOKEN_KEY, token);
+                    }
+                    
+                    // Stocker les données utilisateur
+                    if (data.user) {
+                      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+                      
+                      // Redirection si nécessaire (via window.location pour éviter les problèmes avec React)
+                      if (autoRedirect) {
+                        const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+                        setTimeout(() => {
+                          window.location.href = targetUrl;
+                        }, 500);
+                      }
+                    }
+                    
+                    resolve({
+                      success: true,
+                      user: data.user,
+                      token: token
+                    });
+                  } catch (e) {
+                    console.error("❌ Erreur de parsing JSON:", e);
+                    resolve({
+                      success: false,
+                      error: "Réponse invalide du serveur"
+                    });
+                  }
+                } else {
+                  console.error(`❌ Erreur XHR (${xhr.status}):`, xhr.responseText);
+                  resolve({
+                    success: false,
+                    error: `Erreur du serveur: ${xhr.status}`
+                  });
+                }
+              };
+              
+              xhr.onerror = function() {
+                console.error("❌ Erreur réseau XHR");
+                resolve({
+                  success: false,
+                  error: "Erreur de connexion réseau"
+                });
+              };
+              
+              xhr.send(JSON.stringify(requestBody));
+            });
+          } catch (xhrError) {
+            console.error("❌ L'approche XHR a également échoué:", xhrError);
+          }
+        }
+        
         return {
           success: false,
           error: `Erreur du serveur: ${response.status} ${response.statusText}`
