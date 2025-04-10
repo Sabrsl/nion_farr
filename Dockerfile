@@ -35,12 +35,15 @@ if [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then\n\
   npm run build\n\
 fi\n\
 \n\
+echo "🔄 DIAGNOSTIC PORT: La variable PORT est définie à: $PORT"\n\
+\n\
 echo "✅ Démarrage de l'\''application principale..."\n\
-NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true node dist/main.js 2>&1 | tee logs/app.log || (\n\
+NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log || (\n\
   echo "❌ Échec du démarrage de l'\''application principale, examen des logs..."\n\
   tail -n 50 logs/app.log\n\
   echo "🔄 Utilisation du serveur de secours pour maintenir les healthchecks"\n\
-  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false node server.js\n\
+  echo "🔄 DIAGNOSTIC PORT pour serveur de secours: La variable PORT est définie à: $PORT"\n\
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server.js\n\
 )' > start.sh && \
     chmod +x start.sh
 
