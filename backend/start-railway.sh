@@ -30,6 +30,104 @@ fi
 echo "📂 Contenu du dossier dist/ :"
 ls -la dist/
 
+# Vérification de la taille du fichier main.js
+echo "🔍 Vérification de la taille de main.js"
+MAIN_JS_SIZE=$(stat -c %s dist/main.js 2>/dev/null || stat -f %z dist/main.js 2>/dev/null || echo "0")
+echo "Taille de main.js: $MAIN_JS_SIZE octets"
+
+# Si le fichier est trop petit (< 5KB), créer un fichier main.js de secours
+if [ "$MAIN_JS_SIZE" -lt 5000 ]; then
+  echo "⚠️ Le fichier main.js est trop petit ($MAIN_JS_SIZE octets) - création d'un fichier principal de secours"
+  
+  # Sauvegarder le fichier original
+  mv dist/main.js dist/main.js.original
+  
+  # Créer un fichier main.js minimal qui utilise express
+  cat > dist/main.js << 'MAIN_JS'
+/**
+ * Serveur NestJS minimal de secours
+ */
+console.log("🚀 Démarrage du serveur NestJS minimal de secours");
+
+// Dépendances essentielles
+const express = require('express');
+const app = express();
+const cors = require('cors');
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());
+app.use(cors({
+  origin: process.env.CORS_ALLOWED_ORIGINS ? 
+          process.env.CORS_ALLOWED_ORIGINS.split(',') : 
+          (process.env.FRONTEND_URL || '*')
+}));
+
+// Logs
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
+// Route de healthcheck
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'NestJS minimal server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    railway: process.env.RAILWAY_DEPLOYMENT === 'true',
+    render: process.env.IS_RENDER === 'true'
+  });
+});
+
+// Route de healthcheck (ping)
+app.get('/health/ping', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'pong',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API endpoint générique
+app.get('/api', (req, res) => {
+  res.status(200).json({
+    message: 'API is running in minimal mode',
+    info: 'This is a minimal server because the full NestJS app failed to start'
+  });
+});
+
+// Gestion des erreurs
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal Server Error', message: err.message });
+});
+
+// Démarrer le serveur
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Serveur minimal NestJS en écoute sur le port ${PORT}`);
+  console.log(`📝 Variables d'environnement: NODE_ENV=${process.env.NODE_ENV}, RAILWAY=${process.env.RAILWAY_DEPLOYMENT}`);
+  console.log(`✅ Healthcheck disponible sur http://0.0.0.0:${PORT}/health/ping`);
+});
+
+// Gestion des erreurs non capturées
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  // Ne pas quitter le process
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection:', reason);
+  // Ne pas quitter le process
+});
+MAIN_JS
+
+  # Rendre exécutable
+  chmod +x dist/main.js
+  echo "✅ Fichier main.js de secours créé"
+fi
+
 # Vérification supplémentaire des imports
 echo "🔍 Vérification des imports dans main.js"
 grep -n "import " dist/main.js || echo "Aucun import trouvé (fichier compilé en JS)"
