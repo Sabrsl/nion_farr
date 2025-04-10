@@ -1,29 +1,33 @@
 #!/bin/bash
 
-echo "Starting Railway build script..."
+echo "🚀 Démarrage du script de build Railway personnalisé"
 
-# Ensure we're in the backend directory
-cd "$(dirname "$0")/.."
-
-# Use specific Node version
-echo "Setting up Node environment..."
-if command -v nvm &> /dev/null; then
-  nvm use 18
+# Vérification et nettoyage des fichiers problématiques
+echo "🧹 Nettoyage des fichiers lock s'ils existent"
+if [ -f "package-lock.json" ]; then
+  echo "  - Suppression du package-lock.json"
+  rm -f package-lock.json
 fi
 
-# Install dependencies
-echo "Installing dependencies..."
-npm ci || npm install
+# Installation des dépendances avec npm install (pas npm ci)
+echo "📦 Installation des dépendances avec npm install"
+npm install --legacy-peer-deps --no-audit
 
-# Run the build
-echo "Building project..."
-npm run build
-
-# Check if build succeeded
-if [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then
-  echo "Build failed! dist/main.js is missing."
+# Vérification de l'installation
+if [ $? -ne 0 ]; then
+  echo "❌ Erreur lors de l'installation des dépendances!"
   exit 1
 fi
 
-echo "Build completed successfully!"
+# Construction du projet
+echo "🔨 Build du projet"
+npm run build
+
+# Vérification du build
+if [ $? -ne 0 ] || [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then
+  echo "❌ Échec du build! Le dossier dist ou main.js est manquant."
+  exit 1
+fi
+
+echo "✅ Build terminé avec succès!"
 exit 0 

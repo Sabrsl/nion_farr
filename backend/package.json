@@ -19,6 +19,7 @@
     "start:render": "cross-env NODE_OPTIONS=\"--max-old-space-size=128\" npm run build && cross-env NODE_OPTIONS=\"--max-old-space-size=128\" cross-env MEMORY_OPTIMIZED=true node dist/main.js",
     "start:low-memory": "cross-env NODE_OPTIONS=\"--max-old-space-size=128\" cross-env MEMORY_OPTIMIZED=true node dist/main.js",
     "start:railway": "cross-env NODE_OPTIONS=\"--max-old-space-size=256\" cross-env MEMORY_OPTIMIZED=true RAILWAY_DEPLOYMENT=true node dist/main.js",
+    "build:railway": "bash scripts/railway-build.sh",
     "prepare:railway": "node scripts/prepare-railway.js",
     "validate:railway": "node scripts/validate-railway.js",
     "check:railway": "node scripts/check-deployment.js",
