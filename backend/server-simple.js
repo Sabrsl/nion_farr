@@ -28,6 +28,18 @@ const server = http.createServer((req, res) => {
     return;
   }
   
+  // Route racine explicite
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      message: 'NionFar API is running in failsafe mode',
+      timestamp: timestamp,
+      isFailsafe: true
+    }));
+    return;
+  }
+  
   // Pour le reste, répondre avec un message simple
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('NionFar API failsafe server running. The main application is not available.');
