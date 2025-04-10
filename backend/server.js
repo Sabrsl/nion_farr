@@ -88,22 +88,71 @@ app.get('/api/security/csrf-tokens', (req, res) => {
 
 // Routes d'authentification
 app.post('/api/auth/login', (req, res) => {
-  // Simuler un délai d'authentification
-  setTimeout(() => {
-    res.json({
-      status: 'ok',
-      message: 'Authentification en mode de secours - fonctionnalités limitées',
-      user: { id: 1, username: 'demo', role: 'user' },
-      token: 'fallback-token-' + Math.random().toString(36).substring(2, 15)
+  // Récupérer les données de la requête
+  const { email, password } = req.body;
+  
+  // Vérifier que les données requises sont présentes
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email requis',
+      details: { email: 'Veuillez entrer votre adresse email' }
     });
-  }, 300);
+  }
+  
+  if (!password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Mot de passe requis',
+      details: { password: 'Veuillez entrer votre mot de passe' }
+    });
+  }
+  
+  // Répondre avec les informations fournies
+  res.json({
+    success: true,
+    message: 'Authentification réussie en mode de secours',
+    user: { 
+      id: Date.now().toString(),  // ID généré dynamiquement basé sur le timestamp
+      email: email,
+      name: email.split('@')[0],
+      role: 'client'
+    },
+    token: 'token-' + Date.now() + '-' + Math.random().toString(36).substring(2)
+  });
 });
 
 app.post('/api/auth/register', (req, res) => {
+  // Récupérer les données de la requête
+  const { email, password, name, role } = req.body;
+  
+  // Vérifier que les données requises sont présentes
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email requis',
+      details: { email: 'Veuillez entrer votre adresse email' }
+    });
+  }
+  
+  if (!password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Mot de passe requis',
+      details: { password: 'Veuillez entrer votre mot de passe' }
+    });
+  }
+  
+  // Répondre avec les informations fournies
   res.status(200).json({
-    status: 'ok',
-    message: 'Enregistrement simulé en mode de secours',
-    user: { id: 2, username: req.body.username || 'new-user', role: 'user' }
+    success: true,
+    message: 'Inscription réussie en mode de secours',
+    user: { 
+      id: Date.now().toString(),  // ID généré dynamiquement basé sur le timestamp
+      email: email,
+      name: name || email.split('@')[0],
+      role: role || 'client'
+    }
   });
 });
 
@@ -115,6 +164,290 @@ app.get('/api/status', (req, res) => {
     message: 'Serveur en mode de secours',
     environment: process.env.NODE_ENV || 'production',
     railway: process.env.RAILWAY_DEPLOYMENT === 'true'
+  });
+});
+
+// Route pour récupérer les informations de l'utilisateur connecté
+app.get('/api/auth/me', (req, res) => {
+  // Vérifier l'authentification
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Non authentifié'
+    });
+  }
+  
+  // Extraire les informations de l'utilisateur à partir du token (simplification)
+  try {
+    // Dans un serveur de secours, nous répondons avec des informations minimales
+    // basées uniquement sur le token (pas de données mockées)
+    const token = authHeader.split(' ')[1];
+    
+    res.json({
+      success: true,
+      user: {
+        id: token.split('-')[1] || Date.now().toString(),
+        role: 'client',
+        isFreelancer: false,
+        // Pas d'email ou de nom simulé - uniquement des informations génériques
+        // dérivées de l'authentification
+      }
+    });
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: 'Session invalide'
+    });
+  }
+});
+
+// Route pour mettre à jour le profil utilisateur
+app.put('/api/user/profile', (req, res) => {
+  // Vérifier l'authentification
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Non authentifié'
+    });
+  }
+  
+  // Utiliser uniquement les données fournies par l'utilisateur
+  const updatedUser = {
+    ...req.body,
+    id: req.body.id || Date.now().toString()
+  };
+  
+  res.json({
+    success: true,
+    message: 'Profil mis à jour avec succès',
+    user: updatedUser
+  });
+});
+
+// Route pour la déconnexion
+app.post('/api/auth/logout', (req, res) => {
+  // La déconnexion côté serveur est simple dans le mode de secours
+  // car il n'y a pas de session à invalider - le frontend doit supprimer le token
+  res.status(200).json({
+    success: true,
+    message: 'Déconnexion réussie'
+  });
+});
+
+// Routes pour les services de freelance
+app.post('/api/services', (req, res) => {
+  // Vérifier l'authentification
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentification requise'
+    });
+  }
+  
+  // Les données du service viennent entièrement de la requête
+  const serviceData = req.body;
+  
+  // Vérification des champs obligatoires
+  if (!serviceData.title) {
+    return res.status(400).json({
+      success: false,
+      message: 'Le titre du service est requis',
+      errors: { title: 'Ce champ est obligatoire' }
+    });
+  }
+  
+  if (!serviceData.price) {
+    return res.status(400).json({
+      success: false,
+      message: 'Le prix du service est requis',
+      errors: { price: 'Ce champ est obligatoire' }
+    });
+  }
+  
+  // Générer un ID unique pour le service
+  const serviceId = `service-${Date.now()}`;
+  
+  // Créer le service avec les données fournies
+  const newService = {
+    id: serviceId,
+    ...serviceData,
+    createdAt: new Date().toISOString(),
+    status: 'active'
+  };
+  
+  res.status(201).json({
+    success: true,
+    message: 'Service créé avec succès',
+    service: newService
+  });
+});
+
+// Récupérer les services
+app.get('/api/services', (req, res) => {
+  // Cette route renvoie une liste vide en mode de secours
+  // car nous n'avons pas de base de données pour stocker les services
+  res.json({
+    success: true,
+    services: [],
+    message: 'Mode secours: aucun service disponible'
+  });
+});
+
+// Routes pour la gestion des commandes
+app.post('/api/orders', (req, res) => {
+  // Vérifier l'authentification
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentification requise'
+    });
+  }
+  
+  // Les données de la commande viennent entièrement de la requête
+  const orderData = req.body;
+  
+  // Vérification des champs obligatoires
+  if (!orderData.serviceId) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID du service requis',
+      errors: { serviceId: 'Ce champ est obligatoire' }
+    });
+  }
+  
+  // Générer un ID unique pour la commande
+  const orderId = `order-${Date.now()}`;
+  
+  // Créer la commande avec les données fournies
+  const newOrder = {
+    id: orderId,
+    ...orderData,
+    createdAt: new Date().toISOString(),
+    status: 'pending'
+  };
+  
+  res.status(201).json({
+    success: true,
+    message: 'Commande créée avec succès',
+    order: newOrder
+  });
+});
+
+// Récupérer les commandes
+app.get('/api/orders', (req, res) => {
+  // Vérifier l'authentification
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentification requise'
+    });
+  }
+  
+  // En mode secours, on renvoie une liste vide
+  res.json({
+    success: true,
+    orders: [],
+    message: 'Mode secours: aucune commande disponible'
+  });
+});
+
+// Route pour une commande spécifique
+app.get('/api/orders/:id', (req, res) => {
+  // Vérifier l'authentification
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentification requise'
+    });
+  }
+  
+  // En mode secours, on renvoie une erreur indiquant que la commande n'existe pas
+  res.status(404).json({
+    success: false,
+    message: 'Commande non trouvée',
+    error: 'not_found'
+  });
+});
+
+// Routes pour la gestion des disputes
+app.post('/api/disputes', (req, res) => {
+  // Vérifier l'authentification
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentification requise'
+    });
+  }
+  
+  // Les données de la dispute viennent entièrement de la requête
+  const disputeData = req.body;
+  
+  // Vérification des champs obligatoires
+  if (!disputeData.orderId) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID de commande requis',
+      errors: { orderId: 'Ce champ est obligatoire' }
+    });
+  }
+  
+  if (!disputeData.reason) {
+    return res.status(400).json({
+      success: false,
+      message: 'Motif de litige requis',
+      errors: { reason: 'Ce champ est obligatoire' }
+    });
+  }
+  
+  // Générer un ID unique pour la dispute
+  const disputeId = `dispute-${Date.now()}`;
+  
+  // Créer la dispute avec les données fournies
+  const newDispute = {
+    id: disputeId,
+    ...disputeData,
+    createdAt: new Date().toISOString(),
+    status: 'open'
+  };
+  
+  res.status(201).json({
+    success: true,
+    message: 'Litige créé avec succès',
+    dispute: newDispute
+  });
+});
+
+// Récupérer les disputes
+app.get('/api/disputes', (req, res) => {
+  // Vérifier l'authentification
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentification requise'
+    });
+  }
+  
+  // En mode secours, on renvoie une liste vide
+  res.json({
+    success: true,
+    disputes: [],
+    message: 'Mode secours: aucun litige disponible'
   });
 });
 

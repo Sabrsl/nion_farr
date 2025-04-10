@@ -133,15 +133,73 @@ const nextConfig = {
         source: '/api/:path*',
         destination: `${apiUrl}/:path*`,
       },
-      // Cas spécifique pour auth/login
+      // Routes d'authentification
+      {
+        source: '/api/auth/login',
+        destination: `${apiUrl}/auth/login`,
+      },
+      {
+        source: '/api/auth/register',
+        destination: `${apiUrl}/auth/register`,
+      },
+      {
+        source: '/api/auth/logout',
+        destination: `${apiUrl}/auth/logout`,
+      },
+      {
+        source: '/api/auth/me',
+        destination: `${apiUrl}/auth/me`,
+      },
       {
         source: '/api/v1/auth/login',
         destination: `${apiUrl}/auth/login`,
       },
-      // Route spéciale pour CSRF tokens
+      // Routes utilisateur
+      {
+        source: '/api/user/profile',
+        destination: `${apiUrl}/user/profile`,
+      },
+      // Routes des services freelance
+      {
+        source: '/api/services',
+        destination: `${apiUrl}/services`,
+      },
+      {
+        source: '/api/services/:id',
+        destination: `${apiUrl}/services/:id`,
+      },
+      // Routes des commandes
+      {
+        source: '/api/orders',
+        destination: `${apiUrl}/orders`,
+      },
+      {
+        source: '/api/orders/:id',
+        destination: `${apiUrl}/orders/:id`,
+      },
+      // Routes des litiges
+      {
+        source: '/api/disputes',
+        destination: `${apiUrl}/disputes`,
+      },
+      {
+        source: '/api/disputes/:id',
+        destination: `${apiUrl}/disputes/:id`,
+      },
+      // Route pour les tokens CSRF
       {
         source: '/api/security/csrf-tokens',
         destination: `${apiUrl}/security/csrf-tokens`,
+      },
+      // Route pour le statut
+      {
+        source: '/api/status',
+        destination: `${apiUrl}/status`,
+      },
+      // Route pour le healthcheck
+      {
+        source: '/api/health',
+        destination: `${apiUrl}/health`,
       },
     ];
   },
