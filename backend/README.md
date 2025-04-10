@@ -192,3 +192,7 @@ This application includes built-in memory optimization features for deployment o
 - `npm run start:render` - Builds and starts the app with memory optimization for Render
 - `npm run start:low-memory` - Starts the app with memory optimization
 - `npm run monitor:memory` - Monitors memory usage in real-time 
+
+## CI/CD
+
+Le projet utilise GitHub Actions pour vérifier automatiquement que le build pour Railway fonctionne correctement. 
