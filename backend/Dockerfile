@@ -2,23 +2,24 @@ FROM node:18
 
 WORKDIR /app
 
-# Copiez d'abord les fichiers package pour meilleur caching
-COPY package*.json ./
+# Copier uniquement package.json, sans package-lock.json
+COPY ./backend/package.json ./
 
-# Installez les dépendances
-RUN npm install
+# Installer les dépendances sans package-lock
+RUN npm config set package-lock false && \
+    npm install --legacy-peer-deps --no-audit
 
-# Copiez le reste des fichiers
-COPY . .
+# Copier le reste des fichiers
+COPY ./backend ./
 
-# Compilez l'application
+# Supprimer le package-lock s'il existe
+RUN rm -f package-lock.json || true
+
+# Construire l'application
 RUN npm run build
 
-# Nettoyez les dépendances de développement si nécessaire
-# RUN npm prune --production
-
-# Exposez le port que l'application utilisera
+# Exposer le port
 EXPOSE 3000
 
-# Commande pour démarrer l'application
+# Démarrer l'application
 CMD ["npm", "run", "start:railway"] 
