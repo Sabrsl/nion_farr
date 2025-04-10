@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { NextRouter } from 'next/router';
+import tokenStorage from '../utils/tokenStorage';
 
 // Constantes pour le stockage des données d'authentification
 const AUTH_TOKEN_KEY = 'auth_token';
@@ -402,7 +403,7 @@ class AuthService {
         // Stocker le token si présent (vérifier les deux formats possibles)
         const token = data.accessToken || data.token;
         if (token) {
-          localStorage.setItem(AUTH_TOKEN_KEY, token);
+          tokenStorage.setToken(token);
           this.token = token;
         }
         
@@ -693,7 +694,7 @@ class AuthService {
       console.error('Erreur lors de la déconnexion:', error);
     } finally {
       // Supprimer le token côté client dans tous les cas
-      this.removeToken();
+      tokenStorage.removeToken();
     }
     this.user = null;
     this.token = null;
@@ -946,7 +947,7 @@ class AuthService {
       }
       
       // Récupérer et vérifier le token
-      const storedToken = localStorage.getItem('nionfarToken');
+      const storedToken = tokenStorage.getToken();
       if (storedToken) {
         this.token = storedToken;
         console.log('✅ Token trouvé dans le localStorage:', storedToken.substring(0, 10) + '...');

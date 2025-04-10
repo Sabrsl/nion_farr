@@ -1,5 +1,6 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { SecurityService } from './security.service';
+import { Public } from '../modules/auth/decorators/public.decorator';
 
 @Controller('security')
 export class SecurityController {
@@ -7,6 +8,7 @@ export class SecurityController {
 
   constructor(private readonly securityService: SecurityService) {}
 
+  @Public()
   @Get('csrf-tokens')
   getCsrfToken() {
     try {
