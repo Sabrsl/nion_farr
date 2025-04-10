@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpCode } from '@nestjs/common';
 import { HealthService } from './health.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
@@ -8,6 +8,7 @@ export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Get()
+  @HttpCode(200)
   @ApiOperation({ summary: 'Check API health status' })
   @ApiResponse({ status: 200, description: 'API is healthy' })
   @ApiResponse({ status: 503, description: 'API is unhealthy' })
@@ -23,6 +24,7 @@ export class HealthController {
   }
 
   @Get('ping')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Simple ping test that does not require database' })
   @ApiResponse({ status: 200, description: 'Pong response' })
   ping() {

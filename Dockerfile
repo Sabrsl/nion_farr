@@ -42,6 +42,14 @@ file dist/main.js\n\
 \n\
 echo "🔄 DIAGNOSTIC PORT: La variable PORT est définie à: $PORT"\n\
 \n\
+# Vérifier si PORT est vide ou non défini\n\
+if [ -z "$PORT" ]; then\n\
+  echo "⚠️ ATTENTION: La variable PORT n'est pas définie! Utilisation du port par défaut 3000."\n\
+  export PORT=3000\n\
+else\n\
+  echo "✅ PORT est correctement défini à $PORT"\n\
+fi\n\
+\n\
 echo "✅ Démarrage de l'\''application principale..."\n\
 NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log || (\n\
   echo "❌ Échec du démarrage de l'\''application principale, examen des logs..."\n\
