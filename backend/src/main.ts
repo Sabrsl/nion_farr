@@ -130,6 +130,11 @@ async function bootstrap() {
     // Démarrage du serveur
     await app.listen(port, '0.0.0.0');
     console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
+    console.log(`✅ NionFar API est prêt et écoute sur http://0.0.0.0:${port}`);
+    console.log(`✅ Routes de Healthcheck disponibles:`);
+    console.log(`  - http://0.0.0.0:${port}/health`);
+    console.log(`  - http://0.0.0.0:${port}/health/ping`);
+    console.log(`  - http://0.0.0.0:${port}/api/health`);
     
     // Afficher l'information sur le déploiement
     const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';

@@ -1,6 +1,7 @@
 import { Controller, Get, HttpCode } from '@nestjs/common';
 import { HealthService } from './health.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Public } from '../modules/auth/decorators/public.decorator';
 
 @ApiTags('Health')
 @Controller('health')
@@ -23,6 +24,7 @@ export class HealthController {
     return this.healthService.checkDetailed();
   }
 
+  @Public()
   @Get('ping')
   @HttpCode(200)
   @ApiOperation({ summary: 'Simple ping test that does not require database' })
