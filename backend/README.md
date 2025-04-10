@@ -138,3 +138,57 @@ Le script `render-build.sh` inclut un serveur de secours qui s'active automatiqu
    - Surveiller les journaux d'erreurs dans le tableau de bord Render
    - Mettre à jour régulièrement les dépendances (npm audit)
    - Tester les nouvelles fonctionnalités avant le déploiement en production 
+
+## Memory Optimization
+
+This application includes built-in memory optimization features for deployment on platforms with limited resources (such as Render's free tier).
+
+### Memory Optimization Features
+
+1. **Environment-aware Configuration**
+   - Memory-optimized settings are automatically applied when running in constrained environments
+   - MongoDB connection pools are reduced in size
+   - Database synchronization is disabled
+   - Throttling windows are extended
+   - Scheduled tasks can be disabled
+
+2. **Memory Monitoring**
+   - Real-time memory usage tracking
+   - Automatic memory cleanup attempts when thresholds are exceeded
+   - Graceful shutdown handlers to prevent crashes
+
+3. **How to Enable Memory Optimization**
+
+   Set one of the following environment variables:
+   ```
+   MEMORY_OPTIMIZED=true
+   ```
+   
+   Or use the provided scripts:
+   ```
+   npm run start:low-memory
+   ```
+   
+   For Render deployment, the configuration is already optimized in `render.yaml`.
+
+4. **Monitoring Memory Usage**
+
+   Use the included script to monitor memory usage:
+   ```
+   npm run monitor:memory
+   ```
+
+5. **Troubleshooting Memory Issues**
+
+   If you encounter OOM (Out of Memory) errors:
+   
+   - Check if memory optimization is enabled
+   - Reduce the frequency of scheduled tasks
+   - Review database queries for potential optimizations
+   - Consider upgrading to a higher resource tier
+
+### Memory-Optimized Scripts
+
+- `npm run start:render` - Builds and starts the app with memory optimization for Render
+- `npm run start:low-memory` - Starts the app with memory optimization
+- `npm run monitor:memory` - Monitors memory usage in real-time 

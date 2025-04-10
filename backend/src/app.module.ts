@@ -11,6 +11,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { BackupService } from './scripts/backup';
+import { getMongooseMemoryOptions, getTypeOrmMemoryOptions } from './config/mongodb-memory-options';
+import { getMemoryConfig } from './config/environment';
 
 // Modules
 import { UsersModule } from './modules/users/users.module';
@@ -43,28 +45,36 @@ import { IpModule } from './ip/ip.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'mongodb',
-        url: configService.get<string>('MONGODB_URI'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false,
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        retryAttempts: 5,
-        retryDelay: 3000,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const memoryConfig = getMemoryConfig();
+        
+        return {
+          type: 'mongodb',
+          url: configService.get<string>('MONGODB_URI'),
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          ...(memoryConfig.isConstrained ? getTypeOrmMemoryOptions() : {
+            synchronize: false,
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            retryAttempts: 3,
+            retryDelay: 3000,
+          }),
+        };
+      },
     }),
     
     // Rate limiting
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ([
-        {
-          ttl: configService.get('THROTTLE_TTL', 60) * 1000,
-          limit: configService.get('THROTTLE_LIMIT', 10),
-        },
-      ]),
+      useFactory: (configService: ConfigService) => {
+        const memoryConfig = getMemoryConfig();
+        
+        return [{
+          ttl: memoryConfig.isConstrained ? 60 * 1000 * 30 : 60 * 1000 * 10, // 30 min in constrained vs 10 min
+          limit: 50,
+        }];
+      },
     }),
     
     // JWT
@@ -83,19 +93,25 @@ import { IpModule } from './ip/ip.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (config: ConfigService) => ({
-        uri: config.get<string>('MONGODB_URI'),
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        retryAttempts: 5,
-        retryDelay: 3000,
-        serverSelectionTimeoutMS: 5000,
-        connectTimeoutMS: 10000,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const memoryConfig = getMemoryConfig();
+        
+        return {
+          uri: configService.get<string>('MONGODB_URI'),
+          ...(memoryConfig.isConstrained ? getMongooseMemoryOptions() : {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            retryAttempts: 3,
+            retryDelay: 3000,
+            serverSelectionTimeoutMS: 5000,
+            connectTimeoutMS: 10000,
+          }),
+        };
+      },
     }),
     
-    // Planification des tâches
-    ScheduleModule.forRoot(),
+    // Planification des tâches - disabled in memory constrained mode
+    ...(getMemoryConfig().disableScheduledTasks ? [] : [ScheduleModule.forRoot()]),
     
     // Application modules
     AuthModule,
@@ -118,7 +134,8 @@ import { IpModule } from './ip/ip.module';
   controllers: [AppController],
   providers: [
     AppService,
-    BackupService,
+    // Disable BackupService in memory-constrained environments as it's resource intensive
+    ...(getMemoryConfig().disableBackups ? [] : [BackupService]),
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

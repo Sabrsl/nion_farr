@@ -16,7 +16,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main.js",
-    "start:render": "NODE_OPTIONS='--max-old-space-size=2048' npm run build && NODE_OPTIONS='--max-old-space-size=2048' npm run start:prod",
+    "start:render": "cross-env NODE_OPTIONS=\"--max-old-space-size=128\" npm run build && cross-env NODE_OPTIONS=\"--max-old-space-size=128\" cross-env MEMORY_OPTIMIZED=true node dist/main.js",
+    "start:low-memory": "cross-env NODE_OPTIONS=\"--max-old-space-size=128\" cross-env MEMORY_OPTIMIZED=true node dist/main.js",
     "start:pm2": "pm2 start ecosystem.config.js --env production",
     "stop:pm2": "pm2 stop ecosystem.config.js",
     "restart:pm2": "pm2 restart ecosystem.config.js",
@@ -38,7 +39,8 @@
     "migration:status": "ts-node -r tsconfig-paths/register src/scripts/migration-status.ts",
     "test:jwt": "ts-node src/scripts/test-jwt.ts",
     "generate:secrets": "ts-node src/scripts/generate-secrets.ts",
-    "check:dist": "node src/check-dist.js"
+    "check:dist": "node src/check-dist.js",
+    "monitor:memory": "node src/scripts/memory-monitor.js"
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.1",
@@ -62,6 +64,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "compression": "^1.8.0",
+    "cross-env": "^7.0.3",
     "cron": "^2.3.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^7.2.0",

@@ -9,28 +9,28 @@ import { ConfigService } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import * as Sentry from '@sentry/node';
-import { Request, Response } from 'express';
 import { checkRequiredEnvVars } from './config/check-env';
+import { startMemoryMonitoring, setupGracefulShutdown } from './scripts/memory-management';
+import { isMemoryConstrainedEnvironment, getMemoryConfig } from './config/environment';
 
 async function bootstrap() {
-  console.log('Starting server...');
-  console.log('Current directory:', process.cwd());
+  console.log('Démarrage du serveur NionFar API...');
+  
+  // Setup graceful shutdown handlers
+  setupGracefulShutdown();
   
   // Vérifier les variables d'environnement requises
   checkRequiredEnvVars();
   
-  console.log('Environment variables:', {
-    NODE_ENV: process.env.NODE_ENV,
-    PORT: process.env.PORT,
-    API_PREFIX: process.env.API_PREFIX,
-    MONGODB_URI: process.env.MONGODB_URI ? 'Set' : 'Not set'
-  });
-
+  // Get memory configuration
+  const memoryConfig = getMemoryConfig();
+  
   try {
-    // Configuration du logger
+    // Configuration du logger - reduced logging to save memory
     const logger = WinstonModule.createLogger({
       transports: [
         new winston.transports.Console({
+          level: memoryConfig.logLevel,
           format: winston.format.combine(
             winston.format.timestamp(),
             winston.format.json(),
@@ -39,14 +39,10 @@ async function bootstrap() {
       ],
     });
 
-    console.log('Initializing application...');
-
     const app = await NestFactory.create(AppModule, { 
       logger,
       abortOnError: false 
     });
-    
-    console.log('Application created, getting config service...');
     
     const configService = app.get(ConfigService);
     
@@ -55,23 +51,19 @@ async function bootstrap() {
     const environment = configService.get<string>('NODE_ENV') || 'development';
     const port = parseInt(process.env.PORT, 10) || 3000;
     
-    console.log(`Environment: ${environment}`);
-    console.log(`MongoDB URI: ${configService.get<string>('MONGODB_URI')}`);
-    
-    // Configuration Sentry en production
-    if (environment === 'production') {
+    // Configuration Sentry en production - disabled for memory optimization
+    if (environment === 'production' && !memoryConfig.isConstrained) {
       const sentryDsn = configService.get<string>('SENTRY_DSN');
       if (sentryDsn) {
         try {
           Sentry.init({
             dsn: sentryDsn,
             environment,
-            // Performance monitoring de base
-            tracesSampleRate: 1.0,
-            // Désactivation du profiling
+            // No performance monitoring to save memory
+            tracesSampleRate: 0.1,
+            // Disabled profiling to save memory
             profilesSampleRate: 0.0,
           });
-          console.log('Sentry initialized for error tracking');
         } catch (error) {
           console.error('Failed to initialize Sentry:', error);
         }
@@ -81,11 +73,13 @@ async function bootstrap() {
     // Middlewares de sécurité
     app.use(helmet());
     
-    // Rate limiting
+    // Rate limiting - increased window time to reduce memory pressure from tracking
     app.use(
       rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
+        windowMs: memoryConfig.isConstrained ? 30 * 60 * 1000 : 15 * 60 * 1000, // 30 min in constrained env, 15 min otherwise
         max: 100, // limit each IP to 100 requests per windowMs
+        standardHeaders: true,
+        legacyHeaders: false,
       }),
     );
     
@@ -96,7 +90,7 @@ async function bootstrap() {
     app.enableCors({
       origin: allowedOrigins,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-CSRF-Token'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
       maxAge: 3600,
     });
@@ -117,7 +111,7 @@ async function bootstrap() {
     // Préfixe global de l'API
     app.setGlobalPrefix(apiPrefix);
 
-    // Documentation Swagger
+    // Documentation Swagger - disabled in production to save memory
     if (environment !== 'production') {
       const config = new DocumentBuilder()
         .setTitle('NionFar API')
@@ -131,14 +125,29 @@ async function bootstrap() {
 
     // Démarrage du serveur
     await app.listen(port, '0.0.0.0');
-    console.log(`Application is running on: http://localhost:${port}/${apiPrefix}`);
-    console.log(`Environment: ${environment}`);
-    console.log(`API Documentation: http://localhost:${port}/api/docs`);
+    console.log(`Serveur NionFar API démarré sur ${port}`);
+    
+    if (memoryConfig.isConstrained) {
+      console.log(`🧠 Mode d'optimisation mémoire activé - certaines fonctionnalités sont désactivées`);
+    }
+
+    // Start memory monitoring 
+    startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
 
   } catch (error) {
     console.error('Error during bootstrap:', error);
     process.exit(1);
   }
 }
+
+process.on('SIGTERM', () => {
+  console.log('Signal SIGTERM reçu. Arrêt du serveur...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('Signal SIGINT reçu. Arrêt du serveur...');
+  process.exit(0);
+});
 
 bootstrap(); 
