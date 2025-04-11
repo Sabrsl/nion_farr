@@ -107,6 +107,72 @@ function fixEntryPoint() {
   }
 }
 
+// Fonction pour copier récursivement un dossier
+function copyDirectoryRecursive(source, destination) {
+  if (!fs.existsSync(source)) {
+    console.log(`⚠️ Dossier source manquant: ${source}`);
+    return;
+  }
+
+  ensureDirectoryExists(destination);
+  
+  try {
+    const entries = fs.readdirSync(source, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const srcPath = path.join(source, entry.name);
+      const destPath = path.join(destination, entry.name);
+      
+      if (entry.isDirectory()) {
+        copyDirectoryRecursive(srcPath, destPath);
+      } else if (entry.isFile() && entry.name.endsWith('.js')) {
+        copyFile(srcPath, destPath);
+        // Corriger les imports si c'est un fichier JS
+        fixModuleImports(destPath);
+      }
+    }
+    
+    console.log(`✅ Dossier copié récursivement: ${source} -> ${destination}`);
+  } catch (error) {
+    console.error(`❌ Erreur lors de la copie récursive du dossier ${source}:`, error);
+  }
+}
+
+// Créer un stub du décorateur public.decorator si nécessaire
+function createPublicDecoratorStub() {
+  const decoratorsDir = 'dist/modules/auth/decorators';
+  ensureDirectoryExists(decoratorsDir);
+  
+  const publicDecoratorPath = path.join(decoratorsDir, 'public.decorator.js');
+  
+  if (!fs.existsSync(publicDecoratorPath)) {
+    console.log('⚠️ Décorateur public.decorator manquant, création d\'un stub...');
+    
+    const stubContent = `"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Public = exports.IS_PUBLIC_KEY = void 0;
+
+const common_1 = require("@nestjs/common");
+
+// Clé de métadonnée pour le décorateur Public
+exports.IS_PUBLIC_KEY = 'isPublic';
+
+// Décorateur @Public() pour marquer les routes comme publiques (non authentifiées)
+function Public() {
+    return (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
+}
+exports.Public = Public;
+`;
+    
+    try {
+      fs.writeFileSync(publicDecoratorPath, stubContent, 'utf8');
+      console.log(`✅ Stub du décorateur Public créé: ${publicDecoratorPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du stub du décorateur Public:`, error);
+    }
+  }
+}
+
 // Assurer que les fichiers nécessaires sont au bon endroit
 function fixCriticalFiles() {
   console.log('🔍 Vérification des fichiers critiques...');
@@ -125,6 +191,9 @@ function fixCriticalFiles() {
     'dist/src',
     'dist/scripts',
     'dist/models',
+    'dist/modules',
+    'dist/modules/auth',
+    'dist/modules/auth/decorators',
     'dist/node_modules/reflect-metadata',
     'dist/node_modules/@nestjs',
     'dist/node_modules/@nestjs/mongoose/dist/decorators'
@@ -161,6 +230,18 @@ function fixCriticalFiles() {
     } catch (error) {
       console.error('❌ Erreur lors de la copie des modèles:', error);
     }
+  }
+  
+  // Copier le dossier modules de manière récursive
+  const srcModulesDir = 'dist/src/modules';
+  const destModulesDir = 'dist/modules';
+  
+  if (fs.existsSync(srcModulesDir)) {
+    console.log('📁 Copie récursive du dossier modules...');
+    copyDirectoryRecursive(srcModulesDir, destModulesDir);
+  } else {
+    console.log('⚠️ Dossier modules source manquant. Création de stubs essentiels...');
+    createPublicDecoratorStub();
   }
   
   // Créer un stub pour le décorateur de propriété mongoose si nécessaire
