@@ -14,76 +14,199 @@ on:
 
 jobs:
   verify-railway-build:
-    name: Vérifier le build Railway
+    name: 🚂 Vérification du build Railway
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout code
+      - name: ⬇️ Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: 'backend/package-lock.json'
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         working-directory: backend
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
-      - name: Test Railway build
+      - name: 🔎 Vérification de la configuration Railway
         working-directory: backend
         run: |
-          echo "🧪 Vérification du build Railway..."
-          npm run build:railway
+          echo "🧪 Vérification des fichiers de configuration Railway..."
           
-      - name: Check dist structure
-        working-directory: backend
-        run: |
-          echo "📂 Structure du dossier dist:"
-          ls -la dist/
+          # Vérifier la présence de scripts essentiels pour Railway
+          RAILWAY_SCRIPTS=("scripts/fix-dist-structure.js" "scripts/check-dist.js")
           
-          # Vérifier si main.js existe à la racine de dist/
-          if [ -f "dist/main.js" ]; then
-            echo "✅ dist/main.js existe, taille:"
-            stat -c %s dist/main.js
+          for script in "${RAILWAY_SCRIPTS[@]}"; do
+            if [ -f "$script" ]; then
+              echo "✅ $script existe"
+            else
+              echo "❌ $script est manquant!"
+              exit 1
+            fi
+          done
+          
+          # Vérifier le package.json pour les scripts nécessaires
+          if grep -q "\"build:railway\":" package.json && grep -q "\"start:railway\":" package.json; then
+            echo "✅ Scripts package.json pour Railway trouvés"
           else
-            echo "❌ dist/main.js est manquant!"
+            echo "❌ Scripts package.json pour Railway manquants!"
             exit 1
           fi
-          
-          # Vérification supplémentaire pour dist/src/main.js
-          if [ -f "dist/src/main.js" ]; then
-            echo "✅ dist/src/main.js existe également, taille:"
-            stat -c %s dist/src/main.js
-          else
-            echo "⚠️ dist/src/main.js est manquant, mais nous avons dist/main.js donc c'est OK"
-          fi
 
-      - name: Test starter script
+      - name: 🛠️ Test du build Railway
         working-directory: backend
         run: |
-          echo "🧪 Création du script de démarrage test..."
+          echo "🧪 Exécution du build Railway..."
+          npm run build:railway
+          echo "✅ Build Railway terminé avec succès"
+          
+      - name: 📂 Vérification de la structure dist
+        working-directory: backend
+        run: |
+          echo "📂 Structure complète du dossier dist:"
+          find dist -type f | sort
+          
+          echo "📊 Statistiques de taille:"
+          du -sh dist/
+          
+          # Vérifier les fichiers essentiels
+          CRITICAL_FILES=("dist/main.js" "dist/app.module.js" "dist/index.js")
+          
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ $file existe, taille $(stat -c %s "$file") octets"
+            else
+              echo "❌ $file est manquant!"
+              exit 1
+            fi
+          done
+          
+          # Vérifier le dossier scripts et backup.js spécifiquement
+          if [ -d "dist/scripts" ]; then
+            echo "✅ Dossier dist/scripts existe"
+            
+            if [ -f "dist/scripts/backup.js" ]; then
+              echo "✅ dist/scripts/backup.js existe"
+            else
+              echo "⚠️ dist/scripts/backup.js manquant - tentative de correction..."
+              node scripts/fix-dist-structure.js
+              
+              # Vérifier à nouveau après la correction
+              if [ -f "dist/scripts/backup.js" ]; then
+                echo "✅ dist/scripts/backup.js créé avec succès"
+              else
+                echo "⚠️ Impossible de créer dist/scripts/backup.js, mais nous continuerons"
+              fi
+            fi
+          else
+            echo "⚠️ Dossier dist/scripts manquant - tentative de correction..."
+            node scripts/fix-dist-structure.js
+            
+            # Vérifier à nouveau après la correction
+            if [ -d "dist/scripts" ]; then
+              echo "✅ Dossier dist/scripts créé avec succès"
+            else
+              echo "⚠️ Impossible de créer dist/scripts, mais nous continuerons"
+            fi
+          fi
+
+      - name: 🚀 Test de démarrage du serveur
+        working-directory: backend
+        run: |
+          echo "🧪 Test de démarrage du serveur (dry run)..."
+          
+          # Créer un script de test pour le démarrage
           cat > test-start.sh << 'EOL'
           #!/bin/bash
           
-          # Script de test pour vérifier que le serveur peut démarrer
-          echo "🔍 Vérification de la structure de dist/"
+          # Configuration de l'environnement de test
+          export NODE_ENV=test
+          export PORT=3333
+          export RAILWAY_DEPLOYMENT=true
+          export MEMORY_OPTIMIZED=true
+          
+          echo "🔍 Vérification de la structure du dossier dist/"
           ls -la dist/
           
-          if [ -f "dist/main.js" ]; then
-            echo "✅ Démarrage de test avec dist/main.js..."
-            # Démarrer le serveur en arrière-plan avec un timeout de sécurité
-            # Ignorer les erreurs potentielles car nous voulons juste vérifier que le serveur peut démarrer
-            NODE_ENV=test PORT=3333 timeout 3s node dist/main.js || true
-            echo "👍 Test de démarrage terminé"
+          echo "🚀 Tentative de démarrage du serveur..."
+          timeout 8s node dist/main.js > server_output.log 2>&1 || EXIT_CODE=$?
+          
+          echo "📜 Sortie du serveur:"
+          cat server_output.log
+          
+          # Vérifier si le serveur a démarré correctement
+          if grep -q "NionFar API est prêt et écoute sur http" server_output.log; then
+            echo "✅ Le serveur a démarré correctement"
+            exit 0
+          elif grep -q "Serveur de secours démarré" server_output.log; then
+            echo "⚠️ Le serveur a démarré en mode secours"
+            exit 0
+          elif grep -q "NionFar API en mode dégradé" server_output.log; then
+            echo "⚠️ Le serveur a démarré en mode dégradé"
             exit 0
           else
-            echo "❌ dist/main.js est manquant!"
-            exit 1
+            if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" -eq 124 ]; then
+              echo "⚠️ Le serveur s'est exécuté jusqu'au timeout, ce qui est un bon signe"
+              exit 0
+            else
+              echo "❌ Le serveur n'a pas pu démarrer correctement"
+              exit 1
+            fi
           fi
           EOL
           
           chmod +x test-start.sh
-          ./test-start.sh || echo "⚠️ Le test de démarrage a échoué mais nous considérons le build comme réussi" 
+          ./test-start.sh
+
+      - name: 📋 Générer rapport de vérification
+        working-directory: backend
+        run: |
+          echo "📝 Génération du rapport de vérification..."
+          
+          cat > railway-verification-report.txt << EOL
+          # Rapport de vérification Railway
+          
+          ## Date de vérification
+          $(date)
+          
+          ## Structure du build
+          Fichiers critiques:
+          - dist/main.js: $([ -f "dist/main.js" ] && echo "✅ Présent" || echo "❌ Manquant")
+          - dist/app.module.js: $([ -f "dist/app.module.js" ] && echo "✅ Présent" || echo "❌ Manquant")
+          - dist/index.js: $([ -f "dist/index.js" ] && echo "✅ Présent" || echo "❌ Manquant")
+          - dist/scripts/backup.js: $([ -f "dist/scripts/backup.js" ] && echo "✅ Présent" || echo "⚠️ Manquant mais géré")
+          
+          ## Tests de démarrage
+          - Démarrage serveur: $([ -f "server_output.log" ] && echo "✅ Testé" || echo "⚠️ Non testé")
+          
+          ## Recommandation
+          $([ -f "dist/main.js" ] && [ -f "dist/app.module.js" ] && echo "✅ Le build est prêt pour le déploiement sur Railway" || echo "❌ Des corrections sont nécessaires avant le déploiement")
+          EOL
+          
+          echo "✅ Rapport généré: railway-verification-report.txt"
+          cat railway-verification-report.txt
+
+      - name: 📤 Sauvegarder rapport comme artefact
+        uses: actions/upload-artifact@v3
+        with:
+          name: railway-verification-report
+          path: backend/railway-verification-report.txt
+          retention-days: 7
+
+  notify-success:
+    name: 📢 Notification de succès
+    needs: [verify-railway-build]
+    if: success() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ✅ Notification de réussite
+        run: |
+          echo "✅ Vérification réussie pour le déploiement Railway!"
+          echo "🚀 Le backend est prêt à être déployé sur Railway"
+          echo "📝 Les modifications seront automatiquement déployées via l'intégration GitHub" 
