@@ -118,6 +118,37 @@ function fixEntryPoint() {
       createAppModuleStub();
     }
   }
+
+  // Vérifier et corriger env.validation.js
+  const configDir = path.join('dist', 'config');
+  ensureDirectoryExists(configDir);
+  
+  const envValidationPath = path.join(configDir, 'env.validation.js');
+  if (!fs.existsSync(envValidationPath)) {
+    console.log('⚠️ env.validation.js manquant dans dist/config/, tentative de copie...');
+    
+    // Essayer plusieurs emplacements potentiels
+    const srcPaths = [
+      path.join('src', 'config', 'env.validation.js'),
+      path.join('dist', 'src', 'config', 'env.validation.js'),
+      path.join('config', 'env.validation.js')
+    ];
+    
+    let copied = false;
+    for (const srcPath of srcPaths) {
+      if (fs.existsSync(srcPath)) {
+        copyFile(srcPath, envValidationPath);
+        fixModuleImports(envValidationPath);
+        copied = true;
+        break;
+      }
+    }
+    
+    if (!copied) {
+      console.log('⚠️ Impossible de trouver env.validation.js, création d\'un stub...');
+      createEnvValidationStub();
+    }
+  }
   
   // Vérifier et corriger app.controller.js
   const appControllerPath = path.join('dist', 'app.controller.js');
@@ -180,6 +211,26 @@ exports.AppModule = AppModule;
   console.log(`✅ Module App créé: ${appModulePath}`);
 }
 
+// Créer un module de validation d'environnement minimal
+function createEnvValidationStub() {
+  const envValidationPath = path.join('dist', 'config', 'env.validation.js');
+  const content = `
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.validate = void 0;
+
+// Fonction stub pour la validation d'environnement
+function validate(config) {
+  console.log('⚠️ Utilisation du stub de validation d\'environnement');
+  return config;
+}
+exports.validate = validate;
+`;
+
+  fs.writeFileSync(envValidationPath, content, 'utf8');
+  console.log(`✅ Module de validation d'environnement créé: ${envValidationPath}`);
+}
+
 // Fonction pour copier récursivement un dossier
 function copyDirectoryRecursive(source, destination) {
   if (!fs.existsSync(source)) {
@@ -218,6 +269,7 @@ function fixCriticalFiles() {
   // Créer la structure de dossiers
   ensureDirectoryExists('dist/scripts');
   ensureDirectoryExists('dist/models');
+  ensureDirectoryExists('dist/config');
   ensureDirectoryExists('dist/modules');
   ensureDirectoryExists('dist/modules/auth');
   ensureDirectoryExists('dist/modules/auth/decorators');
@@ -245,6 +297,21 @@ function fixCriticalFiles() {
     copyFile(srcAppModulePath, destAppModulePath);
   } else if (fs.existsSync(srcAppModuleDistPath)) {
     copyFile(srcAppModuleDistPath, destAppModulePath);
+  }
+
+  // Copier le dossier config
+  console.log('🔍 Copie du dossier config...');
+  const srcConfigDir = path.join('src', 'config');
+  const distConfigDir = path.join('dist', 'config');
+  const distSrcConfigDir = path.join('dist', 'src', 'config');
+  
+  if (fs.existsSync(srcConfigDir)) {
+    copyDirectoryRecursive(srcConfigDir, distConfigDir);
+  } else if (fs.existsSync(distSrcConfigDir)) {
+    copyDirectoryRecursive(distSrcConfigDir, distConfigDir);
+  } else {
+    console.log('⚠️ Dossier config introuvable, création d\'un stub pour env.validation.js');
+    createEnvValidationStub();
   }
   
   // Copier reflect-metadata de node_modules vers dist/node_modules
