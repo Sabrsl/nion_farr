@@ -83,7 +83,11 @@ jobs:
       
       - name: 📦 Install dependencies
         working-directory: backend
-        run: npm ci --legacy-peer-deps
+        run: |
+          echo "📦 Installation des dépendances backend..."
+          # Utiliser npm install au lieu de npm ci pour résoudre les problèmes de désynchronisation
+          npm install --legacy-peer-deps
+          echo "✅ Dépendances backend installées"
       
       - name: 🧹 Lint Backend
         working-directory: backend
