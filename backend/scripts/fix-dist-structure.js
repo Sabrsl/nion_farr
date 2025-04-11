@@ -167,7 +167,22 @@ function fixEntryPoint() {
   const appControllerPath = path.join('dist', 'app.controller.js');
   if (fs.existsSync(appControllerPath)) {
     console.log('🔍 Vérification du contrôleur app.controller.js...');
-    fixModuleImports(appControllerPath);
+    
+    // Vérifier et corriger spécifiquement l'import de app.service.js
+    try {
+      let content = fs.readFileSync(appControllerPath, 'utf8');
+      
+      // Correction spécifique pour l'import de app.service
+      if (content.includes("require('./app.service')") || content.includes("require(\"./app.service\")")) {
+        content = content.replace(/require\(['"]\.\/app\.service['"]\)/g, "require('./app.service.js')");
+        console.log('✅ Fixed app.service import to include .js extension in app.controller.js');
+        fs.writeFileSync(appControllerPath, content, 'utf8');
+      }
+      
+      fixModuleImports(appControllerPath);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la modification des imports dans ${appControllerPath}:`, error);
+    }
   } else {
     console.log('⚠️ app.controller.js manquant dans dist/, tentative de copie...');
     
@@ -179,6 +194,60 @@ function fixEntryPoint() {
     
     if (!findAndCopyFile('app.controller.js', appControllerPath, possibleAppControllerPaths)) {
       console.error('❌ ERREUR: app.controller.js est introuvable, cela pourrait causer des problèmes au démarrage!');
+    }
+  }
+  
+  // Vérifier et corriger app.service.js - NOUVEAU CODE
+  const appServicePath = path.join('dist', 'app.service.js');
+  if (fs.existsSync(appServicePath)) {
+    console.log('🔍 Vérification du service app.service.js...');
+    fixModuleImports(appServicePath);
+  } else {
+    console.log('⚠️ app.service.js manquant dans dist/, tentative de copie...');
+    
+    // Essayer de trouver et copier app.service.js depuis différents emplacements possibles
+    const possibleAppServicePaths = [
+      path.join('src', 'app.service.js'),
+      path.join('dist', 'src', 'app.service.js')
+    ];
+    
+    if (!findAndCopyFile('app.service.js', appServicePath, possibleAppServicePaths)) {
+      console.log('⚠️ app.service.js est introuvable, création d\'un service minimal...');
+      
+      // Créer un service minimal si nécessaire
+      const minimalServiceContent = `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AppService = void 0;
+const common_1 = require("@nestjs/common");
+
+let AppService = class AppService {
+    constructor() {
+        console.log('AppService initialized');
+    }
+    
+    getHello() {
+        return 'NionFar API is running!';
+    }
+};
+AppService = __decorate([
+    (0, common_1.Injectable)()
+], AppService);
+exports.AppService = AppService;`;
+      
+      try {
+        fs.writeFileSync(appServicePath, minimalServiceContent, 'utf8');
+        console.log(`✅ Fichier app.service.js créé avec succès dans ${appServicePath}`);
+      } catch (error) {
+        console.error(`❌ Erreur lors de la création du fichier ${appServicePath}:`, error);
+      }
     }
   }
   
