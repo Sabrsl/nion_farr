@@ -156,12 +156,23 @@ export class AppModule {
     // Chargement conditionnel du BackupService si nous ne sommes pas en production
     if (configService.get('NODE_ENV') !== 'production' && !getMemoryConfig().disableBackups) {
       try {
-        // Tentative d'import dynamique du BackupService
-        import('./scripts/backup').then(module => {
-          console.log('✅ BackupService chargé avec succès');
-        }).catch(err => {
-          console.warn('⚠️ BackupService non disponible:', err.message);
-        });
+        // Tentative d'import dynamique du BackupService avec gestion d'erreur améliorée
+        console.log('🔄 Tentative de chargement du BackupService...');
+        
+        // Vérifier d'abord si le fichier existe pour éviter les erreurs d'importation
+        const fs = require('fs');
+        const path = require('path');
+        const backupJsPath = path.join(__dirname, 'scripts', 'backup.js');
+        
+        if (fs.existsSync(backupJsPath)) {
+          import('./scripts/backup').then(module => {
+            console.log('✅ BackupService chargé avec succès');
+          }).catch(err => {
+            console.warn('⚠️ BackupService non disponible (import dynamique):', err.message);
+          });
+        } else {
+          console.log(`⚠️ Le fichier ${backupJsPath} n'existe pas, BackupService désactivé`);
+        }
       } catch (error) {
         console.warn('⚠️ Import dynamique du BackupService échoué:', error.message);
       }

@@ -225,7 +225,10 @@ function copyModulesToRoot() {
             const backupJsPath = path.join(targetDir, 'backup.js');
             
             if (fs.existsSync(backupTsPath)) {
-              // Essayer de créer un fichier backup.js minimal
+              console.log('📂 Copie du fichier backup.ts vers dist/scripts/');
+              copyFileIfExists(backupTsPath, path.join(targetDir, 'backup.ts'));
+              
+              console.log('📂 Copie du fichier backup.js vers dist/scripts/');
               const backupJsContent = `
 /**
  * Fichier backup.js généré manuellement par fix-dist-structure.js
@@ -263,29 +266,47 @@ BackupService = __decorate([
 ], BackupService);
 
 exports.BackupService = BackupService;
-              `;
+`;
               
               fs.writeFileSync(backupJsPath, backupJsContent);
-              console.log(`✅ Fichier de substitution créé: ${backupJsPath}`);
+              console.log(`✅ Fichier backup.js créé manuellement: ${backupJsPath}`);
             } else {
-              console.log('❌ Impossible de trouver backup.ts dans src/scripts/');
+              console.log(`⚠️ Fichier source backup.ts non trouvé dans src/scripts, création d'un stub minimal...`);
+              
+              // Créer un fichier stub très simple
+              const backupStubContent = `
+/**
+ * Fichier backup.js stub créé par fix-dist-structure.js
+ */
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BackupService = void 0;
+
+class BackupService {
+    constructor(configService) {
+        this.configService = configService;
+        console.log('⚠️ BackupService stub initialisé');
+    }
+    
+    async performBackup() {
+        console.log('⚠️ Backup ignoré - stub');
+        return true;
+    }
+}
+
+exports.BackupService = BackupService;
+`;
+              fs.writeFileSync(backupJsPath, backupStubContent);
+              console.log(`✅ Fichier stub backup.js créé: ${backupJsPath}`);
             }
           }
         }
       }
     }
     
-    // 6. Copier les fichiers de base
-    const baseFiles = ['app.module.js', 'app.controller.js', 'app.service.js'];
-    for (const file of baseFiles) {
-      copyFileIfExists(
-        path.join(distSrcDir, file), 
-        path.join(distDir, file)
-      );
-    }
-    
-    // 7. Créer un wrapper index.js à la racine pour plus de robustesse
-    createRootWrapper();
+    // 6. Copier app.module.js vers la racine dist/
+    const destAppModulePath = path.join(distDir, 'app.module.js');
+    copyFileIfExists(srcAppModulePath, destAppModulePath);
   } else {
     console.log('❌ app.module.js non trouvé dans dist/src/, impossible de corriger la structure');
   }
@@ -296,14 +317,16 @@ exports.BackupService = BackupService;
     const files = fs.readdirSync(distDir);
     console.log(`Fichiers dans dist/: ${files.join(', ')}`);
   }
+  
+  // 7. Créer un wrapper index.js à la racine de dist
+  createRootWrapper();
 }
 
-// Exécuter la correction
+// Exécuter les corrections
 try {
-  console.log('🔧 Correction de la structure dist pour NestJS...');
   copyModulesToRoot();
-  console.log('✅ Structure dist corrigée avec succès');
+  console.log('✅ Structure du dossier dist corrigée avec succès.');
 } catch (error) {
-  console.error(`❌ Erreur lors de la correction de la structure: ${error.message}`);
+  console.error('❌ Erreur lors de la correction de la structure dist:', error.message);
   process.exit(1);
 } 
