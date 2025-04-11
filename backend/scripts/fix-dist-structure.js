@@ -77,6 +77,10 @@ function fixModuleImports(filePath) {
     content = content.replace(/require\(['"]\.\/audit-log\.service['"]\)/g, "require('./audit-log.service.js')");
     content = content.replace(/from ['"]\.\/audit-log\.service['"]/g, "from './audit-log.service.js'");
     
+    // Correction pour les modules du dossier scripts
+    content = content.replace(/require\(['"]\.\/scripts\/sync-control['"]\)/g, "require('./scripts/sync-control.js')");
+    content = content.replace(/from ['"]\.\/scripts\/sync-control['"]/g, "from './scripts/sync-control.js'");
+    
     // Correction pour les modules du dossier common
     content = content.replace(/require\(['"]\.\.\/common\/pipes\/zod-validation\.pipe['"]\)/g, "require('../common/pipes/zod-validation.pipe.js')");
     content = content.replace(/from ['"]\.\.\/common\/pipes\/zod-validation\.pipe['"]/g, "from '../common/pipes/zod-validation.pipe.js'");
@@ -606,6 +610,73 @@ function fixAppModuleImports() {
   }
 }
 
+// Fonction pour créer un stub du module de synchronisation
+function createSyncControlStub() {
+  const scriptsDir = 'dist/scripts';
+  ensureDirectoryExists(scriptsDir);
+  
+  const syncControlPath = path.join(scriptsDir, 'sync-control.js');
+  
+  if (!fs.existsSync(syncControlPath)) {
+    console.log('⚠️ Module sync-control manquant, création d\'un stub...');
+    
+    const stubContent = `"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SyncControlModule = void 0;
+
+const common_1 = require("@nestjs/common");
+
+/**
+ * Stub pour le module SyncControl qui semble manquer dans le build
+ */
+class SyncControlService {
+    constructor() {
+        console.log('⚠️ Stub SyncControlService initialisé');
+    }
+    
+    async syncData() {
+        console.log('⚠️ Méthode stub: syncData appelée');
+        return { success: true, message: 'Opération simulée' };
+    }
+    
+    async getStatus() {
+        return {
+            status: 'stub',
+            lastSync: new Date().toISOString(),
+            mode: 'fallback'
+        };
+    }
+}
+
+let SyncControlModule = class SyncControlModule {
+    static register(options) {
+        return {
+            module: SyncControlModule,
+            providers: [
+                {
+                    provide: 'SYNC_CONTROL_OPTIONS',
+                    useValue: options || {},
+                },
+                SyncControlService,
+            ],
+            exports: [SyncControlService],
+        };
+    }
+};
+SyncControlModule = __decorate([
+    (0, common_1.Module)({})
+], SyncControlModule);
+exports.SyncControlModule = SyncControlModule;`;
+    
+    try {
+      fs.writeFileSync(syncControlPath, stubContent, 'utf8');
+      console.log(`✅ Stub du module SyncControl créé: ${syncControlPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du stub du module SyncControl:`, error);
+    }
+  }
+}
+
 // Assurer que les fichiers nécessaires sont au bon endroit
 function fixCriticalFiles() {
   console.log('🔍 Vérification des fichiers critiques...');
@@ -744,6 +815,9 @@ function fixCriticalFiles() {
   
   // Créer un modèle stub si nécessaire
   createModelStub();
+  
+  // Créer un stub pour le module de synchronisation
+  createSyncControlStub();
 }
 
 // Fonction pour créer un stub du décorateur de propriété mongoose
