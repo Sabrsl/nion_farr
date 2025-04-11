@@ -24,6 +24,9 @@ RUN echo "📂 Contenu du dossier source:" && \
 # Créer le dossier de logs
 RUN mkdir -p logs
 
+# S'assurer que glob est installé pour le script de correction d'importations
+RUN npm install glob --save
+
 # Construire l'application en une seule étape
 RUN echo "🔨 Lancement du build NestJS..." && \
     npm run build:railway && \
@@ -37,12 +40,18 @@ RUN echo "🔨 Lancement du build NestJS..." && \
       exit 1; \
     fi
 
+# S'assurer que reflect-metadata est correctement chargé
+RUN echo '#!/bin/bash\n\necho "🧩 Vérification de reflect-metadata..."\nnode -e "try { require(\"reflect-metadata\"); console.log(\"✅ reflect-metadata chargé avec succès.\"); } catch(e) { console.error(\"❌ Erreur lors du chargement de reflect-metadata:\", e); process.exit(1); }"' > check-reflect.sh && \
+    chmod +x check-reflect.sh && \
+    ./check-reflect.sh
+
+# Exécuter le script de correction des importations
+RUN echo "🔧 Correction des importations..." && \
+    node scripts/fix-imports.js
+
 # Copier le script de démarrage personnalisé
 COPY start-railway.sh ./start.sh
 RUN chmod +x ./start.sh
-
-# Commande de démarrage - utiliser le script de démarrage
-CMD ["./start.sh"]
 
 # Exposer le port (Railway réaffecte PORT via la variable d'environnement)
 EXPOSE 3000 8080
@@ -60,10 +69,6 @@ RUN echo "🛠 Vérification finale avant CMD:" && \
         ls -la dist/src/; \
     fi && \
     echo "📂 Contenu final de dist/: " && ls -la dist/
-
-# Exécuter le script de fix-dist une dernière fois
-RUN echo "🔧 Exécution finale de fix-dist-structure.js..." && \
-    node scripts/fix-dist-structure.js
 
 # Commande de démarrage
 CMD ["./start.sh"] 

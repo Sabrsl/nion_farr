@@ -411,4 +411,31 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 EOL
   NODE_ENV=production PORT="$PORT" node minimal-server.js
+fi
+
+# Vérifier et corriger les imports avant le démarrage
+if [ -f "scripts/fix-imports.js" ]; then
+  echo "🔧 Correction des importations pour assurer la compatibilité..."
+  node scripts/fix-imports.js
+else
+  echo "⚠️ Script de correction des importations non trouvé. Vérifiez votre installation."
+fi
+
+# Définir les options Node.js pour optimiser les performances
+export NODE_OPTIONS="--max-old-space-size=512 --enable-source-maps"
+
+# Démarrer l'application avec reflect-metadata préchargé
+if [ -f "dist/main.js" ]; then
+  echo "✅ Démarrage de l'application principale avec reflect-metadata préchargé..."
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" \
+    node -r reflect-metadata main-railway.js 2>&1 | tee logs/app.log
+else
+  echo "❌ Fichier principal manquant! Tentative de démarrage du serveur de secours..."
+  if [ -f "server.js" ]; then
+    NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" \
+      node server.js 2>&1 | tee logs/fallback.log
+  else
+    echo "❌ ERREUR CRITIQUE: Aucun point d'entrée valide trouvé!"
+    exit 1
+  fi
 fi 

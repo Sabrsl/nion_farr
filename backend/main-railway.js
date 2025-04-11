@@ -1,7 +1,9 @@
 /**
  * Point d'entrée backend pour Railway
- * Version optimisée avec gestion d'erreurs robuste
+ * Version optimisée avec initialisation correcte des dépendances
  */
+
+// IMPORTANT: Charger reflect-metadata avant toute autre chose
 require('reflect-metadata');
 
 const fs = require('fs');
@@ -29,6 +31,42 @@ function log(message) {
   fs.appendFileSync(MAIN_LOG, logMessage);
 }
 
+// Vérifier si des dépendances critiques sont manquantes
+function verifyCriticalDependencies() {
+  try {
+    // Vérifier que reflect-metadata est correctement chargé
+    if (typeof Reflect !== 'object' || typeof Reflect.getMetadata !== 'function') {
+      log('⚠️ reflect-metadata n\'est pas correctement initialisé');
+      // Essayer de le charger à nouveau
+      require('reflect-metadata');
+    }
+    
+    // Vérifier si mongoose est disponible
+    try {
+      const mongoose = require('mongoose');
+      log('✅ Module mongoose trouvé et chargé');
+    } catch (error) {
+      log(`⚠️ Module mongoose non disponible: ${error.message}`);
+    }
+    
+    // Vérifier NestJS
+    try {
+      const nest = require('@nestjs/common');
+      log('✅ Module @nestjs/common trouvé et chargé');
+    } catch (error) {
+      log(`⚠️ Module @nestjs/common non disponible: ${error.message}`);
+    }
+    
+    return true;
+  } catch (error) {
+    log(`❌ Erreur lors de la vérification des dépendances: ${error.message}`);
+    return false;
+  }
+}
+
+// Vérifier les dépendances critiques
+verifyCriticalDependencies();
+
 // Vérifier si le fichier principal existe
 if (!fs.existsSync(DIST_MAIN)) {
   log(`❌ Erreur fatale: ${DIST_MAIN} est introuvable!`);
@@ -45,6 +83,9 @@ function startMainApp() {
   
   try {
     // Utiliser fork pour exécuter le script principal dans un processus séparé
+    // Définir NODE_OPTIONS pour augmenter la mémoire et charger reflect-metadata
+    process.env.NODE_OPTIONS = '--max_old_space_size=512 --trace-warnings';
+    
     const mainApp = fork(DIST_MAIN, [], { 
       env: process.env,
       stdio: 'pipe'
