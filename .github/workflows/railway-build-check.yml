@@ -142,70 +142,63 @@ jobs:
           else
             echo "⚠️ dist/scripts/backup.js est toujours manquant, création d'un stub..."
             mkdir -p dist/scripts
-            cat > dist/scripts/backup.js << 'EOL'
-/**
- * Fichier backup.js généré manuellement pour CI/CD
- * Version simplifiée qui ne fait rien mais permet à l'application de démarrer
- */
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.BackupService = void 0;
-
-class BackupService {
-    constructor(configService) {
-        this.configService = configService;
-        console.log('⚠️ BackupService (version stub CI/CD) initialisé');
-    }
-    
-    async performBackup() {
-        console.log('⚠️ Backup ignoré - version stub CI/CD');
-    }
-}
-
-exports.BackupService = BackupService;
-EOL
+            # Écrire le contenu ligne par ligne avec echo pour éviter les problèmes de syntaxe YAML
+            echo '"use strict";' > dist/scripts/backup.js
+            echo 'Object.defineProperty(exports, "__esModule", { value: true });' >> dist/scripts/backup.js
+            echo 'exports.BackupService = void 0;' >> dist/scripts/backup.js
+            echo '' >> dist/scripts/backup.js
+            echo 'class BackupService {' >> dist/scripts/backup.js
+            echo '    constructor(configService) {' >> dist/scripts/backup.js
+            echo '        this.configService = configService;' >> dist/scripts/backup.js
+            echo '        console.log("⚠️ BackupService (version stub CI/CD) initialisé");' >> dist/scripts/backup.js
+            echo '    }' >> dist/scripts/backup.js
+            echo '    ' >> dist/scripts/backup.js
+            echo '    async performBackup() {' >> dist/scripts/backup.js
+            echo '        console.log("⚠️ Backup ignoré - version stub CI/CD");' >> dist/scripts/backup.js
+            echo '    }' >> dist/scripts/backup.js
+            echo '}' >> dist/scripts/backup.js
+            echo '' >> dist/scripts/backup.js
+            echo 'exports.BackupService = BackupService;' >> dist/scripts/backup.js
             echo "✅ Fichier stub backup.js créé pour le CI/CD"
           fi
           
           # Créer un script de test pour le démarrage
-          cat > test-start.sh << 'EOL'
-#!/bin/bash
-
-# Configuration de l'environnement de test
-export NODE_ENV=test
-export PORT=3333
-export RAILWAY_DEPLOYMENT=true
-export MEMORY_OPTIMIZED=true
-
-echo "🔍 Vérification de la structure du dossier dist/"
-ls -la dist/
-
-echo "🚀 Tentative de démarrage du serveur..."
-timeout 8s node dist/main.js > server_output.log 2>&1 || EXIT_CODE=$?
-
-echo "📜 Sortie du serveur:"
-cat server_output.log
-
-# Vérifier si le serveur a démarré correctement
-if grep -q "NionFar API est prêt et écoute sur http" server_output.log; then
-  echo "✅ Le serveur a démarré correctement"
-  exit 0
-elif grep -q "Serveur de secours démarré" server_output.log; then
-  echo "⚠️ Le serveur a démarré en mode secours"
-  exit 0
-elif grep -q "NionFar API en mode dégradé" server_output.log; then
-  echo "⚠️ Le serveur a démarré en mode dégradé"
-  exit 0
-else
-  if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" -eq 124 ]; then
-    echo "⚠️ Le serveur s'est exécuté jusqu'au timeout, ce qui est un bon signe"
-    exit 0
-  else
-    echo "⚠️ Le serveur n'a pas pu démarrer correctement, mais nous continuons"
-    exit 0  # Ne pas échouer en CI
-  fi
-fi
-EOL
+          echo '#!/bin/bash' > test-start.sh
+          echo '' >> test-start.sh
+          echo '# Configuration de l'\''environnement de test' >> test-start.sh
+          echo 'export NODE_ENV=test' >> test-start.sh
+          echo 'export PORT=3333' >> test-start.sh
+          echo 'export RAILWAY_DEPLOYMENT=true' >> test-start.sh
+          echo 'export MEMORY_OPTIMIZED=true' >> test-start.sh
+          echo '' >> test-start.sh
+          echo 'echo "🔍 Vérification de la structure du dossier dist/"' >> test-start.sh
+          echo 'ls -la dist/' >> test-start.sh
+          echo '' >> test-start.sh
+          echo 'echo "🚀 Tentative de démarrage du serveur..."' >> test-start.sh
+          echo 'timeout 8s node dist/main.js > server_output.log 2>&1 || EXIT_CODE=$?' >> test-start.sh
+          echo '' >> test-start.sh
+          echo 'echo "📜 Sortie du serveur:"' >> test-start.sh
+          echo 'cat server_output.log' >> test-start.sh
+          echo '' >> test-start.sh
+          echo '# Vérifier si le serveur a démarré correctement' >> test-start.sh
+          echo 'if grep -q "NionFar API est prêt et écoute sur http" server_output.log; then' >> test-start.sh
+          echo '  echo "✅ Le serveur a démarré correctement"' >> test-start.sh
+          echo '  exit 0' >> test-start.sh
+          echo 'elif grep -q "Serveur de secours démarré" server_output.log; then' >> test-start.sh
+          echo '  echo "⚠️ Le serveur a démarré en mode secours"' >> test-start.sh
+          echo '  exit 0' >> test-start.sh
+          echo 'elif grep -q "NionFar API en mode dégradé" server_output.log; then' >> test-start.sh
+          echo '  echo "⚠️ Le serveur a démarré en mode dégradé"' >> test-start.sh
+          echo '  exit 0' >> test-start.sh
+          echo 'else' >> test-start.sh
+          echo '  if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" -eq 124 ]; then' >> test-start.sh
+          echo '    echo "⚠️ Le serveur s'\''est exécuté jusqu'\''au timeout, ce qui est un bon signe"' >> test-start.sh
+          echo '    exit 0' >> test-start.sh
+          echo '  else' >> test-start.sh
+          echo '    echo "⚠️ Le serveur n'\''a pas pu démarrer correctement, mais nous continuons"' >> test-start.sh
+          echo '    exit 0  # Ne pas échouer en CI' >> test-start.sh
+          echo '  fi' >> test-start.sh
+          echo 'fi' >> test-start.sh
           
           chmod +x test-start.sh
           ./test-start.sh
@@ -215,25 +208,62 @@ EOL
         run: |
           echo "📝 Génération du rapport de vérification..."
           
-          cat > railway-verification-report.txt << EOL
-# Rapport de vérification Railway
-
-## Date de vérification
-$(date)
-
-## Structure du build
-Fichiers critiques:
-- dist/main.js: $([ -f "dist/main.js" ] && echo "✅ Présent" || echo "❌ Manquant")
-- dist/app.module.js: $([ -f "dist/app.module.js" ] && echo "✅ Présent" || echo "❌ Manquant")
-- dist/index.js: $([ -f "dist/index.js" ] && echo "✅ Présent" || echo "❌ Manquant")
-- dist/scripts/backup.js: $([ -f "dist/scripts/backup.js" ] && echo "✅ Présent" || echo "⚠️ Manquant mais géré")
-
-## Tests de démarrage
-- Démarrage serveur: $([ -f "server_output.log" ] && echo "✅ Testé" || echo "⚠️ Non testé")
-
-## Recommandation
-$([ -f "dist/main.js" ] && [ -f "dist/app.module.js" ] && echo "✅ Le build est prêt pour le déploiement sur Railway" || echo "❌ Des corrections sont nécessaires avant le déploiement")
-EOL
+          # Créer le rapport ligne par ligne
+          echo "# Rapport de vérification Railway" > railway-verification-report.txt
+          echo "" >> railway-verification-report.txt
+          echo "## Date de vérification" >> railway-verification-report.txt
+          echo "$(date)" >> railway-verification-report.txt
+          echo "" >> railway-verification-report.txt
+          echo "## Structure du build" >> railway-verification-report.txt
+          echo "Fichiers critiques:" >> railway-verification-report.txt
+          
+          # Vérifier main.js
+          if [ -f "dist/main.js" ]; then
+            echo "- dist/main.js: ✅ Présent" >> railway-verification-report.txt
+          else
+            echo "- dist/main.js: ❌ Manquant" >> railway-verification-report.txt
+          fi
+          
+          # Vérifier app.module.js
+          if [ -f "dist/app.module.js" ]; then
+            echo "- dist/app.module.js: ✅ Présent" >> railway-verification-report.txt
+          else
+            echo "- dist/app.module.js: ❌ Manquant" >> railway-verification-report.txt
+          fi
+          
+          # Vérifier index.js
+          if [ -f "dist/index.js" ]; then
+            echo "- dist/index.js: ✅ Présent" >> railway-verification-report.txt
+          else
+            echo "- dist/index.js: ❌ Manquant" >> railway-verification-report.txt
+          fi
+          
+          # Vérifier backup.js
+          if [ -f "dist/scripts/backup.js" ]; then
+            echo "- dist/scripts/backup.js: ✅ Présent" >> railway-verification-report.txt
+          else
+            echo "- dist/scripts/backup.js: ⚠️ Manquant mais géré" >> railway-verification-report.txt
+          fi
+          
+          echo "" >> railway-verification-report.txt
+          echo "## Tests de démarrage" >> railway-verification-report.txt
+          
+          # Vérifier si le serveur a été testé
+          if [ -f "server_output.log" ]; then
+            echo "- Démarrage serveur: ✅ Testé" >> railway-verification-report.txt
+          else
+            echo "- Démarrage serveur: ⚠️ Non testé" >> railway-verification-report.txt
+          fi
+          
+          echo "" >> railway-verification-report.txt
+          echo "## Recommandation" >> railway-verification-report.txt
+          
+          # Vérifier les conditions pour recommander le déploiement
+          if [ -f "dist/main.js" ] && [ -f "dist/app.module.js" ]; then
+            echo "✅ Le build est prêt pour le déploiement sur Railway" >> railway-verification-report.txt
+          else
+            echo "❌ Des corrections sont nécessaires avant le déploiement" >> railway-verification-report.txt
+          fi
           
           echo "✅ Rapport généré: railway-verification-report.txt"
           cat railway-verification-report.txt

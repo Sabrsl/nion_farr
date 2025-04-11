@@ -158,28 +158,23 @@ jobs:
           else
             echo "⚠️ dist/scripts/backup.js est toujours manquant, création d'un stub..."
             mkdir -p dist/scripts
-            cat > dist/scripts/backup.js << 'EOL'
-/**
- * Fichier backup.js généré manuellement pour CI/CD
- * Version simplifiée qui ne fait rien mais permet à l'application de démarrer
- */
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.BackupService = void 0;
-
-class BackupService {
-    constructor(configService) {
-        this.configService = configService;
-        console.log('⚠️ BackupService (version stub CI/CD) initialisé');
-    }
-    
-    async performBackup() {
-        console.log('⚠️ Backup ignoré - version stub CI/CD');
-    }
-}
-
-exports.BackupService = BackupService;
-EOL
+            # Écrire le contenu ligne par ligne avec echo pour éviter les problèmes de syntaxe YAML
+            echo '"use strict";' > dist/scripts/backup.js
+            echo 'Object.defineProperty(exports, "__esModule", { value: true });' >> dist/scripts/backup.js
+            echo 'exports.BackupService = void 0;' >> dist/scripts/backup.js
+            echo '' >> dist/scripts/backup.js
+            echo 'class BackupService {' >> dist/scripts/backup.js
+            echo '    constructor(configService) {' >> dist/scripts/backup.js
+            echo '        this.configService = configService;' >> dist/scripts/backup.js
+            echo '        console.log("⚠️ BackupService (version stub CI/CD) initialisé");' >> dist/scripts/backup.js
+            echo '    }' >> dist/scripts/backup.js
+            echo '    ' >> dist/scripts/backup.js
+            echo '    async performBackup() {' >> dist/scripts/backup.js
+            echo '        console.log("⚠️ Backup ignoré - version stub CI/CD");' >> dist/scripts/backup.js
+            echo '    }' >> dist/scripts/backup.js
+            echo '}' >> dist/scripts/backup.js
+            echo '' >> dist/scripts/backup.js
+            echo 'exports.BackupService = BackupService;' >> dist/scripts/backup.js
             echo "✅ Fichier stub backup.js créé pour le CI/CD"
           fi
           
