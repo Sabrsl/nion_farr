@@ -86,6 +86,23 @@ function fixModuleImports(filePath) {
   }
 }
 
+// Fonction pour trouver un fichier dans différents emplacements possibles
+function findAndCopyFile(filename, destination, possibleSources) {
+  console.log(`🔍 Recherche de ${filename} dans plusieurs emplacements possibles...`);
+  
+  for (const source of possibleSources) {
+    if (fs.existsSync(source)) {
+      console.log(`✅ Fichier trouvé: ${source}`);
+      copyFile(source, destination);
+      fixModuleImports(destination);
+      return true;
+    }
+  }
+  
+  console.error(`❌ ERREUR: Impossible de trouver ${filename} - fichier critique manquant!`);
+  return false;
+}
+
 // Fonction pour assurer que les imports nécessaires sont dans l'index.js du dist
 function fixEntryPoint() {
   const mainJsPath = path.join('dist', 'main.js');
@@ -95,6 +112,16 @@ function fixEntryPoint() {
     fixModuleImports(mainJsPath);
   } else {
     console.log('⚠️ main.js non trouvé dans dist/');
+    
+    // Essayer de trouver et copier main.js depuis différents emplacements possibles
+    const possibleMainPaths = [
+      path.join('dist', 'src', 'main.js'),
+      path.join('src', 'main.js')
+    ];
+    
+    if (!findAndCopyFile('main.js', mainJsPath, possibleMainPaths)) {
+      console.error('❌ ERREUR CRITIQUE: main.js est introuvable, impossible de démarrer l\'application!');
+    }
   }
   
   // Vérifier et corriger app.module.js
@@ -103,19 +130,16 @@ function fixEntryPoint() {
     console.log('🔍 Vérification du module app.module.js...');
     fixModuleImports(appModulePath);
   } else {
-    console.log('⚠️ app.module.js manquant dans dist/, tentative de copie depuis src/...');
-    const srcAppModulePath = path.join('src', 'app.module.js');
-    const srcAppModuleDistPath = path.join('dist', 'src', 'app.module.js');
+    console.log('⚠️ app.module.js manquant dans dist/, tentative de copie...');
     
-    if (fs.existsSync(srcAppModulePath)) {
-      copyFile(srcAppModulePath, appModulePath);
-      fixModuleImports(appModulePath);
-    } else if (fs.existsSync(srcAppModuleDistPath)) {
-      copyFile(srcAppModuleDistPath, appModulePath);
-      fixModuleImports(appModulePath);
-    } else {
-      console.log('⚠️ Impossible de trouver app.module.js, création d\'un stub basique...');
-      createAppModuleStub();
+    // Essayer de trouver et copier app.module.js depuis différents emplacements possibles
+    const possibleAppModulePaths = [
+      path.join('src', 'app.module.js'),
+      path.join('dist', 'src', 'app.module.js')
+    ];
+    
+    if (!findAndCopyFile('app.module.js', appModulePath, possibleAppModulePaths)) {
+      console.error('❌ ERREUR CRITIQUE: app.module.js est introuvable, impossible de démarrer l\'application!');
     }
   }
 
@@ -127,26 +151,15 @@ function fixEntryPoint() {
   if (!fs.existsSync(envValidationPath)) {
     console.log('⚠️ env.validation.js manquant dans dist/config/, tentative de copie...');
     
-    // Essayer plusieurs emplacements potentiels
-    const srcPaths = [
+    // Essayer de trouver et copier env.validation.js depuis différents emplacements possibles
+    const possibleEnvValidationPaths = [
       path.join('src', 'config', 'env.validation.js'),
       path.join('dist', 'src', 'config', 'env.validation.js'),
       path.join('config', 'env.validation.js')
     ];
     
-    let copied = false;
-    for (const srcPath of srcPaths) {
-      if (fs.existsSync(srcPath)) {
-        copyFile(srcPath, envValidationPath);
-        fixModuleImports(envValidationPath);
-        copied = true;
-        break;
-      }
-    }
-    
-    if (!copied) {
-      console.log('⚠️ Impossible de trouver env.validation.js, création d\'un stub...');
-      createEnvValidationStub();
+    if (!findAndCopyFile('env.validation.js', envValidationPath, possibleEnvValidationPaths)) {
+      console.error('❌ ERREUR: env.validation.js est introuvable, cela pourrait causer des problèmes au démarrage!');
     }
   }
   
@@ -156,16 +169,16 @@ function fixEntryPoint() {
     console.log('🔍 Vérification du contrôleur app.controller.js...');
     fixModuleImports(appControllerPath);
   } else {
-    console.log('⚠️ app.controller.js manquant dans dist/, tentative de copie depuis src/...');
-    const srcAppControllerPath = path.join('src', 'app.controller.js');
-    const srcAppControllerDistPath = path.join('dist', 'src', 'app.controller.js');
+    console.log('⚠️ app.controller.js manquant dans dist/, tentative de copie...');
     
-    if (fs.existsSync(srcAppControllerPath)) {
-      copyFile(srcAppControllerPath, appControllerPath);
-      fixModuleImports(appControllerPath);
-    } else if (fs.existsSync(srcAppControllerDistPath)) {
-      copyFile(srcAppControllerDistPath, appControllerPath);
-      fixModuleImports(appControllerPath);
+    // Essayer de trouver et copier app.controller.js depuis différents emplacements possibles
+    const possibleAppControllerPaths = [
+      path.join('src', 'app.controller.js'),
+      path.join('dist', 'src', 'app.controller.js')
+    ];
+    
+    if (!findAndCopyFile('app.controller.js', appControllerPath, possibleAppControllerPaths)) {
+      console.error('❌ ERREUR: app.controller.js est introuvable, cela pourrait causer des problèmes au démarrage!');
     }
   }
   
@@ -183,52 +196,6 @@ function fixEntryPoint() {
       }
     });
   }
-}
-
-// Créer un module App minimal pour éviter les erreurs
-function createAppModuleStub() {
-  const appModulePath = path.join('dist', 'app.module.js');
-  const content = `
-require('reflect-metadata');
-const { Module } = require('@nestjs/common');
-
-class AppModule {}
-
-Object.defineProperty(AppModule, '__annotations__', {
-  configurable: true,
-  enumerable: true,
-  value: [new Module({
-    imports: [],
-    controllers: [],
-    providers: [],
-  })],
-});
-
-exports.AppModule = AppModule;
-`;
-
-  fs.writeFileSync(appModulePath, content, 'utf8');
-  console.log(`✅ Module App créé: ${appModulePath}`);
-}
-
-// Créer un module de validation d'environnement minimal
-function createEnvValidationStub() {
-  const envValidationPath = path.join('dist', 'config', 'env.validation.js');
-  const content = `
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = void 0;
-
-// Fonction stub pour la validation d'environnement
-function validate(config) {
-  console.log('⚠️ Utilisation du stub de validation d\'environnement');
-  return config;
-}
-exports.validate = validate;
-`;
-
-  fs.writeFileSync(envValidationPath, content, 'utf8');
-  console.log(`✅ Module de validation d'environnement créé: ${envValidationPath}`);
 }
 
 // Fonction pour copier récursivement un dossier
@@ -286,17 +253,26 @@ function fixCriticalFiles() {
   ensureDirectoryExists('dist/node_modules/@nestjs/mongoose/dist/decorators');
   
   // Copier les fichiers clés depuis src/dist
-  copyFile('dist/src/main.js', 'dist/main.js');
+  const mainJsPath = path.join('dist', 'main.js');
+  if (!fs.existsSync(mainJsPath)) {
+    console.log('⚠️ Fichier main.js manquant dans dist/, tentative de copie...');
+    copyFile(path.join('dist', 'src', 'main.js'), mainJsPath);
+  }
   
-  // Essayer de copier app.module.js s'il existe à la racine src/
+  // Essayer de copier app.module.js s'il existe
+  console.log('🔍 Vérification du fichier app.module.js...');
   const srcAppModulePath = path.join('src', 'app.module.js');
   const srcAppModuleDistPath = path.join('dist', 'src', 'app.module.js');
   const destAppModulePath = path.join('dist', 'app.module.js');
   
-  if (fs.existsSync(srcAppModulePath)) {
-    copyFile(srcAppModulePath, destAppModulePath);
-  } else if (fs.existsSync(srcAppModuleDistPath)) {
-    copyFile(srcAppModuleDistPath, destAppModulePath);
+  if (!fs.existsSync(destAppModulePath)) {
+    if (fs.existsSync(srcAppModulePath)) {
+      copyFile(srcAppModulePath, destAppModulePath);
+    } else if (fs.existsSync(srcAppModuleDistPath)) {
+      copyFile(srcAppModuleDistPath, destAppModulePath);
+    } else {
+      console.error('❌ ERREUR CRITIQUE: app.module.js est introuvable, cela empêchera le démarrage!');
+    }
   }
 
   // Copier le dossier config
@@ -310,8 +286,7 @@ function fixCriticalFiles() {
   } else if (fs.existsSync(distSrcConfigDir)) {
     copyDirectoryRecursive(distSrcConfigDir, distConfigDir);
   } else {
-    console.log('⚠️ Dossier config introuvable, création d\'un stub pour env.validation.js');
-    createEnvValidationStub();
+    console.error('❌ ERREUR: Dossier config introuvable, cela pourrait causer des problèmes!');
   }
   
   // Copier reflect-metadata de node_modules vers dist/node_modules
