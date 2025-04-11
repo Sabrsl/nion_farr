@@ -1,133 +1,164 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import * as os from 'os';
-import { getMemoryConfig } from '../config/environment';
+import * as fs from 'fs';
+import * as path from 'path';
+
+interface HealthResponse {
+  status: 'ok' | 'error';
+  timestamp: string;
+  environment: string;
+  version: string;
+  components: {
+    [key: string]: {
+      status: 'ok' | 'error';
+      details?: any;
+    };
+  };
+  uptime: number;
+  memory: {
+    rss: string;
+    heapTotal: string;
+    heapUsed: string;
+    external: string;
+    percentUsed: number;
+  };
+}
 
 @Injectable()
 export class HealthService {
-  private readonly logger = new Logger(HealthService.name);
-  private readonly memoryConfig = getMemoryConfig();
+  private packageVersion: string;
 
   constructor(
     @InjectConnection() private readonly connection: Connection,
     private readonly configService: ConfigService,
-  ) {}
-
-  async check() {
+  ) {
+    // Lecture du numéro de version depuis package.json
     try {
-      // Vérifier la connexion à MongoDB
-      const dbStatus = this.connection.readyState === 1;
-      
-      if (!dbStatus) {
-        this.logger.error('Database connection is not ready');
-        return {
-          status: 'unhealthy',
-          timestamp: new Date().toISOString(),
-          error: 'Database connection failed',
-        };
+      const packageJsonPath = path.join(process.cwd(), 'package.json');
+      if (fs.existsSync(packageJsonPath)) {
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        this.packageVersion = packageJson.version || '0.0.0';
+      } else {
+        this.packageVersion = '0.0.0';
       }
-      
-      return {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-      };
     } catch (error) {
-      this.logger.error(`Health check failed: ${error.message}`, error.stack);
-      return {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        error: error.message,
-      };
+      this.packageVersion = '0.0.0';
     }
   }
 
-  async checkDetailed() {
-    try {
-      // Vérifier la connexion à MongoDB
-      const dbStatus = this.connection.readyState === 1;
-      
-      // Informations sur le système
-      const uptime = process.uptime();
-      const memoryUsage = process.memoryUsage();
-      const cpuUsage = os.loadavg();
-      
-      // Informations sur l'application
-      const nodeVersion = process.version;
-      const environment = this.configService.get<string>('NODE_ENV') || 'development';
-      
-      // Récupérer les informations de déploiement
-      const deploymentInfo = this.getDeploymentInfo();
-      
-      // Vérifier les collections MongoDB
-      const collections = dbStatus ? await this.connection.db.listCollections().toArray() : [];
-      const collectionNames = collections.map(c => c.name);
-      
-      return {
-        status: dbStatus ? 'healthy' : 'unhealthy',
-        timestamp: new Date().toISOString(),
+  /**
+   * Vérification de santé de base
+   */
+  async check(): Promise<HealthResponse> {
+    const isDbConnected = this.connection.readyState === 1;
+    
+    const memoryUsage = process.memoryUsage();
+    const percentUsed = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
+    
+    const response: HealthResponse = {
+      status: isDbConnected ? 'ok' : 'error',
+      timestamp: new Date().toISOString(),
+      environment: this.configService.get<string>('NODE_ENV') || 'development',
+      version: this.packageVersion,
+      components: {
         database: {
-          connected: dbStatus,
-          collections: collectionNames,
+          status: isDbConnected ? 'ok' : 'error',
+          details: {
+            connected: isDbConnected
+          }
+        },
+        api: {
+          status: 'ok'
+        }
+      },
+      uptime: process.uptime(),
+      memory: {
+        rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
+        heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
+        heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+        external: `${Math.round(memoryUsage.external / 1024 / 1024)}MB`,
+        percentUsed
+      }
+    };
+    
+    return response;
+  }
+
+  /**
+   * Vérification de santé détaillée
+   */
+  async checkDetailed(): Promise<HealthResponse> {
+    const isDbConnected = this.connection.readyState === 1;
+    let collections = [];
+    
+    if (isDbConnected) {
+      try {
+        collections = await this.connection.db.listCollections().toArray();
+        collections = collections.map(col => col.name);
+      } catch (error) {
+        collections = ['Erreur lors de la récupération des collections'];
+      }
+    }
+    
+    const memoryUsage = process.memoryUsage();
+    const percentUsed = Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100);
+    
+    // Récupération de l'utilisation CPU
+    const cpuUsage = process.cpuUsage();
+    const cpuUsagePercent = (cpuUsage.user + cpuUsage.system) / 1000000; // Conversion en secondes
+    
+    // Récupération des informations système
+    const systemInfo = {
+      platform: os.platform(),
+      arch: os.arch(),
+      cpus: os.cpus().length,
+      totalMemory: `${Math.round(os.totalmem() / 1024 / 1024)}MB`,
+      freeMemory: `${Math.round(os.freemem() / 1024 / 1024)}MB`,
+      loadAvg: os.loadavg()
+    };
+    
+    const response: HealthResponse = {
+      status: isDbConnected ? 'ok' : 'error',
+      timestamp: new Date().toISOString(),
+      environment: this.configService.get<string>('NODE_ENV') || 'development',
+      version: this.packageVersion,
+      components: {
+        database: {
+          status: isDbConnected ? 'ok' : 'error',
+          details: {
+            connected: isDbConnected,
+            collections
+          }
+        },
+        api: {
+          status: 'ok'
         },
         system: {
-          uptime: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`,
-          memory: {
-            heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
-            heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
-            rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
-            heapUsagePercent: `${Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100)}%`,
-          },
-          cpu: {
-            loadAverage: cpuUsage,
-          },
+          status: 'ok',
+          details: systemInfo
         },
-        application: {
-          nodeVersion,
-          environment,
-          deploymentPlatform: this.memoryConfig.deploymentPlatform,
-          memoryOptimized: this.memoryConfig.isConstrained,
-          deployment: deploymentInfo,
-        },
-      };
-    } catch (error) {
-      this.logger.error(`Detailed health check failed: ${error.message}`, error.stack);
-      return {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        error: error.message,
-      };
-    }
-  }
-  
-  /**
-   * Récupère les informations de déploiement selon la plateforme
-   */
-  private getDeploymentInfo() {
-    const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
-    const isRender = process.env.IS_RENDER === 'true';
-    
-    if (isRailway) {
-      return {
-        platform: 'Railway',
-        projectId: process.env.RAILWAY_PROJECT_ID,
-        serviceName: process.env.RAILWAY_SERVICE_NAME,
-        environment: process.env.RAILWAY_ENVIRONMENT_NAME,
-        publicDomain: process.env.RAILWAY_PUBLIC_DOMAIN,
-      };
-    }
-    
-    if (isRender) {
-      return {
-        platform: 'Render',
-        serviceType: process.env.RENDER_SERVICE_TYPE,
-        serviceId: process.env.RENDER_SERVICE_ID,
-      };
-    }
-    
-    return {
-      platform: 'Local/Other',
+        deployment: {
+          status: 'ok',
+          details: {
+            railway: process.env.RAILWAY_DEPLOYMENT === 'true',
+            memory_optimized: process.env.MEMORY_OPTIMIZED === 'true',
+            port: process.env.PORT
+          }
+        }
+      },
+      uptime: process.uptime(),
+      memory: {
+        rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
+        heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
+        heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+        external: `${Math.round(memoryUsage.external / 1024 / 1024)}MB`,
+        percentUsed
+      }
     };
+    
+    return response;
   }
 } 

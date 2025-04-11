@@ -1,36 +1,133 @@
-# Nionfar Backend
+# NionFar API Backend
 
-API NestJS pour la plateforme de freelance NionFar.sn
+## Présentation
 
-## Prérequis
+Backend de l'application NionFar, construit avec NestJS et MongoDB.
 
-- Node.js (v18 ou supérieur)
-- MongoDB (v5 ou supérieur)
-- npm ou yarn
+## Architecture
 
-## Installation
+Le backend est structuré selon l'architecture modulaire de NestJS:
 
-```bash
-# Installation des dépendances
-npm install
-
-# Copier le fichier d'environnement
-cp .env.example .env
-
-# Configurer les variables d'environnement dans le fichier .env
 ```
+backend/
+├── src/                        # Code source
+│   ├── common/                 # Composants réutilisables (pipes, guards, etc.)
+│   ├── config/                 # Configuration de l'application
+│   ├── database/               # Configuration de la base de données et migrations
+│   ├── health/                 # Endpoints de surveillance et diagnostics
+│   ├── modules/                # Modules fonctionnels de l'application
+│   ├── performance/            # Outils de suivi des performances
+│   ├── security/               # Fonctionnalités liées à la sécurité
+│   ├── scripts/                # Scripts utilitaires
+│   ├── app.controller.ts       # Contrôleur principal
+│   ├── app.module.ts           # Module principal
+│   └── main.ts                 # Point d'entrée de l'application
+├── dist/                       # Code compilé (généré par build)
+├── scripts/                    # Scripts de déploiement et maintenance
+├── logs/                       # Journaux d'application
+├── .env                        # Variables d'environnement locales
+└── railway.json                # Configuration de déploiement Railway
+```
+
+## Environnements et Déploiement
+
+### Configuration
+
+La configuration de l'application se fait via les variables d'environnement:
+
+- `NODE_ENV`: Environnement d'exécution (`development`, `production`, `test`)
+- `PORT`: Port d'écoute du serveur
+- `MONGODB_URI`: URI de connexion à la base de données MongoDB
+- `JWT_SECRET`: Clé secrète pour les JWT
+- `JWT_EXPIRES_IN`: Durée de validité des JWT
+- `FRONTEND_URL`: URL du frontend pour la configuration CORS
+- `MEMORY_OPTIMIZED`: Active le mode d'optimisation mémoire (`true`/`false`)
+
+### Déploiement sur Railway
+
+Le déploiement sur Railway est géré par la configuration dans `railway.json`. Ce fichier définit:
+
+1. **Build**: Utilisation d'un Dockerfile pour construire l'image
+2. **Démarrage**: Exécution via le script `start-railway.sh`
+3. **Healthcheck**: Vérification de l'état sur `/health` toutes les 15 secondes
+4. **Redémarrage**: Politique de redémarrage en cas d'échec (10 tentatives maximum)
+
+#### Processus de déploiement
+
+1. Railway clone le dépôt et construit l'image Docker
+2. Le script `start-railway.sh` est exécuté au démarrage
+3. Ce script:
+   - Vérifie la structure du dossier `dist/`
+   - Copie et corrige les fichiers nécessaires
+   - Lance l'application avec les bonnes options de mémoire
+   - Si le démarrage échoue, utilise un serveur de secours
+
+#### Mécanismes de résilience
+
+Le système intègre plusieurs couches de résilience:
+
+1. **Structure du dossier dist/**: Correction automatique via `fix-dist-structure.js`
+2. **Healthchecks**: Points de terminaison `/health`, `/health/ping` et `/health/detailed`
+3. **Serveur de secours**: Un serveur minimaliste qui répond aux healthchecks
+4. **Gestion de la mémoire**: Optimisations pour les environnements contraints
+5. **Logging structuré**: Tous les logs sont au format JSON pour faciliter le débogage
+
+### Migration de la base de données
+
+Les migrations sont gérées automatiquement au démarrage si `RUN_MIGRATIONS=true`:
+
+1. Le service `MigrationService` détecte les migrations non appliquées
+2. Les migrations sont exécutées séquentiellement dans une transaction
+3. Chaque migration réussie est enregistrée dans la collection `migrations`
+
+Les fichiers de migration se trouvent dans `src/database/migrations/scripts/` et doivent exporter une fonction `up()`.
+
+## Surveillance et diagnostics
+
+### Healthchecks
+
+L'API expose plusieurs endpoints de healthcheck:
+
+- `GET /health`: Vérification de base (état de la base de données)
+- `GET /health/ping`: Vérification rapide sans accès à la base de données
+- `GET /health/detailed`: Vérification détaillée avec informations système
+
+### Métriques Prometheus
+
+Les métriques de performance sont exposées au format Prometheus:
+
+- `GET /metrics`: Métriques système et application
+  - HTTP: requêtes totales, durée, requêtes en cours
+  - Database: durée des requêtes
+  - System: utilisation mémoire, CPU
 
 ## Développement
 
-```bash
-# Mode développement avec rechargement automatique
-npm run start:dev
+### Installation
 
-# Mode debug
-npm run start:debug
+```bash
+npm install
 ```
 
-## Tests
+### Exécution en développement
+
+```bash
+npm run start:dev
+```
+
+### Build
+
+```bash
+npm run build
+```
+
+### Exécution en production
+
+```bash
+npm run start:prod
+```
+
+### Tests
 
 ```bash
 # Tests unitaires
@@ -43,156 +140,20 @@ npm run test:e2e
 npm run test:cov
 ```
 
-## Build et déploiement
+## Résolution des problèmes
 
-```bash
-# Build de l'application
-npm run build
+### Erreurs de déploiement courantes
 
-# Mode production
-npm run start:prod
-```
+1. **Module non trouvé**: Vérifier que le module est correctement référencé dans `package.json` et inclus dans le build.
+2. **Erreur de connexion MongoDB**: Vérifier l'URI de connexion et les autorisations réseau.
+3. **Out of Memory**: Activer `MEMORY_OPTIMIZED=true` pour réduire l'empreinte mémoire.
+4. **Réflexion TypeScript manquante**: Assurez-vous que `reflect-metadata` est importé dans les fichiers principaux.
 
-## Déploiement sur Render
+### Diagnostic
 
-### Configuration sur Render
+Pour faciliter le diagnostic des problèmes:
 
-1. Créez un nouveau service Web
-2. Connectez votre dépôt GitHub
-3. Configurez les paramètres suivants:
-   - **Name**: nionfar-backend
-   - **Runtime**: Node
-   - **Root Directory**: backend
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm run start:prod`
-
-### Variables d'environnement requises
-
-Configurez ces variables dans l'interface Render (Dashboard > Environment):
-
-```
-NODE_ENV=production
-PORT=3000
-API_PREFIX=api
-APP_URL=https://nionfar.up.railway.app
-FRONTEND_URL=https://nion-farr.vercel.app
-
-# MongoDB
-MONGODB_URI=<votre chaîne de connexion MongoDB>
-
-# JWT (générer des clés sécurisées avec le script generate-secrets.ts)
-JWT_SECRET=<secret JWT généré>
-JWT_EXPIRES_IN=1d
-JWT_REFRESH_SECRET=<secret refresh JWT généré>
-JWT_REFRESH_EXPIRES_IN=7d
-
-# Autres services (si nécessaire)
-MAIL_HOST=<serveur SMTP>
-MAIL_PORT=<port>
-MAIL_USER=<utilisateur>
-MAIL_PASSWORD=<mot de passe>
-MAIL_FROM=<adresse email>
-```
-
-### Génération de secrets sécurisés
-
-Pour générer des secrets JWT sécurisés, utilisez le script fourni:
-
-```bash
-npm run generate:secrets
-```
-
-### Gestion des secrets
-
-- Ne stockez **JAMAIS** de secrets dans le code source
-- Utilisez uniquement les variables d'environnement de Render pour les informations sensibles
-- Changez régulièrement les clés JWT
-- Utilisez des secrets différents pour les environnements de développement, test et production
-
-## Fallback Server
-
-Le script `render-build.sh` inclut un serveur de secours qui s'active automatiquement en cas d'échec du build principal. Ce serveur:
-
-- Fournit une réponse aux routes essentielles
-- Renvoie un état dégradé pour les opérations d'écriture
-- Permet à l'interface utilisateur de rester fonctionnelle même en cas de problèmes de base de données
-
-## Bonnes pratiques de sécurité
-
-1. **Protection des données**
-   - Toutes les clés API et tokens doivent être stockés dans les variables d'environnement
-   - Utiliser le fichier `.env` uniquement pour le développement local
-   - Ne jamais commettre de fichiers `.env` contenant des secrets
-
-2. **API et authentification**
-   - Valider toutes les entrées utilisateur
-   - Utiliser les middlewares de sécurité
-   - Implémenter une limitation de débit pour prévenir les attaques de force brute
-
-3. **Base de données**
-   - Utiliser des utilisateurs MongoDB avec privilèges limités
-   - Activer l'authentification sur le cluster MongoDB
-   - Effectuer des sauvegardes régulières
-
-4. **Maintenance**
-   - Surveiller les journaux d'erreurs dans le tableau de bord Render
-   - Mettre à jour régulièrement les dépendances (npm audit)
-   - Tester les nouvelles fonctionnalités avant le déploiement en production 
-
-## Memory Optimization
-
-This application includes built-in memory optimization features for deployment on platforms with limited resources (such as Render's free tier).
-
-### Memory Optimization Features
-
-1. **Environment-aware Configuration**
-   - Memory-optimized settings are automatically applied when running in constrained environments
-   - MongoDB connection pools are reduced in size
-   - Database synchronization is disabled
-   - Throttling windows are extended
-   - Scheduled tasks can be disabled
-
-2. **Memory Monitoring**
-   - Real-time memory usage tracking
-   - Automatic memory cleanup attempts when thresholds are exceeded
-   - Graceful shutdown handlers to prevent crashes
-
-3. **How to Enable Memory Optimization**
-
-   Set one of the following environment variables:
-   ```
-   MEMORY_OPTIMIZED=true
-   ```
-   
-   Or use the provided scripts:
-   ```
-   npm run start:low-memory
-   ```
-   
-   For Render deployment, the configuration is already optimized in `render.yaml`.
-
-4. **Monitoring Memory Usage**
-
-   Use the included script to monitor memory usage:
-   ```
-   npm run monitor:memory
-   ```
-
-5. **Troubleshooting Memory Issues**
-
-   If you encounter OOM (Out of Memory) errors:
-   
-   - Check if memory optimization is enabled
-   - Reduce the frequency of scheduled tasks
-   - Review database queries for potential optimizations
-   - Consider upgrading to a higher resource tier
-
-### Memory-Optimized Scripts
-
-- `npm run start:render` - Builds and starts the app with memory optimization for Render
-- `npm run start:low-memory` - Starts the app with memory optimization
-- `npm run monitor:memory` - Monitors memory usage in real-time 
-
-## CI/CD
-
-Le projet utilise GitHub Actions pour vérifier automatiquement que le build pour Railway fonctionne correctement. 
+1. Consultez les logs de déploiement sur Railway
+2. Vérifiez les journaux d'application dans `/logs`
+3. Utilisez l'endpoint `/health/detailed` pour un diagnostic complet
+4. Examinez les métriques Prometheus sur `/metrics` 

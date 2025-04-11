@@ -1,3 +1,4 @@
+require('reflect-metadata');
 
 /**
  * Fichier main.js de secours généré automatiquement par check-dist.js

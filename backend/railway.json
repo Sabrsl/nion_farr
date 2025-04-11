@@ -2,15 +2,23 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "./Dockerfile.railway"
+    "dockerfilePath": "./Dockerfile"
   },
   "deploy": {
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 5,
-    "startCommand": "./start.sh",
+    "restartPolicyMaxRetries": 10,
+    "startCommand": "./start-railway.sh",
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 45,
-    "healthcheckInterval": 30,
-    "numReplicas": 1
+    "healthcheckTimeout": 30,
+    "healthcheckInterval": 15,
+    "numReplicas": 1,
+    "sleepApplication": false,
+    "strategy": "rolling"
+  },
+  "variables": {
+    "RAILWAY_DEPLOYMENT": "true",
+    "MEMORY_OPTIMIZED": "true",
+    "NODE_ENV": "production",
+    "PORT": "8080"
   }
 } 

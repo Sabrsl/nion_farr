@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { validate } from './config/env.validation';
@@ -13,6 +13,8 @@ import { HealthModule } from './health/health.module';
 import { getMongooseMemoryOptions, getTypeOrmMemoryOptions } from './config/mongodb-memory-options';
 import { getMemoryConfig } from './config/environment';
 import { SyncControlService } from './scripts/sync-control';
+import { GlobalExceptionFilter } from './common/interceptors/http-exception.interceptor';
+import { LoggerModule } from './common/logger/logger.module';
 
 // Modules
 import { UsersModule } from './modules/users/users.module';
@@ -41,6 +43,9 @@ import { PerformanceModule } from './performance/performance.module';
       isGlobal: true,
       validate,
     }),
+    
+    // Logger
+    LoggerModule,
     
     // Database - TypeORM configuré avec MongoDB
     TypeOrmModule.forRootAsync({
@@ -148,6 +153,10 @@ import { PerformanceModule } from './performance/performance.module';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
     },
   ],
 })

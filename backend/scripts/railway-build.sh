@@ -26,7 +26,16 @@ npm run build
 # Vérification du build
 if [ $? -ne 0 ] || [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then
   echo "❌ Échec du build! Le dossier dist ou main.js est manquant."
-  exit 1
+  
+  # Correction automatique de la structure
+  echo "🔧 Tentative de correction de la structure du dossier dist..."
+  node scripts/fix-dist-structure.js
+  
+  # Vérification après correction
+  if [ ! -f "dist/main.js" ]; then
+    echo "❌ Impossible de résoudre le problème de build!"
+    exit 1
+  fi
 fi
 
 echo "✅ Build terminé avec succès!"

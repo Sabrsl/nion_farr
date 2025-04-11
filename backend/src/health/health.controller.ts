@@ -1,45 +1,91 @@
-import { Controller, Get, HttpCode } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { HealthService } from './health.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../modules/auth/decorators/public.decorator';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-@ApiTags('Health')
+interface HealthResponse {
+  status: 'ok' | 'error';
+  timestamp: string;
+  environment: string;
+  version: string;
+  components: {
+    [key: string]: {
+      status: 'ok' | 'error';
+      details?: any;
+    };
+  };
+  uptime: number;
+  memory: {
+    rss: string;
+    heapTotal: string;
+    heapUsed: string;
+    external: string;
+    percentUsed: number;
+  };
+}
+
+@ApiTags('health')
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Get()
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Check API health status' })
-  @ApiResponse({ status: 200, description: 'API is healthy' })
-  @ApiResponse({ status: 503, description: 'API is unhealthy' })
-  async check() {
+  @Public()
+  @ApiOperation({ summary: 'Check system health' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'System health information',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['ok', 'error'] },
+        timestamp: { type: 'string', format: 'date-time' },
+        environment: { type: 'string' },
+        version: { type: 'string' },
+        components: { 
+          type: 'object',
+          additionalProperties: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', enum: ['ok', 'error'] },
+              details: { type: 'object' }
+            }
+          }
+        },
+        uptime: { type: 'number' },
+        memory: {
+          type: 'object',
+          properties: {
+            rss: { type: 'string' },
+            heapTotal: { type: 'string' },
+            heapUsed: { type: 'string' },
+            external: { type: 'string' },
+            percentUsed: { type: 'number' }
+          }
+        }
+      }
+    }
+  })
+  async check(): Promise<HealthResponse> {
     return this.healthService.check();
   }
 
-  @Get('detailed')
-  @ApiOperation({ summary: 'Get detailed health status' })
-  @ApiResponse({ status: 200, description: 'Detailed health status' })
-  async checkDetailed() {
-    return this.healthService.checkDetailed();
-  }
-
-  @Public()
   @Get('ping')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Simple ping test that does not require database' })
-  @ApiResponse({ status: 200, description: 'Pong response' })
-  ping() {
+  @Public()
+  @ApiOperation({ summary: 'Simple ping check' })
+  @ApiResponse({ status: 200, description: 'Ping response' })
+  ping(): { status: string; timestamp: string } {
     return {
       status: 'ok',
-      message: 'pong',
-      timestamp: new Date().toISOString(),
-      railway: process.env.RAILWAY_DEPLOYMENT === 'true',
-      render: process.env.IS_RENDER === 'true',
-      environment: process.env.NODE_ENV,
-      memoryOptimized: process.env.MEMORY_OPTIMIZED === 'true',
-      port: process.env.PORT || 'non défini',
-      hostname: '0.0.0.0', // On écoute sur toutes les interfaces
+      timestamp: new Date().toISOString()
     };
+  }
+
+  @Get('detailed')
+  @Public()
+  @ApiOperation({ summary: 'Detailed health check with component status' })
+  @ApiResponse({ status: 200, description: 'Detailed health information' })
+  async detailed(): Promise<HealthResponse> {
+    return this.healthService.checkDetailed();
   }
 } 

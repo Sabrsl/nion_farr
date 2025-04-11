@@ -30,12 +30,12 @@ fi
 # Assurer que les logs existent
 mkdir -p logs
 
-# Correction des imports avant le démarrage
-if [ -f "scripts/fix-imports.js" ]; then
-  echo "🔧 Correction des importations pour assurer la compatibilité..."
-  node scripts/fix-imports.js
+# Correction de la structure dist avant le démarrage
+if [ -f "scripts/fix-dist-structure.js" ]; then
+  echo "🔧 Correction de la structure dist pour assurer la compatibilité..."
+  node scripts/fix-dist-structure.js
 else
-  echo "⚠️ Script de correction des importations non trouvé."
+  echo "⚠️ Script de correction de la structure dist non trouvé."
 fi
 
 # Options de performance

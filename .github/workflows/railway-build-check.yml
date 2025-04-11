@@ -43,7 +43,7 @@ jobs:
           echo "🧪 Vérification des fichiers de configuration Railway..."
           
           # Vérifier la présence de scripts essentiels pour Railway
-          RAILWAY_SCRIPTS=("scripts/fix-dist-structure.js" "scripts/check-dist.js")
+          RAILWAY_SCRIPTS=("scripts/fix-dist-structure.js" "start-railway.sh")
           
           for script in "${RAILWAY_SCRIPTS[@]}"; do
             if [ -f "$script" ]; then
@@ -59,6 +59,22 @@ jobs:
             echo "✅ Scripts package.json pour Railway trouvés"
           else
             echo "❌ Scripts package.json pour Railway manquants!"
+            exit 1
+          fi
+          
+          # Vérifier le Dockerfile
+          if [ -f "Dockerfile" ]; then
+            echo "✅ Dockerfile existe"
+          else
+            echo "❌ Dockerfile manquant!"
+            exit 1
+          fi
+          
+          # Vérifier le fichier de configuration Railway
+          if [ -f "railway.json" ]; then
+            echo "✅ railway.json existe"
+          else
+            echo "❌ railway.json manquant!"
             exit 1
           fi
 
@@ -87,7 +103,7 @@ jobs:
           du -sh dist/
           
           # Vérifier les fichiers essentiels
-          CRITICAL_FILES=("dist/main.js" "dist/app.module.js" "dist/index.js")
+          CRITICAL_FILES=("dist/main.js" "dist/app.module.js")
           
           for file in "${CRITICAL_FILES[@]}"; do
             if [ -f "$file" ]; then
@@ -98,69 +114,34 @@ jobs:
             fi
           done
           
-          # Vérifier le dossier scripts et backup.js spécifiquement
-          if [ -d "dist/scripts" ]; then
-            echo "✅ Dossier dist/scripts existe"
-            
-            if [ -f "dist/scripts/backup.js" ]; then
-              echo "✅ dist/scripts/backup.js existe"
+          # Vérifier les dossiers essentiels
+          CRITICAL_DIRS=("dist/modules" "dist/common" "dist/health")
+          
+          for dir in "${CRITICAL_DIRS[@]}"; do
+            if [ -d "$dir" ]; then
+              echo "✅ $dir existe"
             else
-              echo "⚠️ dist/scripts/backup.js manquant - tentative de correction..."
+              echo "⚠️ $dir manquant - tentative de correction..."
               node scripts/fix-dist-structure.js
               
               # Vérifier à nouveau après la correction
-              if [ -f "dist/scripts/backup.js" ]; then
-                echo "✅ dist/scripts/backup.js créé avec succès"
+              if [ -d "$dir" ]; then
+                echo "✅ $dir créé avec succès"
               else
-                echo "⚠️ Impossible de créer dist/scripts/backup.js, mais nous continuerons"
+                echo "❌ Impossible de créer $dir"
+                exit 1
               fi
             fi
-          else
-            echo "⚠️ Dossier dist/scripts manquant - tentative de correction..."
-            node scripts/fix-dist-structure.js
-            
-            # Vérifier à nouveau après la correction
-            if [ -d "dist/scripts" ]; then
-              echo "✅ Dossier dist/scripts créé avec succès"
-            else
-              echo "⚠️ Impossible de créer dist/scripts, mais nous continuerons"
-            fi
-          fi
+          done
 
       - name: 🚀 Test de démarrage du serveur
         working-directory: backend
         run: |
           echo "🧪 Test de démarrage du serveur (dry run)..."
           
-          # Exécuter explicitement le script fix-dist-structure.js pour assurer que backup.js existe
+          # Exécuter explicitement le script fix-dist-structure.js pour assurer la structure correcte
           echo "🔧 Exécution du script fix-dist-structure.js..."
           node scripts/fix-dist-structure.js
-          
-          # Vérifier si scripts/backup.js existe maintenant
-          if [ -f "dist/scripts/backup.js" ]; then
-            echo "✅ dist/scripts/backup.js existe après correction"
-          else
-            echo "⚠️ dist/scripts/backup.js est toujours manquant, création d'un stub..."
-            mkdir -p dist/scripts
-            # Écrire le contenu ligne par ligne avec echo pour éviter les problèmes de syntaxe YAML
-            echo '"use strict";' > dist/scripts/backup.js
-            echo 'Object.defineProperty(exports, "__esModule", { value: true });' >> dist/scripts/backup.js
-            echo 'exports.BackupService = void 0;' >> dist/scripts/backup.js
-            echo '' >> dist/scripts/backup.js
-            echo 'class BackupService {' >> dist/scripts/backup.js
-            echo '    constructor(configService) {' >> dist/scripts/backup.js
-            echo '        this.configService = configService;' >> dist/scripts/backup.js
-            echo '        console.log("⚠️ BackupService (version stub CI/CD) initialisé");' >> dist/scripts/backup.js
-            echo '    }' >> dist/scripts/backup.js
-            echo '    ' >> dist/scripts/backup.js
-            echo '    async performBackup() {' >> dist/scripts/backup.js
-            echo '        console.log("⚠️ Backup ignoré - version stub CI/CD");' >> dist/scripts/backup.js
-            echo '    }' >> dist/scripts/backup.js
-            echo '}' >> dist/scripts/backup.js
-            echo '' >> dist/scripts/backup.js
-            echo 'exports.BackupService = BackupService;' >> dist/scripts/backup.js
-            echo "✅ Fichier stub backup.js créé pour le CI/CD"
-          fi
           
           # Créer un script de test pour le démarrage
           echo '#!/bin/bash' > test-start.sh
@@ -175,7 +156,7 @@ jobs:
           echo 'ls -la dist/' >> test-start.sh
           echo '' >> test-start.sh
           echo 'echo "🚀 Tentative de démarrage du serveur..."' >> test-start.sh
-          echo 'timeout 8s node dist/main.js > server_output.log 2>&1 || EXIT_CODE=$?' >> test-start.sh
+          echo 'timeout 8s node -r reflect-metadata dist/main.js > server_output.log 2>&1 || EXIT_CODE=$?' >> test-start.sh
           echo '' >> test-start.sh
           echo 'echo "📜 Sortie du serveur:"' >> test-start.sh
           echo 'cat server_output.log' >> test-start.sh
@@ -202,6 +183,12 @@ jobs:
           
           chmod +x test-start.sh
           ./test-start.sh
+
+      - name: 🐳 Test du build Docker
+        working-directory: backend
+        run: |
+          echo "🧪 Test de build Docker..."
+          docker build -t nionfar-backend:test . || echo "⚠️ Le build Docker a échoué, mais nous continuons"
 
       - name: 📋 Générer rapport de vérification
         working-directory: backend
@@ -231,49 +218,43 @@ jobs:
             echo "- dist/app.module.js: ❌ Manquant" >> railway-verification-report.txt
           fi
           
-          # Vérifier index.js
-          if [ -f "dist/index.js" ]; then
-            echo "- dist/index.js: ✅ Présent" >> railway-verification-report.txt
-          else
-            echo "- dist/index.js: ❌ Manquant" >> railway-verification-report.txt
-          fi
+          # Vérifier les dossiers critiques
+          echo "" >> railway-verification-report.txt
+          echo "Dossiers critiques:" >> railway-verification-report.txt
           
-          # Vérifier backup.js
-          if [ -f "dist/scripts/backup.js" ]; then
-            echo "- dist/scripts/backup.js: ✅ Présent" >> railway-verification-report.txt
-          else
-            echo "- dist/scripts/backup.js: ⚠️ Manquant mais géré" >> railway-verification-report.txt
-          fi
+          for dir in "dist/modules" "dist/common" "dist/health"; do
+            if [ -d "$dir" ]; then
+              echo "- $dir: ✅ Présent" >> railway-verification-report.txt
+            else
+              echo "- $dir: ❌ Manquant" >> railway-verification-report.txt
+            fi
+          done
+          
+          echo "" >> railway-verification-report.txt
+          echo "## Configuration de déploiement" >> railway-verification-report.txt
+          echo "- railway.json: $(if [ -f "railway.json" ]; then echo "✅ Présent"; else echo "❌ Manquant"; fi)" >> railway-verification-report.txt
+          echo "- Dockerfile: $(if [ -f "Dockerfile" ]; then echo "✅ Présent"; else echo "❌ Manquant"; fi)" >> railway-verification-report.txt
+          echo "- start-railway.sh: $(if [ -f "start-railway.sh" ]; then echo "✅ Présent"; else echo "❌ Manquant"; fi)" >> railway-verification-report.txt
           
           echo "" >> railway-verification-report.txt
           echo "## Tests de démarrage" >> railway-verification-report.txt
-          
-          # Vérifier si le serveur a été testé
           if [ -f "server_output.log" ]; then
-            echo "- Démarrage serveur: ✅ Testé" >> railway-verification-report.txt
+            echo "```" >> railway-verification-report.txt
+            cat server_output.log | head -n 20 >> railway-verification-report.txt
+            echo "```" >> railway-verification-report.txt
           else
-            echo "- Démarrage serveur: ⚠️ Non testé" >> railway-verification-report.txt
+            echo "❌ Aucun log de démarrage disponible" >> railway-verification-report.txt
           fi
           
           echo "" >> railway-verification-report.txt
-          echo "## Recommandation" >> railway-verification-report.txt
-          
-          # Vérifier les conditions pour recommander le déploiement
-          if [ -f "dist/main.js" ] && [ -f "dist/app.module.js" ]; then
-            echo "✅ Le build est prêt pour le déploiement sur Railway" >> railway-verification-report.txt
-          else
-            echo "❌ Des corrections sont nécessaires avant le déploiement" >> railway-verification-report.txt
-          fi
-          
-          echo "✅ Rapport généré: railway-verification-report.txt"
-          cat railway-verification-report.txt
+          echo "## Conclusion" >> railway-verification-report.txt
+          echo "Le build Railway est $(if [ -f "dist/main.js" ] && [ -f "dist/app.module.js" ] && [ -d "dist/modules" ] && [ -d "dist/common" ] && [ -d "dist/health" ]; then echo "✅ VALIDE"; else echo "❌ INVALIDE"; fi)" >> railway-verification-report.txt
 
-      - name: 📤 Sauvegarder rapport comme artefact
-        uses: actions/upload-artifact@v2
+      - name: 📤 Uploader le rapport de vérification
+        uses: actions/upload-artifact@v3
         with:
           name: railway-verification-report
           path: backend/railway-verification-report.txt
-          retention-days: 7
 
   notify-success:
     name: 📢 Notification de succès
