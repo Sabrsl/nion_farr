@@ -62,6 +62,14 @@ jobs:
             exit 1
           fi
 
+      - name: 🧹 Lint Backend
+        working-directory: backend
+        run: |
+          echo "🔎 Vérification du code backend avec ESLint..."
+          # Ignorer la configuration ESLint de la racine et utiliser celle du dossier backend
+          npx eslint --no-eslintrc --config ./.eslintrc.js "{src,apps,libs,test}/**/*.ts" --fix || echo "⚠️ Des avertissements de lint ont été trouvés mais nous continuons"
+          echo "✅ Lint backend terminé"
+
       - name: 🛠️ Test du build Railway
         working-directory: backend
         run: |
