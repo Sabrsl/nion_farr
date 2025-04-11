@@ -26,243 +26,287 @@ async function bootstrap() {
   console.log("🟢 Lancement main.ts avec PORT:", process.env.PORT);
   console.log('Démarrage du serveur NionFar API...');
   
-  // Setup graceful shutdown handlers
-  setupGracefulShutdown();
-  
-  // Vérifier les variables d'environnement requises
-  checkRequiredEnvVars();
-  
-  // Get memory configuration
-  const memoryConfig = getMemoryConfig();
-  
   try {
-    // Configuration du logger - reduced logging to save memory
-    const logger = WinstonModule.createLogger({
-      transports: [
-        new winston.transports.Console({
-          level: memoryConfig.logLevel,
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.json(),
-          ),
-        }),
-      ],
-    });
-
-    const app = await NestFactory.create(AppModule, { 
-      logger,
-      abortOnError: false 
-    });
+    // Setup graceful shutdown handlers
+    setupGracefulShutdown();
     
-    const configService = app.get(ConfigService);
+    // Vérifier les variables d'environnement requises
+    checkRequiredEnvVars();
     
-    // Variables d'environnement
-    const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
-    const environment = configService.get<string>('NODE_ENV') || 'development';
-    const port = parseInt(process.env.PORT || '3000', 10);
-    console.log(`🚨 DIAGNOSTIC NESTJS: process.env.PORT=${process.env.PORT}, utilisant le port ${port}`);
+    // Get memory configuration
+    const memoryConfig = getMemoryConfig();
     
-    // Configuration Sentry en production - disabled for memory optimization
-    if (environment === 'production' && !memoryConfig.isConstrained) {
-      const sentryDsn = configService.get<string>('SENTRY_DSN');
-      if (sentryDsn) {
-        try {
-          Sentry.init({
-            dsn: sentryDsn,
-            environment,
-            // No performance monitoring to save memory
-            tracesSampleRate: 0.1,
-            // Disabled profiling to save memory
-            profilesSampleRate: 0.0,
-          });
-        } catch (error) {
-          console.error('Failed to initialize Sentry:', error);
-        }
-      }
-    }
-    
-    // Middlewares de sécurité
-    app.use(helmet());
-    
-    // Rate limiting - increased window time to reduce memory pressure from tracking
-    app.use(
-      rateLimit({
-        windowMs: memoryConfig.isConstrained ? 30 * 60 * 1000 : 15 * 60 * 1000, // 30 min in constrained env, 15 min otherwise
-        max: 100, // limit each IP to 100 requests per windowMs
-        standardHeaders: true,
-        legacyHeaders: false,
-      }),
-    );
-    
-    // CORS - Configuration pour la production et le développement
-    const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const allowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS')?.split(',') || [frontendUrl];
-    
-    // Configuration CORS plus permissive pour assurer la compatibilité avec Vercel
-    console.log(`🔒 Configuration CORS pour: ${frontendUrl}`);
-    app.enableCors({
-      origin: (origin, callback) => {
-        // Autoriser les requêtes sans origine (comme les requêtes mobiles ou Postman)
-        if (!origin) {
-          callback(null, true);
-          return;
-        }
-        
-        // Vérifier si l'origine est dans la liste des origines autorisées
-        // Si allowedOrigins est 'true', toutes les origines sont autorisées
-        if (allowedOrigins.includes(origin) || 
-            allowedOrigins.includes('*') || 
-            origin.includes('vercel.app') || 
-            origin.includes('localhost')) {
-          callback(null, true);
-        } else {
-          console.warn(`🚫 Origine bloquée par CORS: ${origin}`);
-          callback(null, true); // Temporairement autorisé pour déboguer
-        }
-      },
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'X-CSRF-Token'],
-      exposedHeaders: ['Content-Disposition', 'X-CSRF-Token'],
-      credentials: true,
-      maxAge: 86400, // 24 heures
-      preflightContinue: false,
-      optionsSuccessStatus: 204
-    });
-
-    // Compression
-    app.use(compression());
-
-    // Validation globale
-    app.useGlobalPipes(new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }));
-
-    // Préfixe global de l'API
-    app.setGlobalPrefix(apiPrefix);
-
-    // Documentation Swagger - disabled in production to save memory
-    if (environment !== 'production') {
-      const config = new DocumentBuilder()
-        .setTitle('NionFar API')
-        .setDescription('API documentation for NionFar')
-        .setVersion('1.0')
-        .addBearerAuth()
-        .build();
-      const document = SwaggerModule.createDocument(app, config);
-      SwaggerModule.setup('api/docs', app, document);
-    }
-
-    // Ajouter une route de base pour le healthcheck de Railway
-    const httpAdapter = app.getHttpAdapter();
-    httpAdapter.get('/', (req, res) => {
-      console.log('ROOT / route called - healthcheck from outside');
-      return res.json({
-        status: 'ok',
-        message: 'NionFar API is up and running',
-        timestamp: new Date().toISOString(),
-        environment,
-        deploymentPlatform: memoryConfig.deploymentPlatform
+    try {
+      // Configuration du logger - reduced logging to save memory
+      const logger = WinstonModule.createLogger({
+        transports: [
+          new winston.transports.Console({
+            level: memoryConfig.logLevel,
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.json(),
+            ),
+          }),
+        ],
       });
-    });
 
-    // Ajouter une route GET spécifique pour le healthcheck Railway
-    // Cette route est critique pour que Railway sache que l'app est bien démarrée
-    httpAdapter.get('/health', (req, res) => {
-      console.log(`Healthcheck appelé (${new Date().toISOString()})`);
-      return res.json({
-        status: 'ok',
-        message: 'API running',
-        timestamp: new Date().toISOString(),
-        deployment: 'railway',
-        uptime: process.uptime(),
-        is_alive: true
+      const app = await NestFactory.create(AppModule, { 
+        logger,
+        abortOnError: false 
       });
-    });
-
-    // Route de healthcheck plus détaillée avec état de la mémoire
-    httpAdapter.get('/health/detailed', (req, res) => {
-      const memUsage = process.memoryUsage();
       
-      return res.json({
-        status: 'ok',
-        message: 'Detailed healthcheck passed',
-        timestamp: new Date().toISOString(),
-        environment,
-        deployment: {
-          platform: memoryConfig.deploymentPlatform,
-          railway: process.env.RAILWAY_DEPLOYMENT === 'true',
-        },
-        system: {
-          uptime: process.uptime(),
-          memory: {
-            rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
-            heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
-            heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
-            external: `${Math.round(memUsage.external / 1024 / 1024)}MB`,
-            percentUsed: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)
-          },
-          versions: {
-            node: process.version,
-            platform: process.platform
+      const configService = app.get(ConfigService);
+      
+      // Variables d'environnement
+      const apiPrefix = configService.get<string>('API_PREFIX') || 'api';
+      const environment = configService.get<string>('NODE_ENV') || 'development';
+      const port = parseInt(process.env.PORT || '3000', 10);
+      console.log(`🚨 DIAGNOSTIC NESTJS: process.env.PORT=${process.env.PORT}, utilisant le port ${port}`);
+      
+      // Configuration Sentry en production - disabled for memory optimization
+      if (environment === 'production' && !memoryConfig.isConstrained) {
+        const sentryDsn = configService.get<string>('SENTRY_DSN');
+        if (sentryDsn) {
+          try {
+            Sentry.init({
+              dsn: sentryDsn,
+              environment,
+              // No performance monitoring to save memory
+              tracesSampleRate: 0.1,
+              // Disabled profiling to save memory
+              profilesSampleRate: 0.0,
+            });
+          } catch (error) {
+            console.error('Failed to initialize Sentry:', error);
           }
         }
+      }
+      
+      // Middlewares de sécurité
+      app.use(helmet());
+      
+      // Rate limiting - increased window time to reduce memory pressure from tracking
+      app.use(
+        rateLimit({
+          windowMs: memoryConfig.isConstrained ? 30 * 60 * 1000 : 15 * 60 * 1000, // 30 min in constrained env, 15 min otherwise
+          max: 100, // limit each IP to 100 requests per windowMs
+          standardHeaders: true,
+          legacyHeaders: false,
+        }),
+      );
+      
+      // CORS - Configuration pour la production et le développement
+      const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+      const allowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS')?.split(',') || [frontendUrl];
+      
+      // Configuration CORS plus permissive pour assurer la compatibilité avec Vercel
+      console.log(`🔒 Configuration CORS pour: ${frontendUrl}`);
+      app.enableCors({
+        origin: (origin, callback) => {
+          // Autoriser les requêtes sans origine (comme les requêtes mobiles ou Postman)
+          if (!origin) {
+            callback(null, true);
+            return;
+          }
+          
+          // Vérifier si l'origine est dans la liste des origines autorisées
+          // Si allowedOrigins est 'true', toutes les origines sont autorisées
+          if (allowedOrigins.includes(origin) || 
+              allowedOrigins.includes('*') || 
+              origin.includes('vercel.app') || 
+              origin.includes('localhost')) {
+            callback(null, true);
+          } else {
+            console.warn(`🚫 Origine bloquée par CORS: ${origin}`);
+            callback(null, true); // Temporairement autorisé pour déboguer
+          }
+        },
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'X-CSRF-Token'],
+        exposedHeaders: ['Content-Disposition', 'X-CSRF-Token'],
+        credentials: true,
+        maxAge: 86400, // 24 heures
+        preflightContinue: false,
+        optionsSuccessStatus: 204
       });
-    });
 
-    // Route de ping simplifiée pour les vérifications ultra-rapides
-    httpAdapter.get('/health/ping', (req, res) => {
-      return res.send('pong');
-    });
+      // Compression
+      app.use(compression());
 
-    // Démarrage du serveur - point critique, doit toujours être exécuté
-    await app.listen(port, '0.0.0.0');
-    
-    // Marquer que le bootstrap est complété
-    isBootstrapComplete = true;
-    
-    console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
-    console.log(`✅ NionFar API est prêt et écoute sur http://0.0.0.0:${port}`);
-    console.log(`✅ Routes de Healthcheck disponibles:`);
-    console.log(`  - http://0.0.0.0:${port}/health`);
-    console.log(`  - http://0.0.0.0:${port}/health/ping`);
-    console.log(`  - http://0.0.0.0:${port}/api/health`);
-    
-    // Afficher l'information sur le déploiement
-    const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
-    const appUrl = configService.get<string>('APP_URL') || `http://localhost:${port}`;
-    
-    console.log(`Serveur NionFar API démarré sur le port ${port}`);
-    console.log(`🚀 Environnement: ${environment} (${memoryConfig.deploymentPlatform})`);
-    console.log(`🔗 URL: ${appUrl}`);
-    
-    if (memoryConfig.isConstrained) {
-      console.log(`🧠 Mode d'optimisation mémoire activé - certaines fonctionnalités sont désactivées`);
+      // Validation globale
+      app.useGlobalPipes(new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }));
+
+      // Préfixe global de l'API
+      app.setGlobalPrefix(apiPrefix);
+
+      // Documentation Swagger - disabled in production to save memory
+      if (environment !== 'production') {
+        const config = new DocumentBuilder()
+          .setTitle('NionFar API')
+          .setDescription('API documentation for NionFar')
+          .setVersion('1.0')
+          .addBearerAuth()
+          .build();
+        const document = SwaggerModule.createDocument(app, config);
+        SwaggerModule.setup('api/docs', app, document);
+      }
+
+      // Ajouter une route de base pour le healthcheck de Railway
+      const httpAdapter = app.getHttpAdapter();
+      httpAdapter.get('/', (req, res) => {
+        console.log('ROOT / route called - healthcheck from outside');
+        return res.json({
+          status: 'ok',
+          message: 'NionFar API is up and running',
+          timestamp: new Date().toISOString(),
+          environment,
+          deploymentPlatform: memoryConfig.deploymentPlatform
+        });
+      });
+
+      // Ajouter une route GET spécifique pour le healthcheck Railway
+      // Cette route est critique pour que Railway sache que l'app est bien démarrée
+      httpAdapter.get('/health', (req, res) => {
+        console.log(`Healthcheck appelé (${new Date().toISOString()})`);
+        return res.json({
+          status: 'ok',
+          message: 'API running',
+          timestamp: new Date().toISOString(),
+          deployment: 'railway',
+          uptime: process.uptime(),
+          is_alive: true
+        });
+      });
+
+      // Route de healthcheck plus détaillée avec état de la mémoire
+      httpAdapter.get('/health/detailed', (req, res) => {
+        const memUsage = process.memoryUsage();
+        
+        return res.json({
+          status: 'ok',
+          message: 'Detailed healthcheck passed',
+          timestamp: new Date().toISOString(),
+          environment,
+          deployment: {
+            platform: memoryConfig.deploymentPlatform,
+            railway: process.env.RAILWAY_DEPLOYMENT === 'true',
+          },
+          system: {
+            uptime: process.uptime(),
+            memory: {
+              rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+              heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+              heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+              external: `${Math.round(memUsage.external / 1024 / 1024)}MB`,
+              percentUsed: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)
+            },
+            versions: {
+              node: process.version,
+              platform: process.platform
+            }
+          }
+        });
+      });
+
+      // Route de ping simplifiée pour les vérifications ultra-rapides
+      httpAdapter.get('/health/ping', (req, res) => {
+        return res.send('pong');
+      });
+
+      // Démarrage du serveur - point critique, doit toujours être exécuté
+      await app.listen(port, '0.0.0.0');
+      
+      // Marquer que le bootstrap est complété
+      isBootstrapComplete = true;
+      
+      console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
+      console.log(`✅ NionFar API est prêt et écoute sur http://0.0.0.0:${port}`);
+      console.log(`✅ Routes de Healthcheck disponibles:`);
+      console.log(`  - http://0.0.0.0:${port}/health`);
+      console.log(`  - http://0.0.0.0:${port}/health/ping`);
+      console.log(`  - http://0.0.0.0:${port}/api/health`);
+      
+      // Afficher l'information sur le déploiement
+      const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
+      const appUrl = configService.get<string>('APP_URL') || `http://localhost:${port}`;
+      
+      console.log(`Serveur NionFar API démarré sur le port ${port}`);
+      console.log(`🚀 Environnement: ${environment} (${memoryConfig.deploymentPlatform})`);
+      console.log(`🔗 URL: ${appUrl}`);
+      
+      if (memoryConfig.isConstrained) {
+        console.log(`🧠 Mode d'optimisation mémoire activé - certaines fonctionnalités sont désactivées`);
+      }
+
+      // Start memory monitoring 
+      startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
+
+      // Log CORS configuration
+      console.log(`🔒 CORS configuré pour: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
+
+    } catch (innerError) {
+      console.error('❌ ERREUR CRITIQUE lors de la création de l\'application NestJS:', innerError);
+      
+      // Démarrer un serveur Express minimal pour éviter que Railway ne restart en boucle
+      console.log('⚠️ Démarrage du serveur de secours...');
+      const express = require('express');
+      const fallbackApp = express();
+      const port = parseInt(process.env.PORT || '3000', 10);
+      
+      fallbackApp.get('/', (req, res) => {
+        res.json({
+          status: 'error',
+          message: 'NionFar API en mode dégradé suite à une erreur de démarrage',
+          error: innerError.message,
+          timestamp: new Date().toISOString()
+        });
+      });
+      
+      fallbackApp.get('/health', (req, res) => {
+        res.json({
+          status: 'error',
+          message: 'Health check en mode dégradé',
+          error: innerError.message,
+          timestamp: new Date().toISOString()
+        });
+      });
+      
+      fallbackApp.get('/health/ping', (req, res) => {
+        res.send('error');
+      });
+      
+      fallbackApp.listen(port, '0.0.0.0', () => {
+        console.log(`⚠️ Serveur de secours démarré sur le port ${port}`);
+      });
     }
-
-    // Start memory monitoring 
-    startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
-
-    // Log CORS configuration
-    console.log(`🔒 CORS configuré pour: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
-
-  } catch (error) {
-    console.error('Error during bootstrap:', error);
-    // Ne quitte pas brutalement, laisse Railway afficher les logs
-    console.error('🚨 Application en échec de démarrage, logs détaillés:');
-    console.error(error instanceof Error ? error.stack : String(error));
+  } catch (outerError) {
+    console.error('❌ ERREUR FATALE lors du démarrage:', outerError);
+    // Ne pas terminer le processus pour éviter que Railway ne redémarre en boucle
     
-    // IMPORTANT: Ne pas quitter le processus immédiatement - 
-    // Railway a besoin que le processus reste en vie pour voir les logs
-    console.log('⏳ Attente de 20 secondes avant sortie pour permettre de voir les logs...');
-    setTimeout(() => {
-      console.log('❌ Sortie du processus après délai');
-      process.exit(1);
-    }, 20000);
+    // Démarrer un serveur HTTP minimal de secours
+    const http = require('http');
+    const emergencyPort = parseInt(process.env.PORT || '3000', 10);
+    
+    const server = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: 'fatal_error',
+        message: 'NionFar API en mode d\'urgence',
+        error: outerError.message,
+        timestamp: new Date().toISOString()
+      }));
+    });
+    
+    server.listen(emergencyPort, '0.0.0.0', () => {
+      console.log(`🚨 Serveur d'URGENCE démarré sur le port ${emergencyPort}`);
+    });
   }
 }
 

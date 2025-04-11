@@ -10,7 +10,6 @@ import { AppController, RootController } from './app.controller';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './health/health.module';
-import { BackupService } from './scripts/backup';
 import { getMongooseMemoryOptions, getTypeOrmMemoryOptions } from './config/mongodb-memory-options';
 import { getMemoryConfig } from './config/environment';
 import { SyncControlService } from './scripts/sync-control';
@@ -138,8 +137,6 @@ import { PerformanceModule } from './performance/performance.module';
   providers: [
     AppService,
     SyncControlService,
-    // Disable BackupService in memory-constrained environments as it's resource intensive
-    ...(getMemoryConfig().disableBackups ? [] : [BackupService]),
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
@@ -154,4 +151,22 @@ import { PerformanceModule } from './performance/performance.module';
     },
   ],
 })
-export class AppModule {} 
+export class AppModule {
+  constructor(private configService: ConfigService) {
+    // Chargement conditionnel du BackupService si nous ne sommes pas en production
+    if (configService.get('NODE_ENV') !== 'production' && !getMemoryConfig().disableBackups) {
+      try {
+        // Tentative d'import dynamique du BackupService
+        import('./scripts/backup').then(module => {
+          console.log('✅ BackupService chargé avec succès');
+        }).catch(err => {
+          console.warn('⚠️ BackupService non disponible:', err.message);
+        });
+      } catch (error) {
+        console.warn('⚠️ Import dynamique du BackupService échoué:', error.message);
+      }
+    } else {
+      console.log('ℹ️ BackupService désactivé en production ou en mode économie de mémoire');
+    }
+  }
+} 
