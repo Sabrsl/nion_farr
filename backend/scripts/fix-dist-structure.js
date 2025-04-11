@@ -307,6 +307,41 @@ exports.BackupService = BackupService;
     // 6. Copier app.module.js vers la racine dist/
     const destAppModulePath = path.join(distDir, 'app.module.js');
     copyFileIfExists(srcAppModulePath, destAppModulePath);
+    
+    // 7. Copier explicitement app.controller.js et app.service.js
+    const srcAppControllerPath = path.join(distSrcDir, 'app.controller.js');
+    const destAppControllerPath = path.join(distDir, 'app.controller.js');
+    copyFileIfExists(srcAppControllerPath, destAppControllerPath);
+    
+    const srcAppServicePath = path.join(distSrcDir, 'app.service.js');
+    const destAppServicePath = path.join(distDir, 'app.service.js');
+    copyFileIfExists(srcAppServicePath, destAppServicePath);
+    
+    // 8. Corriger les références dans app.module.js si nécessaire
+    if (fs.existsSync(destAppModulePath)) {
+      // Lire le contenu du fichier
+      let appModuleContent = fs.readFileSync(destAppModulePath, 'utf8');
+      
+      // Vérifier et corriger les imports relatifs
+      if (appModuleContent.includes('require("./app.controller")') || 
+          appModuleContent.includes("require('./app.controller')")) {
+        console.log('✅ Les imports dans app.module.js semblent corrects');
+      } else {
+        // Rechercher comment les controllers sont importés et corriger si nécessaire
+        const controllerImportRegex = /require\(['"](.*app\.controller)['"]\)/;
+        const match = appModuleContent.match(controllerImportRegex);
+        
+        if (match) {
+          console.log(`⚠️ Correction de l'import du contrôleur dans app.module.js: ${match[1]}`);
+          appModuleContent = appModuleContent.replace(
+            controllerImportRegex,
+            'require("./app.controller")'
+          );
+          fs.writeFileSync(destAppModulePath, appModuleContent);
+          console.log('✅ Import app.controller corrigé dans app.module.js');
+        }
+      }
+    }
   } else {
     console.log('❌ app.module.js non trouvé dans dist/src/, impossible de corriger la structure');
   }
@@ -318,7 +353,7 @@ exports.BackupService = BackupService;
     console.log(`Fichiers dans dist/: ${files.join(', ')}`);
   }
   
-  // 7. Créer un wrapper index.js à la racine de dist
+  // 9. Créer un wrapper index.js à la racine de dist
   createRootWrapper();
 }
 
