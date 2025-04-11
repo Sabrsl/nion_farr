@@ -22,7 +22,7 @@
     "start:prod": "node dist/src/main.js",
     "start:render": "cross-env NODE_OPTIONS=\"--max-old-space-size=128\" npm run build && cross-env NODE_OPTIONS=\"--max-old-space-size=128\" cross-env MEMORY_OPTIMIZED=true node dist/src/main.js",
     "start:low-memory": "cross-env NODE_OPTIONS=\"--max-old-space-size=128\" cross-env MEMORY_OPTIMIZED=true node dist/src/main.js",
-    "start:railway": "node scripts/check-dist.js && node scripts/fix-dist-structure.js && node dist/main.js",
+    "start:railway": "node scripts/check-dist.js && node scripts/fix-dist-structure.js && node main-railway.js",
     "start:railway:simple": "cross-env NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT=8080 node server-simple.js",
     "start:backup": "node server.js",
     "verify:railway": "node scripts/verify-railway-start.js",
