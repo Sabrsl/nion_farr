@@ -45,6 +45,10 @@ RUN echo '#!/bin/bash\n\necho "🧩 Vérification de reflect-metadata..."\nnode 
     chmod +x check-reflect.sh && \
     ./check-reflect.sh
 
+# Nettoyer les stubs
+RUN echo "🧹 Nettoyage des fichiers stubs..." && \
+    node scripts/cleanup-stubs.js
+
 # Exécuter le script de correction des importations
 RUN echo "🔧 Correction des importations..." && \
     node scripts/fix-imports.js
