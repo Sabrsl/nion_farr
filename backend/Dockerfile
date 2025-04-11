@@ -12,8 +12,8 @@ COPY package.json ./
 RUN npm config set package-lock false && \
     npm install --legacy-peer-deps --no-audit --no-optional
 
-# S'assurer que glob est installé pour le script de correction des structures
-RUN npm install glob --save
+# S'assurer que les dépendances nécessaires sont installées
+RUN npm install glob prom-client --save
 
 # Copier le reste du code source
 COPY . .
@@ -21,7 +21,7 @@ COPY . .
 # Créer le dossier de logs
 RUN mkdir -p logs
 
-# Construire l'application
+# Exécuter un build complet
 RUN echo "🔨 Lancement du build NestJS..." && \
     npm run build:railway && \
     echo "📋 Structure finale de dist/:" && \
