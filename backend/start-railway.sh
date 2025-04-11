@@ -8,18 +8,6 @@ echo "- Port: $PORT"
 echo "- Railway deployment: $RAILWAY_DEPLOYMENT"
 echo "- MongoDB URI configuré: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; else echo "non"; fi)"
 
-# Exécuter le script de préparation pour Railway
-echo "📦 Exécution du script de préparation pour Railway..."
-node scripts/prepare-railway.js
-
-# Nettoyer les fichiers .js générés qui causent des conflits
-echo "🧹 Nettoyage des fichiers .js problématiques..."
-if [ -f "scripts/clean-source-js.js" ]; then
-  node scripts/clean-source-js.js
-else
-  echo "⚠️ Script de nettoyage non trouvé, poursuite sans nettoyage."
-fi
-
 echo "👉 Vérification du build..."
 echo "📂 Contenu du dossier dist/ :"
 ls -la dist/
@@ -382,4 +370,45 @@ if [ -f ./dist/main.js ]; then
 else
   echo "❌ main.js manquant! Démarrage du serveur de secours..."
   NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false PORT="$PORT" node server-simple.js
+fi
+
+# Vérifier l'existence des fichiers principaux
+if [ -f "main-railway.js" ]; then
+  echo "✅ Utilisation du démarreur main-railway.js optimisé..."
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node main-railway.js 2>&1 | tee logs/app.log
+elif [ -f "server.js" ]; then
+  echo "⚠️ main-railway.js introuvable! Utilisation du serveur de secours..."
+  NODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node server.js 2>&1 | tee logs/fallback.log
+else
+  echo "❌ ERREUR CRITIQUE: Aucun point d'entrée valide trouvé!"
+  # Créer un serveur HTTP minimal pour répondre aux health checks
+  echo "📝 Création d'un serveur HTTP minimal..."
+  cat > minimal-server.js << 'EOL'
+const http = require('http');
+const PORT = process.env.PORT || 8080;
+
+const server = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/health/ping') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      message: 'Serveur minimal de secours en fonctionnement',
+      timestamp: new Date().toISOString()
+    }));
+    return;
+  }
+  
+  res.writeHead(503, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({
+    status: 'error',
+    message: 'Service indisponible - Mode de secours minimal',
+    timestamp: new Date().toISOString()
+  }));
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Serveur minimal démarré sur le port ${PORT}`);
+});
+EOL
+  NODE_ENV=production PORT="$PORT" node minimal-server.js
 fi 

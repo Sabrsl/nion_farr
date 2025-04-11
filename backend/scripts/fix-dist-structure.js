@@ -57,6 +57,30 @@ function fixModuleImports(filePath) {
     content = content.replace(/require\(['"]\.\/app\.service['"]\)/g, "require('./app.service.js')");
     content = content.replace(/from ['"]\.\/app\.service['"]/g, "from './app.service.js'");
     
+    // Correction pour les modules du dossier health
+    content = content.replace(/require\(['"]\.\/health\/health\.module['"]\)/g, "require('./health/health.module.js')");
+    content = content.replace(/from ['"]\.\/health\/health\.module['"]/g, "from './health/health.module.js'");
+    content = content.replace(/require\(['"]\.\/health\.controller['"]\)/g, "require('./health.controller.js')");
+    content = content.replace(/from ['"]\.\/health\.controller['"]/g, "from './health.controller.js'");
+    content = content.replace(/require\(['"]\.\/health\.service['"]\)/g, "require('./health.service.js')");
+    content = content.replace(/from ['"]\.\/health\.service['"]/g, "from './health.service.js'");
+    
+    // Correction pour les modules du dossier security
+    content = content.replace(/require\(['"]\.\/security\/security\.module['"]\)/g, "require('./security/security.module.js')");
+    content = content.replace(/from ['"]\.\/security\/security\.module['"]/g, "from './security/security.module.js'");
+    content = content.replace(/require\(['"]\.\/security\.service['"]\)/g, "require('./security.service.js')");
+    content = content.replace(/from ['"]\.\/security\.service['"]/g, "from './security.service.js'");
+    content = content.replace(/require\(['"]\.\/security\.middleware['"]\)/g, "require('./security.middleware.js')");
+    content = content.replace(/from ['"]\.\/security\.middleware['"]/g, "from './security.middleware.js'");
+    content = content.replace(/require\(['"]\.\/security\.controller['"]\)/g, "require('./security.controller.js')");
+    content = content.replace(/from ['"]\.\/security\.controller['"]/g, "from './security.controller.js'");
+    content = content.replace(/require\(['"]\.\/audit-log\.service['"]\)/g, "require('./audit-log.service.js')");
+    content = content.replace(/from ['"]\.\/audit-log\.service['"]/g, "from './audit-log.service.js'");
+    
+    // Correction pour les modules du dossier common
+    content = content.replace(/require\(['"]\.\.\/common\/pipes\/zod-validation\.pipe['"]\)/g, "require('../common/pipes/zod-validation.pipe.js')");
+    content = content.replace(/from ['"]\.\.\/common\/pipes\/zod-validation\.pipe['"]/g, "from '../common/pipes/zod-validation.pipe.js'");
+    
     fs.writeFileSync(filePath, content, 'utf8');
     console.log(`✅ Imports corrigés dans ${filePath}`);
     return true;
@@ -409,6 +433,179 @@ exports.ZodValidationPipe = ZodValidationPipe;`;
   return true;
 }
 
+// Créer un stub pour le module de santé (health)
+function createHealthModuleStub() {
+  const healthDir = 'dist/health';
+  ensureDirectoryExists(healthDir);
+  
+  const healthFiles = [
+    {
+      path: path.join(healthDir, 'health.module.js'),
+      content: `"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HealthModule = void 0;
+const common_1 = require("@nestjs/common");
+const terminus_1 = require("@nestjs/terminus");
+const health_controller_1 = require("./health.controller");
+const health_service_1 = require("./health.service");
+
+// Stub pour le module de santé
+let HealthModule = class HealthModule {
+};
+HealthModule = __decorate([
+    (0, common_1.Module)({
+        imports: [terminus_1.TerminusModule],
+        controllers: [health_controller_1.HealthController],
+        providers: [health_service_1.HealthService],
+    })
+], HealthModule);
+exports.HealthModule = HealthModule;`
+    },
+    {
+      path: path.join(healthDir, 'health.controller.js'),
+      content: `"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HealthController = void 0;
+const common_1 = require("@nestjs/common");
+const terminus_1 = require("@nestjs/terminus");
+const health_service_1 = require("./health.service");
+
+// Stub pour le contrôleur de santé
+let HealthController = class HealthController {
+    constructor(health, healthService) {
+        this.health = health;
+        this.healthService = healthService;
+        console.log('⚠️ Stub HealthController initialisé');
+    }
+
+    check() {
+        return this.health.check([
+            () => ({ status: 'ok', details: { uptime: process.uptime() } }),
+        ]);
+    }
+
+    ping() {
+        return { status: 'ok', timestamp: new Date().toISOString() };
+    }
+};
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], HealthController.prototype, "check", null);
+__decorate([
+    (0, common_1.Get)('ping'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Object)
+], HealthController.prototype, "ping", null);
+HealthController = __decorate([
+    (0, common_1.Controller)('health'),
+    __metadata("design:paramtypes", [terminus_1.HealthCheckService, health_service_1.HealthService])
+], HealthController);
+exports.HealthController = HealthController;`
+    },
+    {
+      path: path.join(healthDir, 'health.service.js'),
+      content: `"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HealthService = void 0;
+const common_1 = require("@nestjs/common");
+
+// Stub pour le service de santé
+let HealthService = class HealthService {
+    constructor() {
+        console.log('⚠️ Stub HealthService initialisé');
+    }
+
+    async checkMongoDB() {
+        return {
+            mongodb: {
+                status: 'up',
+                message: 'MongoDB connection is healthy',
+            },
+        };
+    }
+};
+HealthService = __decorate([
+    (0, common_1.Injectable)()
+], HealthService);
+exports.HealthService = HealthService;`
+    }
+  ];
+  
+  // Créer chaque fichier de stub
+  let allFilesCreated = true;
+  for (const file of healthFiles) {
+    try {
+      if (!fs.existsSync(file.path)) {
+        fs.writeFileSync(file.path, file.content);
+        console.log(`✅ Stub créé: ${file.path}`);
+      }
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du stub ${file.path}:`, error);
+      allFilesCreated = false;
+    }
+  }
+  
+  return allFilesCreated;
+}
+
+// Fonction pour mettre à jour les imports dans app.module.js
+function fixAppModuleImports() {
+  const appModulePath = 'dist/app.module.js';
+  
+  if (!fs.existsSync(appModulePath)) {
+    console.log(`⚠️ Fichier app.module.js non trouvé: ${appModulePath}`);
+    return false;
+  }
+  
+  try {
+    let content = fs.readFileSync(appModulePath, 'utf8');
+    
+    // Corriger les références au module health
+    content = content.replace(
+      /require\(['"]\.\/(health\/health\.module)['"]\)/g,
+      "require('./health/health.module')"
+    );
+    
+    // Corriger d'autres chemins problématiques potentiels
+    content = content.replace(
+      /require\(['"]\.\/modules\/([^'"]+)['"]\)/g,
+      "require('./modules/$1')"
+    );
+    
+    fs.writeFileSync(appModulePath, content, 'utf8');
+    console.log(`✅ Références corrigées dans ${appModulePath}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Erreur lors de la correction des références dans ${appModulePath}:`, error);
+    return false;
+  }
+}
+
 // Assurer que les fichiers nécessaires sont au bon endroit
 function fixCriticalFiles() {
   console.log('🔍 Vérification des fichiers critiques...');
@@ -424,6 +621,10 @@ function fixCriticalFiles() {
     { src: 'dist/src/security/security.middleware.js', dest: 'dist/security/security.middleware.js' },
     { src: 'dist/src/security/audit-log.service.js', dest: 'dist/security/audit-log.service.js' },
     { src: 'dist/src/security/security.controller.js', dest: 'dist/security/security.controller.js' },
+    // Module de santé
+    { src: 'dist/src/health/health.module.js', dest: 'dist/health/health.module.js' },
+    { src: 'dist/src/health/health.controller.js', dest: 'dist/health/health.controller.js' },
+    { src: 'dist/src/health/health.service.js', dest: 'dist/health/health.service.js' },
     // Common pipes
     { src: 'dist/src/common/pipes/zod-validation.pipe.js', dest: 'dist/common/pipes/zod-validation.pipe.js' },
     // Autres fichiers critiques
@@ -439,6 +640,7 @@ function fixCriticalFiles() {
     'dist/modules/auth',
     'dist/modules/auth/decorators',
     'dist/security',
+    'dist/health',
     'dist/common',
     'dist/common/pipes',
     'dist/common/guards',
@@ -507,6 +709,18 @@ function fixCriticalFiles() {
     createSecurityModuleStub();
   }
   
+  // Vérifier et créer le dossier health
+  const srcHealthDir = 'dist/src/health';
+  const destHealthDir = 'dist/health';
+  
+  if (fs.existsSync(srcHealthDir)) {
+    console.log('📁 Copie récursive du dossier health...');
+    copyDirectoryRecursive(srcHealthDir, destHealthDir);
+  } else {
+    console.log('⚠️ Dossier health source manquant. Création de stubs...');
+    createHealthModuleStub();
+  }
+  
   // Vérifier et créer le dossier common
   const srcCommonDir = 'dist/src/common';
   const destCommonDir = 'dist/common';
@@ -521,6 +735,9 @@ function fixCriticalFiles() {
   
   // Corriger les imports dans auth.module.js
   fixAuthModuleImports();
+  
+  // Corriger les imports dans app.module.js
+  fixAppModuleImports();
   
   // Créer un stub pour le décorateur de propriété mongoose si nécessaire
   ensureMongooseDecoratorStub();

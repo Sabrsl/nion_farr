@@ -37,9 +37,9 @@ RUN echo "🔨 Lancement du build NestJS..." && \
       exit 1; \
     fi
 
-# Créer un script de démarrage qui vérifie si main.js existe et démarre le serveur approprié
-RUN echo '#!/bin/bash\n\necho "🚀 Démarrage du serveur NionFar API..."\necho "📝 Variables d'"'"'environnement configurées:"\necho "- Frontend URL: $FRONTEND_URL"\necho "- CORS autorisés: $CORS_ALLOWED_ORIGINS"\necho "- Port: $PORT"\necho "- Railway deployment: $RAILWAY_DEPLOYMENT"\necho "- MongoDB URI configuré: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; else echo "non"; fi)"\n\necho "👉 Vérification du build..."\necho "📂 Contenu du dossier dist/ :"\nls -la dist/\n\necho "🔄 DIAGNOSTIC PORT: La variable PORT est définie à: $PORT"\nif [ -z "$PORT" ]; then\n  echo "⚠️ ATTENTION: La variable PORT n'"'"'est pas définie! Utilisation du port par défaut 3000."\n  export PORT=3000\nelse\n  echo "✅ PORT est correctement défini à $PORT"\nfi\n\necho "✅ Démarrage de l'"'"'application principale..."\nNODE_ENV=production RAILWAY_DEPLOYMENT=true IS_RENDER=false MEMORY_OPTIMIZED=true PORT="$PORT" node dist/main.js 2>&1 | tee logs/app.log\n' > start.sh && \
-    chmod +x start.sh
+# Copier le script de démarrage personnalisé
+COPY start-railway.sh ./start.sh
+RUN chmod +x ./start.sh
 
 # Commande de démarrage - utiliser le script de démarrage
 CMD ["./start.sh"]
@@ -61,5 +61,9 @@ RUN echo "🛠 Vérification finale avant CMD:" && \
     fi && \
     echo "📂 Contenu final de dist/: " && ls -la dist/
 
-# Commande de démarrage - utiliser le script de démarrage
+# Exécuter le script de fix-dist une dernière fois
+RUN echo "🔧 Exécution finale de fix-dist-structure.js..." && \
+    node scripts/fix-dist-structure.js
+
+# Commande de démarrage
 CMD ["./start.sh"] 
