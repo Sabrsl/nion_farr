@@ -1,0 +1,190 @@
+name: Vercel Build Check
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+  # Permettre l'exécution manuelle depuis l'interface GitHub
+  workflow_dispatch:
+
+jobs:
+  verify-vercel-build:
+    name: 🌐 Vérification du build Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: 📦 Install dependencies
+        working-directory: frontend
+        run: |
+          echo "📦 Installation des dépendances..."
+          npm ci
+          echo "✅ Dépendances installées"
+
+      - name: 🔎 Vérification de la configuration Vercel
+        working-directory: frontend
+        run: |
+          echo "🧪 Vérification des fichiers de configuration Vercel..."
+          
+          # Vérifier la présence du fichier vercel.json
+          if [ -f "vercel.json" ]; then
+            echo "✅ vercel.json trouvé"
+            cat vercel.json
+          else
+            echo "❌ vercel.json est manquant!"
+            exit 1
+          fi
+          
+          # Vérifier la présence des scripts nécessaires pour Vercel
+          if grep -q "\"vercel-build\":" package.json; then
+            echo "✅ Script vercel-build trouvé dans package.json"
+          else
+            echo "❌ Script vercel-build manquant dans package.json!"
+            exit 1
+          fi
+          
+          # Vérifier la présence des fichiers de build spécifiques à Vercel
+          VERCEL_FILES=("next.config.js")
+          
+          for file in "${VERCEL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ $file existe"
+            else
+              echo "❌ $file est manquant!"
+              exit 1
+            fi
+          done
+
+      - name: 🧹 Lint Frontend
+        working-directory: frontend
+        run: |
+          echo "🔎 Vérification du code avec ESLint..."
+          npm run lint || echo "⚠️ Des avertissements de lint ont été trouvés mais nous continuons"
+          echo "✅ Lint terminé"
+
+      - name: 🚀 Test du build Vercel
+        working-directory: frontend
+        run: |
+          echo "🔨 Construction du frontend avec vercel-build..."
+          
+          # Ajouter temporairement une clé Vercel pour éviter les erreurs
+          echo "NEXT_PUBLIC_VERCEL_ENV=preview" > .env.local
+          echo "NEXT_PUBLIC_API_URL=https://nionfar.up.railway.app/api" >> .env.local
+          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
+          echo "NEXT_PUBLIC_ENVIRONMENT=test" >> .env.local
+          
+          # Exécuter le build
+          npm run vercel-build
+          echo "✅ Build Vercel terminé avec succès"
+
+      - name: 📂 Vérification des fichiers de build
+        working-directory: frontend
+        run: |
+          echo "📂 Vérification des fichiers générés..."
+          
+          # Vérifier si le dossier .next existe
+          if [ -d ".next" ]; then
+            echo "✅ Dossier .next trouvé"
+            
+            # Vérifier les sous-dossiers essentiels
+            ESSENTIAL_DIRS=(".next/static" ".next/server")
+            
+            for dir in "${ESSENTIAL_DIRS[@]}"; do
+              if [ -d "$dir" ]; then
+                echo "✅ $dir existe"
+              else
+                echo "⚠️ $dir est manquant, cela pourrait causer des problèmes!"
+              fi
+            done
+            
+            # Vérifier les fichiers essentiels
+            if [ -f ".next/build-manifest.json" ]; then
+              echo "✅ .next/build-manifest.json existe"
+            else
+              echo "❌ .next/build-manifest.json est manquant!"
+              exit 1
+            fi
+            
+            echo "📊 Taille du dossier build:"
+            du -sh .next/
+            
+            echo "📄 Structure des fichiers principaux:"
+            find .next -maxdepth 2 -type f | sort
+          else
+            echo "❌ Dossier .next manquant, build échoué!"
+            exit 1
+          fi
+
+      - name: 🔍 Scan des vulnérabilités
+        working-directory: frontend
+        run: |
+          echo "🔍 Analyse des dépendances pour vulnérabilités..."
+          npm audit --production || echo "⚠️ Des vulnérabilités ont été trouvées mais nous continuons pour le test"
+          echo "✅ Scan de vulnérabilités terminé"
+
+      - name: 📋 Générer rapport de vérification
+        working-directory: frontend
+        run: |
+          echo "📝 Génération du rapport de vérification..."
+          
+          # Vérification finale de la structure
+          cat > vercel-verification-report.txt << EOL
+          # Rapport de vérification Vercel
+          
+          ## Date de vérification
+          $(date)
+          
+          ## Structure du build
+          - Dossier .next: $([ -d ".next" ] && echo "✅ Présent" || echo "❌ Manquant")
+          - .next/static: $([ -d ".next/static" ] && echo "✅ Présent" || echo "❌ Manquant")
+          - .next/server: $([ -d ".next/server" ] && echo "✅ Présent" || echo "❌ Manquant")
+          - .next/build-manifest.json: $([ -f ".next/build-manifest.json" ] && echo "✅ Présent" || echo "❌ Manquant")
+          
+          ## Configuration
+          - vercel.json: $([ -f "vercel.json" ] && echo "✅ Présent" || echo "❌ Manquant")
+          - next.config.js: $([ -f "next.config.js" ] && echo "✅ Présent" || echo "❌ Manquant")
+          
+          ## Taille du build
+          $(du -sh .next/)
+          
+          ## Recommandation
+          $([ -d ".next" ] && [ -f ".next/build-manifest.json" ] && echo "✅ Le build est prêt pour le déploiement sur Vercel" || echo "❌ Des corrections sont nécessaires avant le déploiement")
+          EOL
+          
+          echo "✅ Rapport généré: vercel-verification-report.txt"
+          cat vercel-verification-report.txt
+
+      - name: 📤 Sauvegarder rapport comme artefact
+        uses: actions/upload-artifact@v3
+        with:
+          name: vercel-verification-report
+          path: frontend/vercel-verification-report.txt
+          retention-days: 7
+
+  notify-success:
+    name: 📢 Notification de succès
+    needs: [verify-vercel-build]
+    if: success() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ✅ Notification de réussite
+        run: |
+          echo "✅ Vérification réussie pour le déploiement Vercel!"
+          echo "🚀 Le frontend est prêt à être déployé sur Vercel"
+          echo "🔗 Les modifications seront automatiquement déployées via l'intégration GitHub" 
