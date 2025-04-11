@@ -12,6 +12,7 @@ import {
   FiArrowLeft,
   FiInfo
 } from 'react-icons/fi/index.js';
+import Head from 'next/head';
 
 // Components & Layout
 import Layout from '../../components/layout/Layout';
@@ -21,6 +22,7 @@ import { Avatar } from '../../components/ui/Avatar';
 // Services
 import { serviceExplorer } from '../../services/serviceExplorerService';
 import { useAuth } from '../../contexts/AuthContext';
+import { orderService } from '../../services/orderService';
 
 // Types
 import { Service, User } from '../../types';
@@ -42,6 +44,9 @@ type PaymentMethod = typeof PAYMENT_METHODS[number]['id'];
 interface CheckoutPageProps {
   service: Service | null;
 }
+
+// Import du monitoring de performance
+import { analyzePagePerformance, initPerformanceMonitoring } from '../../utils/performance';
 
 const CheckoutPage: NextPage<CheckoutPageProps> = ({ service }) => {
   const router = useRouter();
@@ -199,6 +204,16 @@ const CheckoutPage: NextPage<CheckoutPageProps> = ({ service }) => {
     }
   }, [isProcessing, canOrder, validatePhoneNumber, phoneNumber, service, paymentMethod, specialRequirements, user]);
 
+  // Initialisation du monitoring de performance
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Initialiser le monitoring de performance
+      initPerformanceMonitoring();
+      // Analyser les performances de la page de checkout
+      analyzePagePerformance(router.asPath, 'checkout');
+    }
+  }, [router.asPath]);
+
   // Rendu pour le cas où le service n'existe pas
   if (!service) {
     return (
@@ -236,6 +251,9 @@ const CheckoutPage: NextPage<CheckoutPageProps> = ({ service }) => {
       title={`Commander ${service.title} | Nionfar`}
       description={`Finaliser votre commande pour ${service.title}`}
     >
+      <Head>
+        <title>Commander {service.title} | Nionfar</title>
+      </Head>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header avec retour */}
         <div className="mb-6">

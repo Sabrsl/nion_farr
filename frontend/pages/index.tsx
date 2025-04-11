@@ -22,6 +22,19 @@ import { ContainerTextFlip } from '../components/ui/container-text-flip';
 import TrustedPartners from '../components/home/TrustedPartners';
 import serviceService from '../services/serviceService';
 
+// Performance monitoring
+import { analyzePagePerformance, initPerformanceMonitoring } from '../utils/performance';
+
+// JSON-LD Schemas
+import { generateOrganizationSchema, formatJSONLD } from '../utils/schema';
+
+// Chargement différé des composants lourds
+import { lazyLoad } from '../utils/lazyLoad';
+
+// Définir les composants à charger en différé
+const LazyTrustedPartners = lazyLoad(() => import('../components/home/TrustedPartners').then(mod => ({ default: mod.default || mod })));
+const LazyTestimonialCard = lazyLoad(() => import('../components/ui/TestimonialCard').then(mod => ({ default: mod.default || mod })));
+
 interface CategoryWithCount {
   id: string;
   name: string;
@@ -56,6 +69,16 @@ const Home: NextPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [topServices, setTopServices] = useState<TopService[]>([]);
   const [isLoadingTopServices, setIsLoadingTopServices] = useState(true);
+
+  // Initialisation du monitoring de performance
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Initialiser le monitoring de performance
+      initPerformanceMonitoring();
+      // Analyser les performances de la page d'accueil
+      analyzePagePerformance('/', 'home');
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -181,11 +204,47 @@ const Home: NextPage = () => {
       title="NionFar | Services freelance au Sénégal à partir de 1000 FCFA"
       description="NionFar.sn - La plateforme sénégalaise qui connecte les freelances avec des clients cherchant des services de qualité à petit prix."
     >
+      <Head>
+        <title>NionFar | Services freelance au Sénégal à partir de 1000 FCFA</title>
+        <meta name="description" content="NionFar.sn - La plateforme sénégalaise qui connecte les freelances avec des clients cherchant des services de qualité à petit prix." />
+        <meta property="og:title" content="NionFar | Services freelance au Sénégal" />
+        <meta property="og:description" content="La plateforme sénégalaise qui connecte les freelances avec des clients cherchant des services de qualité à petit prix." />
+        <meta property="og:url" content="https://nionfar.sn" />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href="https://nionfar.sn" />
+        
+        {/* Schéma JSON-LD pour l'organisation */}
+        <script 
+          type="application/ld+json" 
+          dangerouslySetInnerHTML={{ 
+            __html: formatJSONLD(generateOrganizationSchema())
+          }} 
+        />
+        
+        {/* Schéma JSON-LD pour la page d'accueil (WebSite) */}
+        <script 
+          type="application/ld+json" 
+          dangerouslySetInnerHTML={{ 
+            __html: formatJSONLD({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              'name': 'NionFar',
+              'url': 'https://nionfar.sn',
+              'potentialAction': {
+                '@type': 'SearchAction',
+                'target': 'https://nionfar.sn/search?q={search_term_string}',
+                'query-input': 'required name=search_term_string'
+              },
+              'description': 'NionFar.sn - La plateforme sénégalaise qui connecte les freelances avec des clients cherchant des services de qualité à petit prix.'
+            })
+          }}
+        />
+      </Head>
       <section className="relative pt-20 sm:pt-32 pb-16 sm:pb-20 bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600 opacity-30 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-violet-600 opacity-20 rounded-full blur-2xl"></div>
-          <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-purple-500 opacity-20 rounded-full blur-2xl animate-pulse"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90vw] sm:w-[800px] h-[90vw] sm:h-[800px] bg-indigo-600 opacity-30 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/4 right-1/4 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-violet-600 opacity-20 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-1/4 left-1/4 w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-purple-500 opacity-20 rounded-full blur-2xl animate-pulse"></div>
           
           <div className="absolute inset-0 bg-[url('/img/grid-pattern.svg')] bg-center opacity-10"></div>
         </div>
@@ -235,14 +294,14 @@ const Home: NextPage = () => {
               >
                 <Link 
                   href="/explorer" 
-                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-white text-indigo-600 font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group text-sm sm:text-base"
+                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-white text-indigo-600 font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group text-sm sm:text-base w-full sm:w-auto"
                 >
                   Explorer les services
                   <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link 
                   href="/devenir-freelance" 
-                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full border border-white/30 text-white font-medium backdrop-blur-sm hover:bg-white/10 transition-all duration-300 text-sm sm:text-base"
+                  className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full border border-white/30 text-white font-medium backdrop-blur-sm hover:bg-white/10 transition-all duration-300 text-sm sm:text-base w-full sm:w-auto"
                 >
                   Proposer mes services
                 </Link>
@@ -357,14 +416,14 @@ const Home: NextPage = () => {
         </div>
       </section>
 
-      <section className="py-12 sm:py-20 bg-gray-50">
+      <section className="py-8 sm:py-12 bg-gray-50">
         <div className="w-full px-4 sm:px-6 md:px-8 lg:px-12">
-          <div className="text-center mb-10 sm:mb-16 relative z-20">
+          <div className="text-center mb-6 sm:mb-10 relative z-20">
             <motion.h2 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4"
+              className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-3"
             >
               Les services les plus populaires
             </motion.h2>
@@ -372,7 +431,7 @@ const Home: NextPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-base sm:text-xl text-gray-600 max-w-3xl mx-auto"
+              className="text-sm sm:text-base md:text-lg text-gray-600 max-w-3xl mx-auto px-2 sm:px-4"
             >
               Les services exceptionnels de nos freelances les plus performants
             </motion.p>
@@ -382,7 +441,7 @@ const Home: NextPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8"
+            className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6"
           >
             {isLoadingTopServices ? (
               // Affichage d'un state de chargement
@@ -392,20 +451,20 @@ const Home: NextPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.1 * index }}
-                  className="bg-white rounded-lg sm:rounded-2xl shadow-md overflow-hidden"
+                  className="bg-white rounded-lg sm:rounded-xl shadow-md overflow-hidden"
                 >
                   <div className="aspect-w-16 aspect-h-9 bg-gray-200 animate-pulse"></div>
-                  <div className="p-5">
-                    <div className="flex items-center mb-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse mr-2"></div>
-                      <div className="w-1/3 h-4 bg-gray-200 animate-pulse"></div>
-                      <div className="ml-auto w-1/4 h-4 bg-gray-200 animate-pulse rounded"></div>
+                  <div className="p-3 sm:p-4">
+                    <div className="flex items-center mb-2 sm:mb-3">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 animate-pulse mr-2"></div>
+                      <div className="w-1/3 h-3 sm:h-4 bg-gray-200 animate-pulse"></div>
+                      <div className="ml-auto w-1/4 h-3 sm:h-4 bg-gray-200 animate-pulse rounded"></div>
                     </div>
-                    <div className="h-6 bg-gray-200 animate-pulse mb-1 w-3/4"></div>
-                    <div className="h-4 bg-gray-200 animate-pulse mb-3 w-full"></div>
+                    <div className="h-4 sm:h-6 bg-gray-200 animate-pulse mb-1 w-3/4"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 animate-pulse mb-2 sm:mb-3 w-full"></div>
                     <div className="flex items-center justify-between">
-                      <div className="w-1/3 h-4 bg-gray-200 animate-pulse"></div>
-                      <div className="w-1/4 h-4 bg-gray-200 animate-pulse"></div>
+                      <div className="w-1/3 h-3 sm:h-4 bg-gray-200 animate-pulse"></div>
+                      <div className="w-1/4 h-3 sm:h-4 bg-gray-200 animate-pulse"></div>
                     </div>
                   </div>
                 </motion.div>
@@ -413,69 +472,65 @@ const Home: NextPage = () => {
             ) : (
               // Affichage des meilleurs services
               topServices.map((service, index) => (
-              <motion.div
+                <motion.div
                   key={service.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 * index }}
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                className="bg-white rounded-lg sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group"
-              >
-                  <Link href={`/services/${service.slug}`} className="block">
-                    <div className="aspect-w-16 aspect-h-9 relative">
-                      <img 
-                        src={service.image || `/img/services/default-service.jpg`}
-                        alt={service.title}
-                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://placehold.co/600x400/6366f1/ffffff?text=${encodeURIComponent(service.title)}`;
-                        }}
-                      />
-                      <div className="absolute top-2 right-2 bg-indigo-600 px-2 py-1 rounded-full text-xs text-white font-medium">
-                        ⭐ {service.rating.toFixed(1)}/5
-                      </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent opacity-70 group-hover:opacity-80 transition-opacity"></div>
-                  </div>
-                  <div className="p-5">
-                      <div className="flex items-center mb-3">
-                        <div className="w-8 h-8 rounded-full overflow-hidden mr-2">
-                          <img 
-                            src={service.provider.avatar || '/img/avatar-placeholder.jpg'}
-                            alt={service.provider.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(service.provider.name)}&background=6366f1&color=fff`;
-                            }}
-                          />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 * index }}
+                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                  className="bg-white rounded-lg sm:rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group"
+                >
+                  <Link href={`/services/${service.slug}`} legacyBehavior>
+                    <a>
+                      <div className="aspect-w-16 aspect-h-9 relative">
+                        <img 
+                          src={service.image || `/img/services/default-service.jpg`}
+                          alt={service.title}
+                          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                        />
+                        <div className="absolute top-2 right-2 bg-indigo-600 px-2 py-1 rounded-full text-xs text-white font-medium">
+                          ⭐ {service.rating.toFixed(1)}/5
                         </div>
-                        <span className="text-sm text-gray-700">{service.provider.name}</span>
-                        <span className="ml-auto bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
-                          {service.totalOrders} commandes
-                        </span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent opacity-70 group-hover:opacity-80 transition-opacity"></div>
                       </div>
-                      
-                    <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1">
-                        {service.title}
-                    </h3>
-                      <p className="text-sm sm:text-base text-gray-600 mb-3 line-clamp-2">
-                        {service.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                    <div className="flex items-center text-indigo-600 text-sm sm:text-base font-medium">
-                          Voir le service <FiArrowRight className="ml-1 sm:ml-2 group-hover:translate-x-1 transition-transform" />
+                      <div className="p-3 sm:p-4">
+                        <div className="flex items-center mb-2 sm:mb-3">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden mr-2">
+                            <img 
+                              src={service.provider.avatar || '/img/avatar-placeholder.jpg'}
+                              alt={service.provider.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span className="text-xs sm:text-sm text-gray-700 truncate">{service.provider.name}</span>
+                          <span className="ml-auto bg-green-100 text-green-800 text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded">
+                            {service.totalOrders} commandes
+                          </span>
                         </div>
-                        <div className="text-gray-900 font-bold">
-                          {new Intl.NumberFormat('fr-FR', {
-                            style: 'currency',
-                            currency: 'XOF',
-                            maximumFractionDigits: 0,
-                            minimumFractionDigits: 0
-                          }).format(service.price)}
+                        
+                        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors mb-1 line-clamp-2">
+                          {service.title}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">
+                          {service.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-indigo-600 text-xs sm:text-sm font-medium">
+                            Voir le service <FiArrowRight className="ml-1 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                          <div className="text-gray-900 font-bold text-sm sm:text-base">
+                            {new Intl.NumberFormat('fr-FR', {
+                              style: 'currency',
+                              currency: 'XOF',
+                              maximumFractionDigits: 0,
+                              minimumFractionDigits: 0
+                            }).format(service.price)}
+                          </div>
                         </div>
                       </div>
-                  </div>
-                </Link>
-              </motion.div>
+                    </a>
+                  </Link>
+                </motion.div>
               ))
             )}
           </motion.div>
@@ -496,24 +551,29 @@ const Home: NextPage = () => {
         </div>
       </section>
 
-      <TrustedPartners />
+      {/* Partenaires */}
+      <section className="py-10 sm:py-12 border-t border-gray-100">
+        <div className="w-full px-4 sm:px-6 md:px-8 lg:px-12">
+          <LazyTrustedPartners />
+        </div>
+      </section>
 
-      <section className="relative py-12 sm:py-20 bg-gradient-to-b from-indigo-900 via-purple-900 to-indigo-800 overflow-hidden">
+      <section className="relative py-8 sm:py-12 bg-gradient-to-b from-indigo-900 via-purple-900 to-indigo-800 overflow-hidden">
         {/* Éléments visuels en arrière-plan - optimisés pour mobile */}
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-[20%] left-[10%] sm:top-[30%] sm:left-[20%] w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] rounded-full bg-indigo-600/20 blur-[50px] sm:blur-[80px] md:blur-[100px]"></div>
-          <div className="absolute bottom-[10%] right-[5%] sm:bottom-[20%] sm:right-[10%] w-[200px] h-[200px] sm:w-[300px] sm:h-[300px] md:w-[400px] md:h-[400px] rounded-full bg-purple-500/20 blur-[50px] sm:blur-[80px] md:blur-[100px]"></div>
-          <div className="absolute top-[5%] right-[10%] sm:top-[10%] sm:right-[20%] w-[150px] h-[150px] sm:w-[200px] sm:h-[200px] md:w-[300px] md:h-[300px] rounded-full bg-violet-600/20 blur-[30px] sm:blur-[40px] md:blur-[60px] animate-pulse"></div>
+          <div className="absolute top-[20%] left-[10%] sm:top-[30%] sm:left-[20%] w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] rounded-full bg-indigo-600/20 blur-[50px] sm:blur-[80px]"></div>
+          <div className="absolute bottom-[10%] right-[5%] sm:bottom-[20%] sm:right-[10%] w-[150px] h-[150px] sm:w-[300px] sm:h-[300px] rounded-full bg-purple-500/20 blur-[50px] sm:blur-[80px]"></div>
+          <div className="absolute top-[5%] right-[10%] sm:top-[10%] sm:right-[20%] w-[100px] h-[100px] sm:w-[200px] sm:h-[200px] rounded-full bg-violet-600/20 blur-[30px] sm:blur-[40px] animate-pulse"></div>
           <div className="absolute inset-0 bg-[url('/img/grid-pattern.svg')] bg-center opacity-5"></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-6 sm:mb-8 md:mb-14 relative z-10">
+          <div className="text-center mb-4 sm:mb-6 md:mb-8 relative z-10">
             <motion.h2 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 md:mb-4"
+              className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2"
             >
               Ce que disent nos clients
             </motion.h2>
@@ -521,7 +581,7 @@ const Home: NextPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-base sm:text-lg md:text-xl text-indigo-100/90 max-w-sm sm:max-w-lg md:max-w-2xl mx-auto"
+              className="text-sm sm:text-base md:text-lg text-indigo-100/90 max-w-sm sm:max-w-lg md:max-w-2xl mx-auto px-2 sm:px-4"
             >
               Découvrez comment NionFar a aidé des entreprises et des particuliers à réaliser leurs projets
             </motion.p>
@@ -532,7 +592,7 @@ const Home: NextPage = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 relative z-10"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 relative z-10"
           >
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
@@ -540,12 +600,12 @@ const Home: NextPage = () => {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="transform hover:-translate-y-1 transition-all duration-300"
             >
-              <TestimonialCard
-                name="Aminata Fall"
-                location="Dakar, Sénégal"
-                testimonial="J'ai trouvé un concepteur de logo exceptionnel sur NionFar. Le processus était simple, rapide et le résultat final bien au-delà de mes attentes."
+              <LazyTestimonialCard
+                name="Abdoulaye Diop"
+                title="Entrepreneur"
+                testimonial="J'ai fait appel à un designer pour la création du logo de ma nouvelle entreprise. La qualité du travail et le professionnalisme m'ont impressionné !"
+                avatar="/img/avatars/testimonial-1.jpg"
                 rating={5}
-                initials="AF"
               />
             </motion.div>
 
@@ -555,12 +615,12 @@ const Home: NextPage = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="transform hover:-translate-y-1 transition-all duration-300"
             >
-              <TestimonialCard
-                name="Mamadou Diop"
-                location="Saint-Louis, Sénégal"
-                testimonial="En tant que startup, nous avions besoin d'un site web avec un budget limité. Grâce à NionFar, nous avons trouvé un développeur talentueux."
+              <LazyTestimonialCard
+                name="Fatou Sow"
+                title="Gérante de boutique"
+                testimonial="Le développeur a créé un site e-commerce parfaitement adapté à mes besoins. Mes ventes ont augmenté de 40% en 3 mois !"
+                avatar="/img/avatars/testimonial-2.jpg"
                 rating={5}
-                initials="MD"
               />
             </motion.div>
 
@@ -570,12 +630,12 @@ const Home: NextPage = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="transform hover:-translate-y-1 transition-all duration-300 hidden lg:block"
             >
-              <TestimonialCard
-                name="Fatou Sow"
-                location="Thiès, Sénégal"
-                testimonial="La qualité des services sur NionFar est exceptionnelle. J'ai pu faire traduire mes documents en un temps record. Je reviendrai sans hésiter !"
-                rating={5}
-                initials="FS"
+              <LazyTestimonialCard
+                name="Moussa Niang"
+                title="Startupeur"
+                testimonial="J'ai trouvé un rédacteur de qualité pour mon blog d'entreprise. Très professionnel et réactif, je recommande NionFar à 100% !"
+                avatar="/img/avatars/testimonial-3.jpg"
+                rating={4}
               />
             </motion.div>
             
@@ -585,13 +645,13 @@ const Home: NextPage = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="transform hover:-translate-y-1 transition-all duration-300 lg:hidden sm:block col-span-full sm:col-span-2"
             >
-                <TestimonialCard
-                  name="Fatou Sow"
-                  location="Thiès, Sénégal"
-                testimonial="La qualité des services sur NionFar est exceptionnelle. J'ai pu faire traduire mes documents en un temps record. Je reviendrai sans hésiter !"
-                  rating={5}
-                  initials="FS"
-                />
+              <LazyTestimonialCard
+                name="Aïda Kane"
+                title="Influenceuse"
+                testimonial="La création de mon identité visuelle a été parfaite du début à la fin. Je suis ravie du résultat et de l'expérience sur NionFar."
+                avatar="/img/avatars/testimonial-4.jpg"
+                rating={5}
+              />
             </motion.div>
 
             {/* Bouton "Voir plus de témoignages" pour mobile/petits écrans */}
@@ -599,14 +659,14 @@ const Home: NextPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="col-span-full mt-4 sm:mt-6 flex justify-center lg:hidden"
+              className="col-span-full mt-3 sm:mt-4 flex justify-center lg:hidden"
             >
               <Link 
                 href="/temoignages" 
-                className="inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm sm:text-base font-medium backdrop-blur-sm transition-all duration-300 border border-white/20"
+                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium backdrop-blur-sm transition-all duration-300 border border-white/20"
               >
                 Voir plus de témoignages
-                <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                <FiArrowRight className="ml-1 sm:ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
             </motion.div>
           </motion.div>
@@ -614,7 +674,7 @@ const Home: NextPage = () => {
 
         {/* Transition en vague vers la section suivante - adaptée pour tous les écrans */}
         <div className="absolute -bottom-[1px] left-0 right-0 w-full">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" fill="#f9fafb" preserveAspectRatio="none" className="w-full h-[40px] sm:h-[60px] md:h-[80px]">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" fill="#f9fafb" preserveAspectRatio="none" className="w-full h-[30px] sm:h-[40px] md:h-[60px]">
             <path d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
           </svg>
         </div>

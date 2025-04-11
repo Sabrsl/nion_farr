@@ -7,6 +7,9 @@ import '../utils/polyfills';
 import '../styles/globals.css';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
+import { ChakraProvider } from '@chakra-ui/react';
+import initWebVitals from '../utils/performance/webVitals';
+import { analyzePageResources } from '../utils/performance/resourceMonitor';
 
 function MyApp({ Component, pageProps }: AppProps) {
   // Monitor for JavaScript errors
@@ -18,9 +21,20 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }, []);
 
+  // Initialiser le monitoring des performances
+  useEffect(() => {
+    // Initialiser la collecte des web vitals
+    initWebVitals();
+    
+    // Analyser les ressources de la page
+    analyzePageResources();
+  }, []);
+
   return (
     <AuthProvider>
-      <Component {...pageProps} />
+      <ChakraProvider>
+        <Component {...pageProps} />
+      </ChakraProvider>
       <ToastContainer 
         position="top-right"
         autoClose={5000}

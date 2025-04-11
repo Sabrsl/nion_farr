@@ -776,7 +776,7 @@ const ServiceListItem = ({ service, onToggleStatus, onDeleteClick, formatDate, g
                 alt={service.title}
                 className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://placehold.co/600x400/6366f1/ffffff?text=${encodeURIComponent(service.title.substring(0, 20))}`;
+                  (e.target as HTMLImageElement).src = `/images/service-placeholder.svg`;
                 }}
               />
             ) : (

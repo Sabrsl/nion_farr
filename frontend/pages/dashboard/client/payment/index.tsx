@@ -12,6 +12,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import ClientDashboardLayout from '../../../../components/dashboard/ClientDashboardLayout';
+import { analyzePagePerformance, initPerformanceMonitoring } from '../../../../utils/performance';
 
 interface PaymentInfo {
   phoneNumber: string;
@@ -86,6 +87,16 @@ const CheckoutPage: NextPage = () => {
       setIsLoading(false);
     }
   };
+
+  // Initialisation du monitoring de performance
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Initialiser le monitoring de performance
+      initPerformanceMonitoring();
+      // Analyser les performances de la page de paiement
+      analyzePagePerformance(router.asPath, 'payment');
+    }
+  }, [router.asPath]);
 
   return (
     <ClientDashboardLayout title="Paiement | NionFar.sn">

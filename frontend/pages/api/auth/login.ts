@@ -7,216 +7,129 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
-    console.log(`[API] Méthode reçue incorrecte: ${req.method}, forçage à POST`);
-    // Au lieu de rejeter, on va forcer la méthode en POST
-    // Mais loggons quand même l'erreur pour le débogage
+    return res.status(405).json({ 
+      success: false, 
+      error: 'Méthode non autorisée',
+      details: { method: `La méthode ${req.method} n'est pas supportée` }
+    });
   }
 
+  // Détermination de l'URL de l'API backend
+  let apiEndpoint = `${process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api'}/auth/login`;
+  
+  // Log de l'URL utilisée
+  console.log(`[API Proxy] Tentative de connexion au backend: ${apiEndpoint}`);
+  
   try {
-    // En production, nous allons rediriger cette requête vers le backend réel
-    if (process.env.NODE_ENV === 'production') {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
-      const apiEndpoint = `${apiUrl}/auth/login`;
-      
-      console.log(`[API] Redirection vers le backend: ${apiEndpoint}`);
-      
+    // TOUJOURS utiliser POST peu importe la méthode originale
+    const response = await fetch(apiEndpoint, {
+      method: 'POST', // Force POST
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
+        'X-Requested-With': 'XMLHttpRequest' // Ajouter cet en-tête pour indiquer une requête AJAX
+      },
+      body: JSON.stringify(req.body || {}), // Protéger contre body null
+      credentials: 'include' // Ajouter cette option pour inclure les cookies
+    });
+    
+    // Vérifier si la réponse est correcte
+    if (response.ok) {
       try {
-        // TOUJOURS utiliser POST peu importe la méthode originale
-        const response = await fetch(apiEndpoint, {
-          method: 'POST', // Force POST
+        const data = await response.json();
+        return res.status(response.status).json(data);
+      } catch (parseError) {
+        console.error(`[API Proxy] Erreur lors du parsing de la réponse JSON:`, parseError);
+        return res.status(502).json({
+          success: false,
+          error: "Erreur de traitement de la réponse",
+          details: { general: "La réponse du serveur n'est pas un JSON valide" }
+        });
+      }
+    } else {
+      // Gérer les erreurs HTTP
+      try {
+        const errorData = await response.json();
+        return res.status(response.status).json({
+          success: false,
+          error: errorData.message || 'Erreur lors de la connexion',
+          details: errorData.details || { general: 'Le serveur a retourné une erreur' }
+        });
+      } catch (parseError) {
+        // Si la réponse n'est pas du JSON valide
+        try {
+          const errorText = await response.text();
+          console.error(`[API Proxy] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
+          
+          return res.status(response.status).json({
+            success: false,
+            error: `Erreur ${response.status}: ${response.statusText}`,
+            details: { general: 'Réponse invalide du serveur' }
+          });
+        } catch (textError) {
+          console.error(`[API Proxy] Impossible de lire le corps de la réponse:`, textError);
+          
+          return res.status(response.status).json({
+            success: false,
+            error: `Erreur ${response.status}: ${response.statusText}`,
+            details: { general: 'Impossible de lire la réponse du serveur' }
+          });
+        }
+      }
+    }
+  } catch (fetchError) {
+    console.error("[API Proxy] Erreur lors de la connexion au backend:", fetchError);
+    
+    // Réessayer avec une configuration alternative si disponible
+    if (process.env.NEXT_PUBLIC_API_URL_FALLBACK) {
+      try {
+        console.log("[API Proxy] Tentative avec l'URL de secours");
+        const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL_FALLBACK}/auth/login`;
+        
+        const fallbackResponse = await fetch(fallbackUrl, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
-            'X-Requested-With': 'XMLHttpRequest' // Ajouter cet en-tête pour indiquer une requête AJAX
+            'X-Requested-With': 'XMLHttpRequest'
           },
-          body: JSON.stringify(req.body || {}), // Protéger contre body null
-          credentials: 'include' // Ajouter cette option pour inclure les cookies
+          body: JSON.stringify(req.body || {}),
+          credentials: 'include'
         });
         
-        // Vérifier si la réponse est correcte
-        if (response.ok) {
-          const data = await response.json();
-          return res.status(response.status).json(data);
-        } else {
-          // Gérer les erreurs HTTP
+        if (fallbackResponse.ok) {
           try {
-            const errorData = await response.json();
-            return res.status(response.status).json({
-              success: false,
-              error: errorData.message || 'Erreur lors de la connexion',
-              details: errorData.details || { general: 'Le serveur a retourné une erreur' }
-            });
+            const data = await fallbackResponse.json();
+            return res.status(fallbackResponse.status).json(data);
           } catch (parseError) {
-            // Si la réponse n'est pas du JSON valide
-            const errorText = await response.text();
-            console.error(`[API] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
-            
-            return res.status(response.status).json({
+            console.error(`[API Proxy] Erreur lors du parsing de la réponse JSON (fallback):`, parseError);
+            return res.status(502).json({
               success: false,
-              error: `Erreur ${response.status}: ${response.statusText}`,
-              details: { general: 'Réponse invalide du serveur' }
+              error: "Erreur de traitement de la réponse",
+              details: { general: "La réponse du serveur de secours n'est pas un JSON valide" }
             });
           }
+        } else {
+          // Erreur avec l'URL de secours
+          return res.status(fallbackResponse.status).json({
+            success: false,
+            error: `Erreur ${fallbackResponse.status} sur le serveur de secours`,
+            details: { general: "Le serveur de secours a également échoué" }
+          });
         }
-      } catch (fetchError) {
-        console.error("[API Proxy] Erreur lors de la connexion au backend:", fetchError);
-        
-        // Réessayer avec une configuration alternative si disponible
-        if (process.env.NEXT_PUBLIC_API_URL_FALLBACK) {
-          try {
-            console.log("[API Proxy] Tentative avec l'URL de secours");
-            const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL_FALLBACK}/auth/login`;
-            
-            const fallbackResponse = await fetch(fallbackUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest' // Ajouter cet en-tête
-              },
-              body: JSON.stringify(req.body || {}),
-              credentials: 'include' // Ajouter cette option
-            });
-            
-            if (fallbackResponse.ok) {
-              const data = await fallbackResponse.json();
-              return res.status(fallbackResponse.status).json(data);
-            }
-          } catch (fallbackError) {
-            console.error("[API Proxy] Échec de la tentative avec l'URL de secours:", fallbackError);
-          }
-        }
-        
-        // Si aucune URL de secours ou si celle-ci a également échoué
-        return res.status(502).json({
-          success: false,
-          error: "Impossible de se connecter au serveur d'authentification",
-          details: { 
-            general: "Le serveur d'authentification est temporairement indisponible. Veuillez réessayer plus tard." 
-          }
-        });
+      } catch (fallbackError) {
+        console.error("[API Proxy] Échec de la tentative avec l'URL de secours:", fallbackError);
       }
     }
-
-    const { email, password } = req.body;
-
-    // Validation des champs requis
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email requis',
-        details: { email: 'Veuillez entrer votre adresse email' }
-      });
-    }
-
-    if (!password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Mot de passe requis',
-        details: { password: 'Veuillez entrer votre mot de passe' }
-      });
-    }
-
-    // Validation du format de l'email
-    if (!isValidEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Format d\'email invalide',
-        details: { email: 'L\'adresse email fournie n\'est pas valide' }
-      });
-    }
-
-    // Vérifier si l'utilisateur existe
-    let user;
-    try {
-      user = userStorage.getByEmail(email);
-    } catch (storageError) {
-      console.error('Erreur d\'accès au stockage:', storageError);
-      // En cas d'erreur de stockage, créer un utilisateur temporaire pour le développement
-      if (process.env.NODE_ENV === 'development' && email === 'test@example.com' && password === 'password123') {
-        user = {
-          id: 'dev-user-123',
-          email: 'test@example.com',
-          name: 'Utilisateur Test',
-          role: 'client', 
-          password: 'hashed_password123',
-          isVerified: true,
-          createdAt: new Date().toISOString()
-        };
-      } else {
-        // En production, ne pas révéler l'erreur
-        return res.status(401).json({
-          success: false,
-          error: 'Identifiants invalides',
-          details: { general: 'Email ou mot de passe incorrect' }
-        });
-      }
-    }
-
-    if (!user) {
-      // Pour des raisons de sécurité, ne pas divulguer si l'email existe ou non
-      return res.status(401).json({
-        success: false,
-        error: 'Identifiants invalides',
-        details: { general: 'Email ou mot de passe incorrect' }
-      });
-    }
-
-    // Vérifier si l'utilisateur est vérifié
-    if (!user.isVerified) {
-      return res.status(401).json({
-        success: false,
-        error: 'Utilisateur non vérifié',
-        details: { 
-          general: 'Votre compte n\'a pas encore été vérifié. Veuillez vérifier votre email pour activer votre compte.'
-        }
-      });
-    }
-
-    // Vérifier le mot de passe (simulé - dans une vraie application, on utiliserait bcrypt.compare)
-    const passwordMatches = user.password === `hashed_${password}`;
-
-    if (!passwordMatches) {
-      return res.status(401).json({
-        success: false,
-        error: 'Identifiants invalides',
-        details: { general: 'Email ou mot de passe incorrect' }
-      });
-    }
-
-    // Générer un token JWT (simulé)
-    const token = `jwt_${user.id}_${Date.now()}`;
-
-    // Mettre à jour la dernière connexion
-    try {
-      userStorage.update(user.id, {
-        ...user,
-        lastLoginAt: new Date().toISOString()
-      });
-    } catch (updateError) {
-      console.error('Erreur lors de la mise à jour des données utilisateur:', updateError);
-      // Continuer sans bloquer le login
-    }
-
-    // Répondre avec succès
-    return res.status(200).json({
-      success: true,
-      message: 'Connexion réussie',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
-      },
-      token
-    });
-  } catch (error) {
-    console.error('Erreur lors de la connexion:', error);
-    return res.status(500).json({
+    
+    // Si aucune URL de secours ou si celle-ci a également échoué
+    return res.status(502).json({
       success: false,
-      error: 'Une erreur est survenue lors de la connexion',
-      details: error instanceof Error ? error.message : 'Erreur inconnue'
+      error: "Impossible de se connecter au serveur d'authentification",
+      details: { 
+        general: "Le serveur d'authentification est temporairement indisponible. Veuillez réessayer plus tard." 
+      }
     });
   }
 } 

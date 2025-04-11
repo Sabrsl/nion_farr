@@ -1,126 +1,134 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Container, Typography, Paper, CircularProgress, Button, Box, Alert } from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline.js';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline.js';
+import {
+  Container,
+  Box,
+  Heading,
+  Text,
+  Button,
+  Alert,
+  AlertIcon,
+  Spinner,
+  Center
+} from '@chakra-ui/react';
+import Link from 'next/link';
 
 export default function VerifyPage() {
   const router = useRouter();
-  const { email, code } = router.query;
+  const { token } = router.query;
+  
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Vérification de votre compte...');
-  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (!email || !code) {
-      setStatus('error');
-      setError('Paramètres de vérification manquants');
-      return;
+    if (router.isReady && token) {
+      verifyToken(token as string);
     }
+  }, [router.isReady, token]);
 
-    const verifyAccount = async () => {
-      try {
-        const response = await fetch('/api/auth/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, code }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          setStatus('success');
-          setMessage(data.message || 'Votre compte a été vérifié avec succès');
-          
-          // Stockage du token dans le localStorage
-          if (data.token) {
-            localStorage.setItem('auth_token', data.token);
-          }
-          
-          // Redirection automatique vers la page d'accueil après 3 secondes
-          setTimeout(() => {
-            router.push(data.redirectTo || '/');
-          }, 3000);
-        } else {
-          setStatus('error');
-          setError(data.error || 'Échec de la vérification');
-        }
-      } catch (error) {
+  const verifyToken = async (verificationToken: string) => {
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: verificationToken }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setStatus('success');
+        setMessage(data.message || 'Votre compte a été vérifié avec succès !');
+        
+        // Redirection automatique vers la connexion après 3 secondes
+        setTimeout(() => {
+          router.push('/auth/login');
+        }, 3000);
+      } else {
         setStatus('error');
-        setError('Une erreur est survenue lors de la vérification de votre compte');
-        console.error('Erreur de vérification:', error);
+        setMessage(data.error || 'Le lien de vérification est invalide ou a expiré.');
       }
-    };
-
-    verifyAccount();
-  }, [email, code, router]);
+    } catch (error) {
+      console.error('Erreur lors de la vérification:', error);
+      setStatus('error');
+      setMessage('Une erreur est survenue lors de la communication avec le serveur.');
+    }
+  };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
-      <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Vérification du compte
-        </Typography>
-
+    <Container maxW="md" mt={8} mb={8}>
+      <Box p={6} borderWidth="1px" borderRadius="lg" boxShadow="md" textAlign="center">
         {status === 'loading' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4 }}>
-            <CircularProgress size={60} thickness={4} sx={{ mb: 2 }} />
-            <Typography variant="body1">{message}</Typography>
-          </Box>
+          <>
+            <Heading as="h1" size="lg" mb={4}>
+              Vérification en cours...
+            </Heading>
+            <Center my={8}>
+              <Spinner size="xl" color="blue.500" thickness="4px" />
+            </Center>
+            <Text mb={4}>
+              Nous sommes en train de vérifier votre compte...
+            </Text>
+          </>
         )}
-
+        
         {status === 'success' && (
-          <Box sx={{ my: 4 }}>
-            <CheckCircleOutlineIcon color="success" sx={{ fontSize: 60 }} />
-            <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
-              Compte vérifié !
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 3 }}>
+          <>
+            <Heading as="h1" size="lg" mb={4}>
+              Vérification réussie !
+            </Heading>
+            
+            <Alert status="success" mb={6}>
+              <AlertIcon />
               {message}
-            </Typography>
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Vous allez être redirigé automatiquement vers la page d'accueil...
             </Alert>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={() => router.push('/')}
-              sx={{ mt: 2 }}
+            
+            <Text mb={6}>
+              Vous allez être redirigé vers la page de connexion automatiquement...
+            </Text>
+            
+            <Button
+              colorScheme="blue"
+              as={Link}
+              href="/auth/login"
             >
-              Aller à l'accueil
+              Connexion
             </Button>
-          </Box>
+          </>
         )}
-
+        
         {status === 'error' && (
-          <Box sx={{ my: 4 }}>
-            <ErrorOutlineIcon color="error" sx={{ fontSize: 60 }} />
-            <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+          <>
+            <Heading as="h1" size="lg" mb={4}>
               Échec de la vérification
-            </Typography>
-            <Typography variant="body1" color="error" sx={{ mb: 3 }}>
-              {error}
-            </Typography>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              onClick={() => router.push('/auth/login')}
-              sx={{ mr: 2 }}
+            </Heading>
+            
+            <Alert status="error" mb={6}>
+              <AlertIcon />
+              {message}
+            </Alert>
+            
+            <Button
+              colorScheme="blue"
+              as={Link}
+              href="/auth/login"
+              mr={3}
             >
-              Se connecter
+              Connexion
             </Button>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={() => router.push('/auth/register')}
+            
+            <Button
+              variant="outline"
+              as={Link}
+              href="/"
             >
-              S'inscrire
+              Accueil
             </Button>
-          </Box>
+          </>
         )}
-      </Paper>
+      </Box>
     </Container>
   );
 } 

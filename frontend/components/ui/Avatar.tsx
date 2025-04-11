@@ -1,9 +1,8 @@
 import React, { useState, memo } from 'react';
-import Image from 'next/image';
 import classNames from 'classnames';
 
 // Default avatar image
-const DEFAULT_AVATAR = '/img/avatars/default.jpg';
+const DEFAULT_AVATAR = '/img/avatar-placeholder.jpg';
 
 interface AvatarProps {
   src?: string;
@@ -37,9 +36,23 @@ export const Avatar = memo<AvatarProps>(({
     xs: 'w-6 h-6',
     sm: 'w-8 h-8',
     md: 'w-10 h-10',
-    lg: 'w-12 h-12',
-    xl: 'w-16 h-16',
+    lg: 'w-14 h-14',
+    xl: 'w-20 h-20'
   };
+
+  // Get pixel dimensions based on size
+  const getDimensions = () => {
+    switch(size) {
+      case 'xs': return 24;
+      case 'sm': return 32;
+      case 'md': return 40;
+      case 'lg': return 56;
+      case 'xl': return 80;
+      default: return 40;
+    }
+  };
+
+  const imageDimension = getDimensions();
   
   // Get initials from alt text for fallback
   const getInitials = () => {
@@ -80,11 +93,6 @@ export const Avatar = memo<AvatarProps>(({
     className
   );
   
-  // Handle image load error
-  const handleError = () => {
-    setImageError(true);
-  };
-  
   return (
     <div 
       className={avatarClasses}
@@ -101,13 +109,11 @@ export const Avatar = memo<AvatarProps>(({
           </div>
         )
       ) : (
-        <Image
+        <img
           src={src}
           alt={alt}
-          fill
-          sizes={`(max-width: 768px) ${parseInt(SIZES[size].replace('w-', '')) * 4}px, ${parseInt(SIZES[size].replace('w-', '')) * 4}px`}
-          className="object-cover"
-          onError={handleError}
+          className="object-cover w-full h-full"
+          onError={() => setImageError(true)}
         />
       )}
     </div>

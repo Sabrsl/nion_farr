@@ -9,6 +9,7 @@ import {
   JoinColumn,
   ManyToMany,
   JoinTable,
+  OneToOne,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { ServiceOption } from './service-option.entity';
@@ -16,6 +17,8 @@ import { ServiceCategory } from './service-category.entity';
 import { Order } from '../../orders/entities/order.entity';
 import { Review } from '../../reviews/entities/review.entity';
 import { ServiceStatus } from '../enums/service-status.enum';
+import { ServiceValidationResult } from './service-validation-result.entity';
+import { ServiceValidationHistory } from './service-validation-history.entity';
 
 @Entity('services')
 export class Service {
@@ -91,6 +94,13 @@ export class Service {
 
   @OneToMany(() => Review, (review) => review.service)
   reviews: Review[];
+
+  // Relations pour la validation des services
+  @OneToOne(() => ServiceValidationResult, validationResult => validationResult.service, { nullable: true })
+  validationResult: ServiceValidationResult;
+
+  @OneToMany(() => ServiceValidationHistory, history => history.service)
+  validationHistory: ServiceValidationHistory[];
 
   @CreateDateColumn()
   createdAt: Date;

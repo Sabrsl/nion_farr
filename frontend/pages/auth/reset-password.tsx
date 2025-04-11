@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Container, Typography, Paper, TextField, Button, Box, CircularProgress, Alert } from '@mui/material';
+import {
+  Container,
+  Heading,
+  Box,
+  Input,
+  Button,
+  FormControl,
+  FormLabel,
+  FormErrorMessage,
+  Text,
+  Alert,
+  AlertIcon,
+  Spinner,
+  Stack,
+  Center
+} from '@chakra-ui/react';
 import PasswordStrengthMeter from '../../components/auth/PasswordStrengthMeter';
 
 // Page de réinitialisation de mot de passe
@@ -96,89 +111,84 @@ export default function ResetPasswordPage() {
   // Si le token est manquant
   if (!token && router.isReady) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
-        <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h5" component="h1" gutterBottom>
+      <Container maxW="sm" mt={8} mb={8}>
+        <Box p={4} borderWidth="1px" borderRadius="lg" boxShadow="md" textAlign="center">
+          <Heading as="h1" size="lg" mb={2}>
             Lien invalide
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 3 }}>
+          </Heading>
+          <Text mb={6}>
             Le lien de réinitialisation est invalide ou a expiré.
-          </Typography>
+          </Text>
           <Button 
-            variant="contained" 
-            color="primary" 
+            colorScheme="blue" 
             onClick={() => router.push('/auth/forgot-password')}
           >
             Demander un nouveau lien
           </Button>
-        </Paper>
+        </Box>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
+    <Container maxW="sm" mt={8} mb={8}>
+      <Box p={4} borderWidth="1px" borderRadius="lg" boxShadow="md">
         {status === 'form' && (
           <>
-            <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <Typography variant="h4" component="h1" gutterBottom>
+            <Box textAlign="center" mb={6}>
+              <Heading as="h1" size="lg" mb={2}>
                 Réinitialisation du mot de passe
-              </Typography>
-              <Typography variant="body1" color="textSecondary">
+              </Heading>
+              <Text color="gray.600">
                 Veuillez entrer votre nouveau mot de passe
-              </Typography>
+              </Text>
             </Box>
             
             <form onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                margin="normal"
-                label="Nouveau mot de passe"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setErrors({ ...errors, password: '' });
-                }}
-                error={!!errors.password}
-                helperText={errors.password}
-                disabled={isSubmitting}
-              />
+              <FormControl isInvalid={!!errors.password} mb={4}>
+                <FormLabel>Nouveau mot de passe</FormLabel>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrors({ ...errors, password: '' });
+                  }}
+                  isDisabled={isSubmitting}
+                />
+                <FormErrorMessage>{errors.password}</FormErrorMessage>
+              </FormControl>
               
               <PasswordStrengthMeter 
                 password={password} 
                 onScoreChange={setPasswordScore}
               />
               
-              <TextField
-                fullWidth
-                variant="outlined"
-                margin="normal"
-                label="Confirmer le mot de passe"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  setErrors({ ...errors, confirmPassword: '' });
-                }}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword}
-                disabled={isSubmitting}
-              />
+              <FormControl isInvalid={!!errors.confirmPassword} mb={4}>
+                <FormLabel>Confirmer le mot de passe</FormLabel>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setErrors({ ...errors, confirmPassword: '' });
+                  }}
+                  isDisabled={isSubmitting}
+                />
+                <FormErrorMessage>{errors.confirmPassword}</FormErrorMessage>
+              </FormControl>
               
               <Button
                 type="submit"
-                fullWidth
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={isSubmitting || passwordScore < 2}
-                sx={{ mt: 3, mb: 2 }}
+                colorScheme="blue"
+                size="lg"
+                width="full"
+                isDisabled={isSubmitting || passwordScore < 2}
+                mt={4}
+                mb={2}
               >
                 {isSubmitting ? (
-                  <CircularProgress size={24} sx={{ color: 'white' }} />
+                  <Spinner size="sm" />
                 ) : (
                   'Réinitialiser le mot de passe'
                 )}
@@ -188,19 +198,19 @@ export default function ResetPasswordPage() {
         )}
         
         {status === 'success' && (
-          <Box sx={{ textAlign: 'center', my: 4 }}>
-            <Typography variant="h5" component="h1" gutterBottom>
+          <Box textAlign="center" my={4}>
+            <Heading as="h1" size="lg" mb={2}>
               Mot de passe réinitialisé
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 3 }}>
+            </Heading>
+            <Text mb={6}>
               {message}
-            </Typography>
-            <Alert severity="info" sx={{ mb: 3 }}>
+            </Text>
+            <Alert status="info" mb={6}>
+              <AlertIcon />
               Vous allez être redirigé automatiquement vers la page d'accueil...
             </Alert>
             <Button 
-              variant="contained" 
-              color="primary" 
+              colorScheme="blue" 
               onClick={() => router.push('/')}
             >
               Aller à l'accueil
@@ -209,25 +219,23 @@ export default function ResetPasswordPage() {
         )}
         
         {status === 'error' && (
-          <Box sx={{ textAlign: 'center', my: 4 }}>
-            <Typography variant="h5" component="h1" gutterBottom>
+          <Box textAlign="center" my={4}>
+            <Heading as="h1" size="lg" mb={2}>
               Échec de la réinitialisation
-            </Typography>
-            <Typography variant="body1" color="error" sx={{ mb: 3 }}>
+            </Heading>
+            <Text color="red.500" mb={6}>
               {message}
-            </Typography>
+            </Text>
             {message.includes('expiré') ? (
               <Button 
-                variant="contained" 
-                color="primary" 
+                colorScheme="blue" 
                 onClick={() => router.push('/auth/forgot-password')}
               >
                 Demander un nouveau lien
               </Button>
             ) : (
               <Button 
-                variant="contained" 
-                color="primary" 
+                colorScheme="blue" 
                 onClick={() => setStatus('form')}
               >
                 Réessayer
@@ -235,7 +243,7 @@ export default function ResetPasswordPage() {
             )}
           </Box>
         )}
-      </Paper>
+      </Box>
     </Container>
   );
 } 

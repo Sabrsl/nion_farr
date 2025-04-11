@@ -182,6 +182,38 @@ const ClientDashboard: NextPage = () => {
     return orders;
   }, [orders, activeFilter]);
 
+  // Données simulées pour les suggestions de services
+  const suggestedServices = [
+    {
+      id: '1',
+      title: 'Conception de Logo Professionnelle',
+      description: 'Obtenez un logo unique et mémorable pour votre entreprise',
+      price: 12000,
+      image: '/images/service-placeholder.svg'
+    },
+    {
+      id: '2',
+      title: 'Développement Site Web Responsive',
+      description: 'Un site web moderne optimisé pour tous les appareils',
+      price: 45000,
+      image: '/images/service-placeholder.svg'
+    },
+    {
+      id: '3',
+      title: 'Gestion des Réseaux Sociaux',
+      description: 'Augmentez votre présence en ligne avec une stratégie efficace',
+      price: 18000,
+      image: '/images/service-placeholder.svg'
+    },
+    {
+      id: '4',
+      title: 'Optimisation SEO',
+      description: 'Améliorez votre classement dans les moteurs de recherche',
+      price: 25000,
+      image: '/images/service-placeholder.svg'
+    },
+  ];
+
   return (
     <ClientDashboardLayout title="Tableau de bord Client | NionFar.sn">
       <div className="h-full flex flex-col">

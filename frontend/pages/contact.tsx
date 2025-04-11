@@ -176,7 +176,7 @@ const Contact: NextPage = () => {
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center mr-3 sm:mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
                 <FiMail className="text-white w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <a href="mailto:particuliers@nionfar.sn" className="text-sm sm:text-base text-indigo-600 hover:text-indigo-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
+              <a href="mailto:particuliers@nionfar.sn" className="text-sm sm:text-base text-indigo-600 hover:text-indigo-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center" rel="noopener noreferrer" target="_blank" aria-label="Envoyer un email aux particuliers">
                 particuliers@nionfar.sn
                 <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-4 h-4" />
               </a>
@@ -198,7 +198,7 @@ const Contact: NextPage = () => {
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 flex items-center justify-center mr-3 sm:mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
                 <FiMail className="text-white w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <a href="mailto:entreprises@nionfar.sn" className="text-sm sm:text-base text-blue-600 hover:text-blue-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
+              <a href="mailto:entreprises@nionfar.sn" className="text-sm sm:text-base text-blue-600 hover:text-blue-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center" rel="noopener noreferrer" target="_blank" aria-label="Envoyer un email aux entreprises">
                 entreprises@nionfar.sn
                 <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-4 h-4" />
               </a>
@@ -220,7 +220,7 @@ const Contact: NextPage = () => {
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center mr-3 sm:mr-4 shadow-md group-hover:shadow-lg transition-all duration-300">
                 <FiMail className="text-white w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <a href="mailto:presse@nionfar.sn" className="text-sm sm:text-base text-pink-600 hover:text-pink-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center">
+              <a href="mailto:presse@nionfar.sn" className="text-sm sm:text-base text-pink-600 hover:text-pink-800 transition-colors font-medium group-hover:translate-x-1 transition-transform duration-300 inline-flex items-center" rel="noopener noreferrer" target="_blank" aria-label="Envoyer un email à la presse">
                 presse@nionfar.sn
                 <FiArrowRight className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-4 h-4" />
               </a>

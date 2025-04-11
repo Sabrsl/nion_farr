@@ -33,6 +33,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { QueueModule } from './modules/queue/queue.module';
 import { IpModule } from './ip/ip.module';
+import { PerformanceModule } from './performance/performance.module';
 
 @Module({
   imports: [
@@ -131,6 +132,7 @@ import { IpModule } from './ip/ip.module';
     SecurityModule,
     QueueModule,
     IpModule,
+    PerformanceModule,
   ],
   controllers: [AppController, RootController],
   providers: [

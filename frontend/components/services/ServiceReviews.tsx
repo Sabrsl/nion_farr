@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FiStar, FiThumbsUp, FiFilter, FiChevronDown, FiX } from 'react-icons/fi/index.js';
+import { FiStar, FiThumbsUp, FiThumbsDown, FiFilter, FiChevronDown, FiChevronUp, FiX } from 'react-icons/fi/index.js';
 import { Rating } from '../ui/Rating';
 import { Avatar } from '../ui/Avatar';
+import axios from 'axios';
 
 interface Review {
   id: string;

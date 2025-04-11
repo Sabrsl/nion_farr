@@ -1,7 +1,7 @@
+import React, { useState, useEffect } from 'react';
 import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiCheckCircle, 
@@ -21,6 +21,12 @@ import {
 } from 'react-icons/fi/index.js';
 import Layout from '../components/layout/Layout';
 import axios from 'axios';
+
+// Performance monitoring
+import { analyzePagePerformance, initPerformanceMonitoring } from '../utils/performance';
+
+// JSON-LD Schemas
+import { formatJSONLD } from '../utils/schema';
 
 // Service pour récupérer les statistiques de la plateforme
 const useStatsData = () => {
@@ -115,6 +121,16 @@ const DevenirFreelance: NextPage = () => {
     return num.toLocaleString() + "+";
   };
 
+  // Initialisation du monitoring de performance
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Initialiser le monitoring de performance
+      initPerformanceMonitoring();
+      // Analyser les performances de la page freelance
+      analyzePagePerformance('/devenir-freelance', 'freelance');
+    }
+  }, []);
+
   // Handle scroll for header transparency
   useEffect(() => {
     const handleScroll = () => {
@@ -130,14 +146,49 @@ const DevenirFreelance: NextPage = () => {
       title="Devenir Freelance | NionFar.sn - La Plateforme de Freelance au Sénégal"
       description="Rejoignez la communauté NionFar en tant que freelance et développez votre activité professionnelle. Accédez à des clients locaux et internationaux, sans intermédiaire."
     >
+      <Head>
+        <title>Devenir Freelance | NionFar.sn - La Plateforme de Freelance au Sénégal</title>
+        <meta name="description" content="Rejoignez la communauté NionFar en tant que freelance et développez votre activité professionnelle. Accédez à des clients locaux et internationaux, sans intermédiaire." />
+        <meta property="og:title" content="Devenir Freelance | NionFar.sn" />
+        <meta property="og:description" content="Rejoignez la communauté NionFar en tant que freelance et développez votre activité professionnelle." />
+        <meta property="og:url" content="https://nionfar.sn/devenir-freelance" />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href="https://nionfar.sn/devenir-freelance" />
+        
+        {/* Schéma JSON-LD pour la page Devenir Freelance */}
+        <script 
+          type="application/ld+json" 
+          dangerouslySetInnerHTML={{ 
+            __html: formatJSONLD({
+              '@context': 'https://schema.org',
+              '@type': 'WebPage',
+              'name': 'Devenir Freelance sur NionFar',
+              'description': 'Rejoignez la communauté NionFar en tant que freelance et développez votre activité professionnelle. Accédez à des clients locaux et internationaux, sans intermédiaire.',
+              'url': 'https://nionfar.sn/devenir-freelance',
+              'isPartOf': {
+                '@type': 'WebSite',
+                'name': 'NionFar',
+                'url': 'https://nionfar.sn'
+              },
+              'mainEntity': {
+                '@type': 'ProfessionalService',
+                'name': 'Services Freelance NionFar',
+                'description': 'Plateforme de services freelance sénégalaise',
+                'url': 'https://nionfar.sn'
+              }
+            })
+          }}
+        />
+      </Head>
+      
       <main>
         {/* Hero Section with Dynamic Background */}
         <section className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 pt-32 pb-24">
           {/* Decorative elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600 opacity-30 rounded-full blur-3xl"></div>
-            <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-violet-600 opacity-20 rounded-full blur-2xl"></div>
-            <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-purple-500 opacity-20 rounded-full blur-2xl animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90vw] sm:w-[800px] h-[90vw] sm:h-[800px] bg-indigo-600 opacity-30 rounded-full blur-3xl"></div>
+            <div className="absolute top-1/4 right-1/4 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-violet-600 opacity-20 rounded-full blur-2xl"></div>
+            <div className="absolute bottom-1/4 left-1/4 w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-purple-500 opacity-20 rounded-full blur-2xl animate-pulse"></div>
             
             {/* Grid pattern overlay */}
             <div className="absolute inset-0 bg-[url('/img/grid-pattern.svg')] bg-center opacity-10"></div>
@@ -180,14 +231,28 @@ const DevenirFreelance: NextPage = () => {
             >
               <Link 
                 href="/register?type=freelance" 
-                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-white text-indigo-600 font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group text-sm sm:text-base"
+                className="inline-flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 rounded-full bg-white text-indigo-600 font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group text-sm sm:text-base w-full sm:w-auto"
+                onClick={(e) => {
+                  // Empêcher le comportement par défaut pour les appareils mobiles
+                  if (window.innerWidth < 640) {
+                    e.preventDefault();
+                    window.location.href = "/register?type=freelance";
+                  }
+                }}
               >
                 Créer mon compte freelance
                 <FiChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link 
                 href="/contact" 
-                className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full border border-white/30 text-white font-medium backdrop-blur-sm hover:bg-white/10 transition-all duration-300 text-sm sm:text-base"
+                className="inline-flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 rounded-full border border-white/30 text-white font-medium backdrop-blur-sm hover:bg-white/10 transition-all duration-300 text-sm sm:text-base w-full sm:w-auto mt-4 sm:mt-0"
+                onClick={(e) => {
+                  // Empêcher le comportement par défaut pour les appareils mobiles
+                  if (window.innerWidth < 640) {
+                    e.preventDefault();
+                    window.location.href = "/contact";
+                  }
+                }}
               >
                 Contacter l'équipe
               </Link>
@@ -304,8 +369,8 @@ const DevenirFreelance: NextPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                viewport={{ once: true }}
-                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                viewport={{ once: true, margin: "-50px" }}
+                className="bg-white p-4 sm:p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
                 <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
                   <FiDollarSign className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -320,8 +385,8 @@ const DevenirFreelance: NextPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                viewport={{ once: true }}
-                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                viewport={{ once: true, margin: "-50px" }}
+                className="bg-white p-4 sm:p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
                 <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
                   <FiTrendingUp className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -336,8 +401,8 @@ const DevenirFreelance: NextPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                viewport={{ once: true }}
-                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                viewport={{ once: true, margin: "-50px" }}
+                className="bg-white p-4 sm:p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
                 <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
                   <FiShield className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -352,8 +417,8 @@ const DevenirFreelance: NextPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                viewport={{ once: true }}
-                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                viewport={{ once: true, margin: "-50px" }}
+                className="bg-white p-4 sm:p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
                 <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
                   <FiUsers className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -368,8 +433,8 @@ const DevenirFreelance: NextPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                viewport={{ once: true }}
-                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                viewport={{ once: true, margin: "-50px" }}
+                className="bg-white p-4 sm:p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
                 <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
                   <FiStar className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -384,8 +449,8 @@ const DevenirFreelance: NextPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.6 }}
-                viewport={{ once: true }}
-                className="bg-white p-6 sm:p-8 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+                viewport={{ once: true, margin: "-50px" }}
+                className="bg-white p-4 sm:p-6 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100"
               >
                 <div className="text-indigo-600 mb-4 sm:mb-6 bg-indigo-50 w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center">
                   <FiClock className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -445,7 +510,13 @@ const DevenirFreelance: NextPage = () => {
                   </div>
                   
                   <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-6 sm:mb-8 md:mb-0 z-10">
-                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 h-14 w-14 sm:h-16 sm:w-16 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">1</div>
+                    <div className="aspect-[4/3] p-2 sm:p-3 bg-white rounded-lg sm:rounded-xl shadow-sm">
+                      <img
+                        src="/img/freelance-step-1.jpg"
+                        alt="Étape 1: Créez votre compte"
+                        className="w-full h-full object-cover rounded"
+                      />
+                    </div>
                   </div>
                   
                   <div className="md:w-1/2 p-4 sm:p-6 md:pl-16 order-1 md:order-2">
@@ -490,7 +561,13 @@ const DevenirFreelance: NextPage = () => {
                   </div>
                   
                   <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-6 sm:mb-8 md:mb-0 z-10">
-                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 h-14 w-14 sm:h-16 sm:w-16 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">2</div>
+                    <div className="aspect-[4/3] p-2 sm:p-3 bg-white rounded-lg sm:rounded-xl shadow-sm">
+                      <img
+                        src="/img/freelance-step-2.jpg"
+                        alt="Étape 2: Configurez votre profil"
+                        className="w-full h-full object-cover rounded"
+                      />
+                    </div>
                   </div>
                   
                   <div className="md:w-1/2 p-4 sm:p-6 md:pr-16 md:text-right order-1">
@@ -535,7 +612,13 @@ const DevenirFreelance: NextPage = () => {
                   </div>
                   
                   <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2 mb-6 sm:mb-8 md:mb-0 z-10">
-                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 h-14 w-14 sm:h-16 sm:w-16 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">3</div>
+                    <div className="aspect-[4/3] p-2 sm:p-3 bg-white rounded-lg sm:rounded-xl shadow-sm">
+                      <img
+                        src="/img/freelance-step-3.jpg"
+                        alt="Étape 3: Créez vos services"
+                        className="w-full h-full object-cover rounded"
+                      />
+                    </div>
                   </div>
                   
                   <div className="md:w-1/2 p-4 sm:p-6 md:pl-16 order-1 md:order-2">
@@ -598,17 +681,14 @@ const DevenirFreelance: NextPage = () => {
                     <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                   </div>
                 </div>
-                <div className="h-16 w-16 sm:h-20 sm:w-20 bg-indigo-100 rounded-full mb-4 sm:mb-6 overflow-hidden">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 bg-indigo-100 rounded-full mb-3 sm:mb-4 overflow-hidden">
                   <img
                     src="/img/testimonial-fatou.jpg"
                     alt="Fatou Diop"
                     className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80';
-                    }}
                   />
                 </div>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 italic">
+                <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 italic">
                   "Grâce à NionFar, j'ai pu développer mon activité de freelance et maintenant je travaille avec des clients du monde entier tout en restant au Sénégal."
                 </p>
                 <div className="flex items-center">
@@ -635,17 +715,14 @@ const DevenirFreelance: NextPage = () => {
                     <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                   </div>
                 </div>
-                <div className="h-16 w-16 sm:h-20 sm:w-20 bg-indigo-100 rounded-full mb-4 sm:mb-6 overflow-hidden">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 bg-indigo-100 rounded-full mb-3 sm:mb-4 overflow-hidden">
                   <img
                     src="/img/testimonial-abdoulaye.jpg"
                     alt="Abdoulaye Ndiaye"
                     className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80';
-                    }}
                   />
                 </div>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 italic">
+                <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 italic">
                   "J'ai commencé sur NionFar il y a un an et aujourd'hui j'ai plus de clients que je ne peux en gérer. La plateforme m'a vraiment aidé à lancer ma carrière."
                 </p>
                 <div className="flex items-center">
@@ -672,17 +749,14 @@ const DevenirFreelance: NextPage = () => {
                     <FiStar className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                   </div>
                 </div>
-                <div className="h-16 w-16 sm:h-20 sm:w-20 bg-indigo-100 rounded-full mb-4 sm:mb-6 overflow-hidden">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 bg-indigo-100 rounded-full mb-3 sm:mb-4 overflow-hidden">
                   <img
                     src="/img/testimonial-aminata.jpg"
                     alt="Aminata Sow"
                     className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80';
-                    }}
                   />
                 </div>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 italic">
+                <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 italic">
                   "Ce que j'apprécie le plus chez NionFar, c'est la sécurité des paiements et la qualité du support client. Je recommande à tous les freelances sénégalais."
                 </p>
                 <div className="flex items-center">

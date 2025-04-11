@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FiStar, FiClock } from 'react-icons/fi/index.js';
@@ -21,8 +20,8 @@ const hasProperty = <T extends object>(obj: T, prop: string): boolean => {
 };
 
 // Images par défaut
-const DEFAULT_IMAGE = '/img/placeholder.svg';
-const DEFAULT_AVATAR = '/img/avatar-placeholder.svg';
+const DEFAULT_IMAGE = '/img/services/default-service.jpg';
+const DEFAULT_AVATAR = '/img/avatar-placeholder.jpg';
 
 export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({ 
   service,
@@ -30,8 +29,7 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
   className = ""
 }) => {
   const router = useRouter();
-  const [imageError, setImageError] = useState(false);
-  const [avatarError, setAvatarError] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Extraire les propriétés communes ou fournir des valeurs par défaut
   const {
@@ -61,7 +59,16 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
   // Gestionnaire de clic pour la navigation
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    router.push(serviceUrl);
+    
+    // Éviter les navigations multiples simultanées
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    router.push(serviceUrl)
+      .catch(err => {
+        console.error('Navigation error:', err);
+        setIsNavigating(false);
+      });
   };
 
   // Rendu des métadonnées réutilisables (rating, delivery time)
@@ -91,12 +98,10 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
     provider && (
       <div className="mt-1.5 sm:mt-2 flex items-center">
         <div className="flex-shrink-0 h-4 w-4 sm:h-5 sm:w-5 relative">
-          <Image
-            src={avatarError ? DEFAULT_AVATAR : (provider.avatar || DEFAULT_AVATAR)}
+          <img
+            src={provider.avatar || DEFAULT_AVATAR}
             alt={provider.name}
-            fill
-            className="rounded-full object-cover"
-            onError={() => setAvatarError(true)}
+            className="rounded-full object-cover w-full h-full"
           />
         </div>
         <span className="ml-1.5 sm:ml-2 text-xs sm:text-sm text-gray-500">
@@ -118,61 +123,64 @@ export const UniversalServiceCard: React.FC<UniversalServiceCardProps> = ({
   // Vue en liste
   if (viewType === 'list') {
     return (
-      <Link href={serviceUrl} className={`block p-2 sm:p-4 hover:bg-gray-50 transition-colors duration-200 ${className}`} onClick={handleClick}>
-        <div className="flex items-start space-x-2 sm:space-x-4">
-          {/* Image du service */}
-          <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 relative">
-            <Image
-              src={imageError ? DEFAULT_IMAGE : (image || DEFAULT_IMAGE)}
-              alt={title}
-              fill
-              className="rounded-lg object-cover"
-              onError={() => setImageError(true)}
-            />
-          </div>
+      <Link href={serviceUrl} legacyBehavior>
+        <a className="block">
+          <div className={`block p-2 sm:p-4 hover:bg-gray-50 transition-colors duration-200 ${className} cursor-pointer`}>
+            <div className="flex items-start space-x-2 sm:space-x-4">
+              {/* Image du service */}
+              <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 relative">
+                <img
+                  src={image || DEFAULT_IMAGE}
+                  alt={title}
+                  className="rounded-lg object-cover w-full h-full"
+                />
+              </div>
 
-          {/* Contenu */}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 truncate">
-              {title}
-            </h3>
-            
-            {renderProvider()}
-            {renderMetadata()}
-            {renderPrice()}
+              {/* Contenu */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 truncate">
+                  {title}
+                </h3>
+                
+                {renderProvider()}
+                {renderMetadata()}
+                {renderPrice()}
+              </div>
+            </div>
           </div>
-        </div>
+        </a>
       </Link>
     );
   }
 
   // Vue en grille (par défaut)
   return (
-    <Link href={serviceUrl} className={`block group ${className}`} onClick={handleClick}>
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
-        {/* Image du service */}
-        <div className="relative h-32 sm:h-40 md:h-48">
-          <Image
-            src={imageError ? DEFAULT_IMAGE : (image || DEFAULT_IMAGE)}
-            alt={title}
-            fill
-            className="object-cover group-hover:opacity-90 transition-opacity duration-200"
-            onError={() => setImageError(true)}
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-          />
-        </div>
+    <Link href={serviceUrl} legacyBehavior>
+      <a className="block">
+        <div className={`block group cursor-pointer ${className}`}>
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+            {/* Image du service */}
+            <div className="relative h-32 sm:h-40 md:h-48">
+              <img
+                src={image || DEFAULT_IMAGE}
+                alt={title}
+                className="object-cover group-hover:opacity-90 transition-opacity duration-200 w-full h-full"
+              />
+            </div>
 
-        {/* Contenu */}
-        <div className="p-2 sm:p-3 md:p-4">
-          <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 truncate">
-            {title}
-          </h3>
+            {/* Contenu */}
+            <div className="p-2 sm:p-3 md:p-4">
+              <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 truncate">
+                {title}
+              </h3>
 
-          {renderProvider()}
-          {renderMetadata()}
-          {renderPrice()}
+              {renderProvider()}
+              {renderMetadata()}
+              {renderPrice()}
+            </div>
+          </div>
         </div>
-      </div>
+      </a>
     </Link>
   );
 };

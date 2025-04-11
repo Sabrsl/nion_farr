@@ -3,6 +3,13 @@ import Link from 'next/link';
 import { FiHeart, FiStar, FiClock } from 'react-icons/fi/index.js';
 import Image from 'next/image';
 import { Service } from '../../types';
+import { formatDistance } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import classNames from 'classnames';
+
+// Utilisez les placeholders locaux
+const DEFAULT_AVATAR = '/images/avatar-placeholder.svg';
+const DEFAULT_SERVICE_IMAGE = '/images/service-placeholder.svg';
 
 interface ServiceCardProps {
   service: Service;
@@ -42,7 +49,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     setImageError(true);
   };
 
-  const imageUrl = images && images.length > 0 ? images[0] : '/placeholder-service.jpg';
+  const imageUrl = images && images.length > 0 ? images[0] : DEFAULT_SERVICE_IMAGE;
 
   // Pour la vue liste, utiliser un conteneur flex-row
   if (viewType === 'list') {
@@ -94,7 +101,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                     alt={(provider as any).username || provider.name || 'Freelance'}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://placehold.co/40x40/6366f1/ffffff?text=${((provider as any).username || provider.name || 'F').charAt(0).toUpperCase()}`;
+                      (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
                     }}
                   />
                 ) : (
@@ -206,7 +213,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                   alt={(provider as any).username || provider.name || 'Freelance'}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://placehold.co/40x40/6366f1/ffffff?text=${((provider as any).username || provider.name || 'F').charAt(0).toUpperCase()}`;
+                    (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
                   }}
                 />
               ) : (

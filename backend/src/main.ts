@@ -10,7 +10,7 @@ import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import * as Sentry from '@sentry/node';
 import { checkRequiredEnvVars } from './config/check-env';
-import { startMemoryMonitoring, setupGracefulShutdown } from './scripts/memory-management';
+import { startMemoryMonitoring, setupGracefulShutdown } from './performance/memory-monitor';
 import { isMemoryConstrainedEnvironment, getMemoryConfig } from './config/environment';
 
 // Garde pour éviter la fermeture du processus Node.js

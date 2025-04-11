@@ -9,7 +9,6 @@ const nextConfig = {
   images: {
     domains: ['nion-farr.vercel.app', 'nionfar.up.railway.app', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
-    unoptimized: true,
   },
   
   // Configuration de production
@@ -124,8 +123,13 @@ const nextConfig = {
   },
 
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+    // En production, utiliser toujours l'URL de production, sinon utiliser la variable d'environnement
+    const isProduction = process.env.NODE_ENV === 'production';
+    const productionApiUrl = 'https://nionfar.up.railway.app/api';
+    const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
+    
     console.log(`[Next.js Config] Configuration des redirections API vers: ${apiUrl}`);
+    console.log(`[Next.js Config] Environnement: ${process.env.NODE_ENV}`);
     
     return [
       // Requêtes générales vers l'API

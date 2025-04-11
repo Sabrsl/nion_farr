@@ -30,14 +30,24 @@ import { Button } from '../../components/ui/Button';
 import { Rating } from '../../components/ui/Rating';
 import { Avatar } from '../../components/ui/Avatar';
 import { Tabs } from '../../components/ui/Tabs';
-import { ServiceReviews } from '../../components/services/ServiceReviews';
-import { ServicePackages } from '../../components/services/ServicePackages';
-import { RelatedServices } from '../../components/services/RelatedServices';
 import { CommanderButton } from '../../components/services/buttons';
+
+// Composants avec chargement différé
+import { 
+  LazyServiceReviews, 
+  LazyServicePackages, 
+  LazyRelatedServices 
+} from '../../components/lazy';
 
 // Services
 import { serviceExplorer } from '../../services/serviceExplorerService';
 import { useAuth } from '../../contexts/AuthContext';
+
+// Performance Monitoring
+import { analyzePagePerformance } from '../../utils/performance';
+
+// JSON-LD Schemas
+import { generateServiceSchema, generateBreadcrumbSchema, formatJSONLD } from '../../utils/schema';
 
 // Types
 import { User } from '../../types';
@@ -178,6 +188,14 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
     }
   }, [service, router]);
 
+  // Initialisation du monitoring de performance
+  useEffect(() => {
+    if (typeof window !== 'undefined' && service) {
+      // Analyser les performances de la page de service
+      analyzePagePerformance(router.asPath, 'service');
+    }
+  }, [router.asPath, service]);
+
   // Gérer les images manquantes
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const target = e.target as HTMLImageElement;
@@ -211,14 +229,54 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
   return (
     <Layout
       title={`${service.title} | Nionfar`}
-      description={service.description || `Service de ${service.provider?.name || 'freelance'} - ${service.title}`}
+      description={service.shortDescription || service.description.substring(0, 160)}
     >
       <Head>
         {!service.isActive && <meta name="robots" content="noindex" />}
         <title>{`${service.title} | Nionfar`}</title>
-        <meta property="og:title" content={`${service.title} | Nionfar`} key="og-title" />
-        <meta property="og:description" content={service.description || `Service de ${service.provider?.name || 'freelance'} - ${service.title}`} key="og-description" />
-        {service.image && <meta property="og:image" content={service.image} key="og-image" />}
+        <meta name="description" content={service.shortDescription || service.description.substring(0, 160)} />
+        <meta property="og:title" content={`${service.title} | Nionfar`} />
+        <meta property="og:description" content={service.shortDescription || service.description.substring(0, 160)} />
+        {service.image && <meta property="og:image" content={service.image} />}
+        <meta property="og:url" content={`https://nionfar.sn/services/${service.slug}`} />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href={`https://nionfar.sn/services/${service.slug}`} />
+        
+        {/* Schéma JSON-LD pour le service */}
+        <script 
+          type="application/ld+json" 
+          dangerouslySetInnerHTML={{ 
+            __html: formatJSONLD(generateServiceSchema({
+              id: service.id,
+              name: service.title,
+              description: service.description,
+              image: service.image,
+              images: service.images,
+              price: service.price,
+              provider: service.provider ? {
+                id: service.provider.id,
+                name: service.provider.name,
+                image: service.provider.avatar
+              } : undefined,
+              rating: service.rating,
+              reviewCount: service.totalReviews,
+              category: service.category?.name
+            }))
+          }} 
+        />
+        
+        {/* Schéma JSON-LD pour les breadcrumbs */}
+        <script 
+          type="application/ld+json" 
+          dangerouslySetInnerHTML={{ 
+            __html: formatJSONLD(generateBreadcrumbSchema([
+              { name: 'Accueil', url: 'https://nionfar.sn/' },
+              { name: 'Services', url: 'https://nionfar.sn/services' },
+              { name: service.category?.name || 'Catégorie', url: `https://nionfar.sn/services/categories/${service.category?.id}` },
+              { name: service.title, url: `https://nionfar.sn/services/${service.slug}` }
+            ]))
+          }}
+        />
       </Head>
       
       {/* Breadcrumbs */}
@@ -269,12 +327,11 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
             {/* Colonne gauche: Galerie d'images */}
             <div className="md:w-3/5 md:flex-shrink-0">
               {/* Image principale */}
-              <div className="relative aspect-video w-full max-w-4xl mx-auto mb-8">
+              <div className="relative h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] xl:h-[500px] mb-3 sm:mb-4 border border-gray-200 rounded-xl overflow-hidden">
                 <img
                   src={service.image || '/img/placeholder.svg'}
                   alt={service.title}
-                  className="w-full h-full object-cover rounded-lg"
-                  onError={handleImageError}
+                  className="w-full h-full object-contain bg-white"
                 />
               </div>
               
@@ -420,13 +477,15 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
                     )}
                     
                     {service.provider && user?.id !== service.provider.id && (
-                      <a
+                      <Link
                         href={`/services/contact/${service.id}`}
-                        className="flex items-center justify-center w-full px-4 py-3 border border-indigo-200 rounded-md text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-sm hover:shadow-md"
+                        legacyBehavior
                       >
-                        <FiMessageCircle className="mr-2 h-5 w-5" />
-                        Contacter le vendeur
-                      </a>
+                        <a className="flex items-center justify-center w-full px-4 py-3 border border-indigo-200 rounded-md text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-sm hover:shadow-md">
+                          <FiMessageCircle className="mr-2 h-5 w-5" />
+                          Contacter le vendeur
+                        </a>
+                      </Link>
                     )}
                     
                     <div className="flex space-x-2">
@@ -452,11 +511,13 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
                 {service.provider && (
                   <div className="p-6 border-t border-gray-200 bg-white">
                     <div className="flex items-center mb-4">
-                      <Avatar
-                        src={service.provider.avatar}
-                        alt={service.provider.name || "Vendeur"}
-                        size="md"
-                      />
+                      <div className="w-10 h-10 rounded-full mr-3 overflow-hidden">
+                        <img
+                          src={service.provider.avatar || '/img/avatar-placeholder.jpg'}
+                          alt={service.provider.name || "Vendeur"}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                       <div className="ml-3">
                         <h3 className="font-semibold text-gray-900">
                           {service.provider.name}
@@ -467,13 +528,15 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
                       </div>
                     </div>
                     
-                    <a
+                    <Link
                       href={`/freelancers/${service.provider.username || service.provider.id}`}
-                      className="w-full flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      legacyBehavior
                     >
-                      <FiUser className="mr-2 h-4 w-4" />
-                      Voir le profil
-                    </a>
+                      <a className="w-full flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        <FiUser className="mr-2 h-4 w-4" />
+                        Voir le profil
+                      </a>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -500,15 +563,11 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
               )}
               
               {activeTab === 'packages' && (
-                <div className="prose prose-indigo max-w-none">
-                  <p>Options et packages disponibles pour ce service.</p>
-                </div>
+                <LazyServicePackages serviceId={service.id} />
               )}
               
               {activeTab === 'reviews' && (
-                <div className="prose prose-indigo max-w-none">
-                  <p>Avis des clients sur ce service.</p>
-                </div>
+                <LazyServiceReviews serviceId={service.id} />
               )}
             </div>
           </div>
@@ -517,47 +576,10 @@ const ServicePage: NextPage<ServicePageProps> = ({ service, relatedServices, tit
         {/* Services similaires */}
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-6">Services similaires</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {relatedServices.map(relatedService => (
-              <a 
-                key={relatedService.id}
-                href={`/services/${relatedService.slug}`}
-                className="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log('[ServicePage] Navigating to related service:', relatedService.slug);
-                  window.location.href = `/services/${relatedService.slug}`;
-                }}
-              >
-                <div className="relative aspect-video">
-                  <img
-                    src={relatedService.image || '/img/placeholder.svg'}
-                    alt={relatedService.title}
-                    className="object-cover w-full h-full"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null; // Éviter les boucles infinies
-                      target.src = '/img/placeholder.svg';
-                    }}
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-medium text-gray-900 line-clamp-2 hover:text-indigo-600 transition-colors">
-                    {relatedService.title}
-                  </h3>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <FiStar className="h-4 w-4 text-amber-400 mr-1" /> 
-                      {relatedService.rating || '4.5'}
-                    </div>
-                    <div className="font-semibold text-indigo-600">
-                      {relatedService.price.toLocaleString()} FCFA
-                    </div>
-                  </div>
-                </div>
-              </a>
-            ))}
-          </div>
+          <LazyRelatedServices 
+            serviceId={service.id} 
+            relatedServices={relatedServices} 
+          />
         </div>
       </div>
 

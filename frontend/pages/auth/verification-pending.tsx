@@ -1,36 +1,58 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Container, Typography, Paper, Box, Button, Alert, AlertTitle } from '@mui/material';
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead.js';
-import EmailIcon from '@mui/icons-material/Email.js';
+import {
+  Container,
+  Box,
+  Heading,
+  Text,
+  Button,
+  Alert,
+  AlertTitle,
+  AlertIcon,
+  Stack,
+  Center,
+  Icon
+} from '@chakra-ui/react';
 import Link from 'next/link';
 
 export default function VerificationPendingPage() {
   const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
+  const [emailFromQuery, setEmailFromQuery] = useState<string | null>(null);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Récupérer l'email stocké lors de l'inscription
-    const pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
-    if (pendingEmail) {
-      setEmail(pendingEmail);
+    // Récupérer l'email de la query ou du sessionStorage
+    if (router.isReady) {
+      const queryEmail = router.query.email as string;
+      const pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
+      
+      if (queryEmail) {
+        setEmailFromQuery(queryEmail);
+      } else if (pendingEmail) {
+        setEmailFromQuery(pendingEmail);
+      }
     }
-  }, []);
+  }, [router.isReady, router.query]);
 
   // Rediriger vers la page d'inscription si aucun email n'est stocké
   useEffect(() => {
     const redirectTimeout = setTimeout(() => {
-      if (!email && document) {
+      if (!emailFromQuery && document) {
         router.push('/auth/register');
       }
     }, 1500);
 
     return () => clearTimeout(redirectTimeout);
-  }, [email, router]);
+  }, [emailFromQuery, router]);
 
   // Gérer le renvoi du code de vérification
-  const handleResendCode = async () => {
-    if (!email) return;
+  const handleResendVerification = async () => {
+    if (!emailFromQuery) return;
+    
+    setIsSubmitting(true);
+    setError('');
     
     try {
       const response = await fetch('/api/auth/resend-verification', {
@@ -38,83 +60,90 @@ export default function VerificationPendingPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: emailFromQuery }),
       });
       
       const data = await response.json();
       
       if (response.ok && data.success) {
-        alert('Un nouveau code de vérification a été envoyé à votre adresse email.');
+        setResendSuccess(true);
       } else {
-        alert(data.error || 'Une erreur est survenue lors de l\'envoi du code de vérification.');
+        setError(data.error || 'Une erreur est survenue lors de l\'envoi du code de vérification.');
       }
     } catch (error) {
       console.error('Erreur lors du renvoi du code:', error);
-      alert('Erreur de connexion au serveur. Veuillez vérifier votre connexion internet et réessayer.');
+      setError('Erreur de connexion au serveur. Veuillez vérifier votre connexion internet et réessayer.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (!email) {
+  if (!emailFromQuery) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
-        <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h5">Redirection en cours...</Typography>
-        </Paper>
+      <Container maxW="sm" mt={8} mb={8}>
+        <Box p={4} borderWidth="1px" borderRadius="lg" boxShadow="md" textAlign="center">
+          <Heading as="h2" size="md">Redirection en cours...</Heading>
+        </Box>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
-          <MarkEmailReadIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-          <Typography component="h1" variant="h4" gutterBottom align="center">
-            Vérifiez votre email
-          </Typography>
-          <Typography variant="body1" align="center" sx={{ mb: 2 }}>
-            Un email de confirmation a été envoyé à :
-          </Typography>
-          <Typography variant="h6" color="primary" fontWeight="bold" align="center" sx={{ mb: 2 }}>
-            {email}
-          </Typography>
-        </Box>
-
-        <Alert severity="info" sx={{ mb: 4 }}>
-          <AlertTitle>Instructions</AlertTitle>
-          <Typography variant="body2">
-            1. Vérifiez votre boîte de réception (et éventuellement vos spams)
-          </Typography>
-          <Typography variant="body2">
-            2. Cliquez sur le lien de confirmation dans l'email
-          </Typography>
-          <Typography variant="body2">
-            3. Vous serez redirigé vers la page de connexion une fois votre compte vérifié
-          </Typography>
+    <Container maxW="md" mt={8} mb={8}>
+      <Box p={6} borderWidth="1px" borderRadius="lg" boxShadow="md" textAlign="center">
+        <Heading as="h1" size="lg" mb={4}>
+          Vérification de compte requise
+        </Heading>
+        
+        <Text mb={2}>
+          Un lien de vérification a été envoyé à :
+        </Text>
+        <Text fontWeight="bold" color="blue.500" mb={6}>
+          {emailFromQuery}
+        </Text>
+        
+        <Alert status="info" mb={6}>
+          <AlertIcon />
+          <Box>
+            <AlertTitle>Instructions</AlertTitle>
+            <Text fontSize="sm">1. Vérifiez votre boîte de réception (et vos spams)</Text>
+            <Text fontSize="sm">2. Cliquez sur le lien de confirmation dans l'email</Text>
+            <Text fontSize="sm">3. Vous serez redirigé vers la page de connexion</Text>
+          </Box>
         </Alert>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Button 
-            variant="outlined" 
-            color="primary" 
-            startIcon={<EmailIcon />}
-            onClick={handleResendCode}
-            fullWidth
+        
+        {resendSuccess && (
+          <Alert status="success" mb={6}>
+            <AlertIcon />
+            Un nouveau lien de vérification a été envoyé !
+          </Alert>
+        )}
+        
+        {error && (
+          <Alert status="error" mb={6}>
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
+        
+        <Stack spacing={4} direction={{ base: 'column', md: 'row' }} justifyContent="center">
+          <Button
+            colorScheme="blue"
+            onClick={handleResendVerification}
+            isDisabled={isSubmitting}
           >
-            Renvoyer l'email de confirmation
+            Renvoyer le lien
           </Button>
           
-          <Button 
-            variant="contained" 
-            color="primary"
-            component={Link}
+          <Button
+            variant="outline"
+            as={Link}
             href="/auth/login"
-            fullWidth
           >
-            Aller à la page de connexion
+            Aller à la connexion
           </Button>
-        </Box>
-      </Paper>
+        </Stack>
+      </Box>
     </Container>
   );
 } 

@@ -18,6 +18,7 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [retryAttempt, setRetryAttempt] = useState(0);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -25,6 +26,11 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    
+    // Effacer les erreurs quand l'utilisateur modifie les champs
+    if (errorMessage && (name === 'emailOrPhone' || name === 'password')) {
+      setErrorMessage('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,10 +38,51 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
     setIsLoading(true);
     setErrorMessage('');
 
+    // Validation de base côté client
+    if (!credentials.emailOrPhone.trim()) {
+      setErrorMessage('Veuillez entrer votre email ou numéro de téléphone');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!credentials.password) {
+      setErrorMessage('Veuillez entrer votre mot de passe');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await authService.login(credentials, true, redirectUrl);
       
       if (!response.success) {
+        // Si l'erreur est liée à la connexion réseau et que c'est la première tentative
+        if ((response.error?.includes('réseau') || response.error?.includes('serveur')) && retryAttempt === 0) {
+          // Incrémenter le compteur de tentatives
+          setRetryAttempt(1);
+          
+          // Attendre 2 secondes avant de réessayer
+          setTimeout(async () => {
+            console.log("🔄 Nouvelle tentative de connexion automatique...");
+            try {
+              const retryResponse = await authService.login(credentials, true, redirectUrl);
+              
+              if (!retryResponse.success) {
+                setErrorMessage(retryResponse.error || 'Échec de la connexion après nouvelle tentative');
+              }
+            } catch (retryError) {
+              console.error('Erreur lors de la nouvelle tentative:', retryError);
+              setErrorMessage('Échec de la connexion après nouvelle tentative');
+            } finally {
+              setIsLoading(false);
+            }
+          }, 2000);
+          
+          // Mettre à jour le message d'erreur pour informer l'utilisateur
+          setErrorMessage('Problème de connexion, nouvelle tentative en cours...');
+          return;
+        }
+        
+        // Afficher l'erreur
         setErrorMessage(response.error || 'Identifiants incorrects. Veuillez réessayer.');
       }
     } catch (error) {
@@ -52,10 +99,14 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
         <motion.div 
           initial={{ opacity: 0, x: -10 }} 
           animate={{ opacity: 1, x: 0 }} 
-          className="mb-6 bg-red-50 border-l-4 border-red-400 text-red-700 rounded-md p-3 sm:p-4 flex items-start"
+          className={`mb-6 border-l-4 rounded-md p-3 sm:p-4 flex items-start ${
+            errorMessage.includes('tentative en cours') 
+              ? 'bg-blue-50 border-blue-400 text-blue-700' 
+              : 'bg-red-50 border-red-400 text-red-700'
+          }`}
         >
           <div className="flex-shrink-0 mt-0.5">
-            <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <svg className={`h-5 w-5 ${errorMessage.includes('tentative en cours') ? 'text-blue-400' : 'text-red-400'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9v4a1 1 0 102 0V9a1 1 0 10-2 0zm0-4a1 1 0 112 0 1 1 0 01-2 0z" clipRule="evenodd" />
             </svg>
           </div>
