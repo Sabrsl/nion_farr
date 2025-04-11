@@ -6,6 +6,15 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Protection contre l'exécution récursive
+if (process.env.PRE_PUSH_RUNNING === 'true') {
+  console.log('🔄 Détection d\'une exécution récursive, sortie immédiate avec succès');
+  process.exit(0);
+}
+
+// Marquer que le script est en cours d'exécution
+process.env.PRE_PUSH_RUNNING = 'true';
+
 console.log('🔍 Vérification du build Railway avant le push...');
 
 try {
@@ -77,4 +86,7 @@ try {
   // Ne pas échouer pour éviter de bloquer le push
   console.log('⚠️ Attention: Erreur durant la vérification, mais le push est autorisé.');
   process.exit(0);
+} finally {
+  // Nettoyer la variable d'environnement
+  process.env.PRE_PUSH_RUNNING = 'false';
 } 
