@@ -253,9 +253,9 @@ export class ServiceValidationService {
     }
     
     // Check for images (up to 15 points)
-    const hasImages = service.images?.length > 0 || service.image;
+    const hasImages = service.images?.length > 0;
     if (hasImages) {
-      const imagesCount = (service.images?.length || 0) + (service.image ? 1 : 0);
+      const imagesCount = service.images?.length || 0;
       const imageScore = Math.min(15, imagesCount * 5);
       score += imageScore;
       detailedReport.push({
@@ -399,7 +399,7 @@ export class ServiceValidationService {
     }
     
     // Get admin user
-    const admin = await this.usersService.findOneById(adminId);
+    const admin = await this.usersService.findOne(adminId);
     if (!admin) {
       throw new NotFoundException(`Admin with ID ${adminId} not found`);
     }
