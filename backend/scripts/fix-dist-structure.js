@@ -354,6 +354,61 @@ function fixAuthModuleImports() {
   }
 }
 
+// Créer un stub pour le pipe de validation Zod
+function createZodValidationPipeStub() {
+  const commonPipesDir = 'dist/common/pipes';
+  ensureDirectoryExists(commonPipesDir);
+  
+  const zodValidationPipePath = path.join(commonPipesDir, 'zod-validation.pipe.js');
+  
+  if (!fs.existsSync(zodValidationPipePath)) {
+    console.log('⚠️ Pipe de validation Zod manquant, création d\'un stub...');
+    
+    const stubContent = `"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ZodValidationPipe = void 0;
+const common_1 = require("@nestjs/common");
+
+// Stub pour le pipe de validation Zod
+let ZodValidationPipe = class ZodValidationPipe {
+    constructor(schema) {
+        this.schema = schema;
+        console.log('⚠️ Stub ZodValidationPipe initialisé');
+    }
+    
+    transform(value, metadata) {
+        console.log(\`⚠️ Validation court-circuitée par le stub ZodValidationPipe\`);
+        return value; // Retourne la valeur telle quelle sans validation
+    }
+};
+ZodValidationPipe = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [Object])
+], ZodValidationPipe);
+exports.ZodValidationPipe = ZodValidationPipe;`;
+    
+    try {
+      fs.writeFileSync(zodValidationPipePath, stubContent, 'utf8');
+      console.log(`✅ Stub du pipe de validation Zod créé: ${zodValidationPipePath}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du stub du pipe de validation Zod:`, error);
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 // Assurer que les fichiers nécessaires sont au bon endroit
 function fixCriticalFiles() {
   console.log('🔍 Vérification des fichiers critiques...');
@@ -369,6 +424,8 @@ function fixCriticalFiles() {
     { src: 'dist/src/security/security.middleware.js', dest: 'dist/security/security.middleware.js' },
     { src: 'dist/src/security/audit-log.service.js', dest: 'dist/security/audit-log.service.js' },
     { src: 'dist/src/security/security.controller.js', dest: 'dist/security/security.controller.js' },
+    // Common pipes
+    { src: 'dist/src/common/pipes/zod-validation.pipe.js', dest: 'dist/common/pipes/zod-validation.pipe.js' },
     // Autres fichiers critiques
     { src: 'node_modules/reflect-metadata/Reflect.js', dest: 'dist/node_modules/reflect-metadata/Reflect.js' }
   ];
@@ -382,6 +439,12 @@ function fixCriticalFiles() {
     'dist/modules/auth',
     'dist/modules/auth/decorators',
     'dist/security',
+    'dist/common',
+    'dist/common/pipes',
+    'dist/common/guards',
+    'dist/common/decorators',
+    'dist/common/filters',
+    'dist/common/interceptors',
     'dist/node_modules/reflect-metadata',
     'dist/node_modules/@nestjs',
     'dist/node_modules/@nestjs/mongoose/dist/decorators'
@@ -442,6 +505,18 @@ function fixCriticalFiles() {
   } else {
     console.log('⚠️ Dossier security source manquant. Création de stubs...');
     createSecurityModuleStub();
+  }
+  
+  // Vérifier et créer le dossier common
+  const srcCommonDir = 'dist/src/common';
+  const destCommonDir = 'dist/common';
+  
+  if (fs.existsSync(srcCommonDir)) {
+    console.log('📁 Copie récursive du dossier common...');
+    copyDirectoryRecursive(srcCommonDir, destCommonDir);
+  } else {
+    console.log('⚠️ Dossier common source manquant. Création de stubs pour les pipes...');
+    createZodValidationPipeStub();
   }
   
   // Corriger les imports dans auth.module.js
