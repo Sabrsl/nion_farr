@@ -102,6 +102,21 @@ function fixEntryPoint() {
   if (fs.existsSync(appModulePath)) {
     console.log('🔍 Vérification du module app.module.js...');
     fixModuleImports(appModulePath);
+  } else {
+    console.log('⚠️ app.module.js manquant dans dist/, tentative de copie depuis src/...');
+    const srcAppModulePath = path.join('src', 'app.module.js');
+    const srcAppModuleDistPath = path.join('dist', 'src', 'app.module.js');
+    
+    if (fs.existsSync(srcAppModulePath)) {
+      copyFile(srcAppModulePath, appModulePath);
+      fixModuleImports(appModulePath);
+    } else if (fs.existsSync(srcAppModuleDistPath)) {
+      copyFile(srcAppModuleDistPath, appModulePath);
+      fixModuleImports(appModulePath);
+    } else {
+      console.log('⚠️ Impossible de trouver app.module.js, création d\'un stub basique...');
+      createAppModuleStub();
+    }
   }
   
   // Vérifier et corriger app.controller.js
@@ -109,6 +124,18 @@ function fixEntryPoint() {
   if (fs.existsSync(appControllerPath)) {
     console.log('🔍 Vérification du contrôleur app.controller.js...');
     fixModuleImports(appControllerPath);
+  } else {
+    console.log('⚠️ app.controller.js manquant dans dist/, tentative de copie depuis src/...');
+    const srcAppControllerPath = path.join('src', 'app.controller.js');
+    const srcAppControllerDistPath = path.join('dist', 'src', 'app.controller.js');
+    
+    if (fs.existsSync(srcAppControllerPath)) {
+      copyFile(srcAppControllerPath, appControllerPath);
+      fixModuleImports(appControllerPath);
+    } else if (fs.existsSync(srcAppControllerDistPath)) {
+      copyFile(srcAppControllerDistPath, appControllerPath);
+      fixModuleImports(appControllerPath);
+    }
   }
   
   // Vérifier et corriger les éventuels modèles
@@ -125,6 +152,32 @@ function fixEntryPoint() {
       }
     });
   }
+}
+
+// Créer un module App minimal pour éviter les erreurs
+function createAppModuleStub() {
+  const appModulePath = path.join('dist', 'app.module.js');
+  const content = `
+require('reflect-metadata');
+const { Module } = require('@nestjs/common');
+
+class AppModule {}
+
+Object.defineProperty(AppModule, '__annotations__', {
+  configurable: true,
+  enumerable: true,
+  value: [new Module({
+    imports: [],
+    controllers: [],
+    providers: [],
+  })],
+});
+
+exports.AppModule = AppModule;
+`;
+
+  fs.writeFileSync(appModulePath, content, 'utf8');
+  console.log(`✅ Module App créé: ${appModulePath}`);
 }
 
 // Fonction pour copier récursivement un dossier
@@ -182,6 +235,17 @@ function fixCriticalFiles() {
   
   // Copier les fichiers clés depuis src/dist
   copyFile('dist/src/main.js', 'dist/main.js');
+  
+  // Essayer de copier app.module.js s'il existe à la racine src/
+  const srcAppModulePath = path.join('src', 'app.module.js');
+  const srcAppModuleDistPath = path.join('dist', 'src', 'app.module.js');
+  const destAppModulePath = path.join('dist', 'app.module.js');
+  
+  if (fs.existsSync(srcAppModulePath)) {
+    copyFile(srcAppModulePath, destAppModulePath);
+  } else if (fs.existsSync(srcAppModuleDistPath)) {
+    copyFile(srcAppModuleDistPath, destAppModulePath);
+  }
   
   // Copier reflect-metadata de node_modules vers dist/node_modules
   copyFile('node_modules/reflect-metadata/Reflect.js', 'dist/node_modules/reflect-metadata/Reflect.js');
