@@ -12,6 +12,63 @@ echo "👉 Vérification du build..."
 echo "📂 Contenu du dossier dist/ :"
 ls -la dist/
 
+# Création des décorateurs d'authentification manquants
+echo "🔄 VÉRIFICATION CRITIQUE: Création des décorateurs d'authentification manquants..."
+
+# Créer le dossier pour les décorateurs
+mkdir -p dist/modules/auth/decorators
+
+# Créer le décorateur public.decorator.js
+cat > dist/modules/auth/decorators/public.decorator.js << EOL
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Public = exports.IS_PUBLIC_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.IS_PUBLIC_KEY = 'isPublic';
+exports.Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
+EOL
+echo "✅ Décorateur public.decorator.js créé avec succès"
+
+# Créer le décorateur roles.decorator.js si présent dans le code source
+if [ -f "src/modules/auth/decorators/roles.decorator.ts" ]; then
+  cat > dist/modules/auth/decorators/roles.decorator.js << EOL
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Roles = exports.ROLES_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.ROLES_KEY = 'roles';
+exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
+EOL
+  echo "✅ Décorateur roles.decorator.js créé avec succès"
+fi
+
+# Créer un fichier index.js pour faciliter les imports
+cat > dist/modules/auth/decorators/index.js << EOL
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./public.decorator.js"), exports);
+EOL
+if [ -f "src/modules/auth/decorators/roles.decorator.ts" ]; then
+  echo "__exportStar(require(\"./roles.decorator.js\"), exports);" >> dist/modules/auth/decorators/index.js
+fi
+echo "✅ Fichier index.js des décorateurs créé avec succès"
+
 # Vérification plus robuste et création forcée du fichier app.service.js
 echo "🔄 VÉRIFICATION CRITIQUE: Création forcée de app.service.js pour assurer le démarrage..."
 cat > dist/app.service.js << EOL
@@ -61,6 +118,9 @@ if [ -f "dist/app.controller.js" ]; then
   # Remplacement de la ligne d'import problématique
   sed -i 's|require.*app.service.*|require("./app.service.js");|' dist/app.controller.js
   
+  # Correction des imports vers le décorateur Public
+  sed -i 's|require.*modules/auth/decorators/public.decorator.*|require("./modules/auth/decorators/public.decorator.js");|' dist/app.controller.js
+  
   # Vérification supplémentaire
   if grep -q "app.service.js" dist/app.controller.js; then
     echo "✅ Import de app.service.js corrigé dans app.controller.js"
@@ -83,6 +143,7 @@ if [ -f "dist/app.controller.js" ]; then
       echo 'exports.AppController = void 0;'
       echo 'const common_1 = require("@nestjs/common");'
       echo 'const app_service_1 = require("./app.service.js");'
+      echo 'const public_decorator_1 = require("./modules/auth/decorators/public.decorator.js");'
     } > dist/app.controller.js.new
     
     # Extraire tout sauf les 15 premières lignes de l'original
@@ -136,12 +197,18 @@ fi
 # Options de performance
 export NODE_OPTIONS="--max-old-space-size=512 --enable-source-maps"
 
-# Vérification finale de la présence du fichier critique
-echo "🔍 Vérification finale de app.service.js..."
+# Vérification finale de la présence des fichiers critiques
+echo "🔍 Vérification finale des fichiers critiques..."
 if [ -f "dist/app.service.js" ]; then
-  echo "✅ app.service.js est présent et prêt pour le démarrage!"
+  echo "✅ app.service.js est présent!"
 else
   echo "⚠️ app.service.js est toujours manquant malgré les corrections!"
+fi
+
+if [ -f "dist/modules/auth/decorators/public.decorator.js" ]; then
+  echo "✅ public.decorator.js est présent!"
+else
+  echo "⚠️ public.decorator.js est toujours manquant malgré les corrections!"
 fi
 
 # Démarrage avec différentes stratégies de repli

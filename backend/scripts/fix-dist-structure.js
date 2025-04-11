@@ -348,6 +348,9 @@ function fixCriticalFiles() {
   ensureDirectoryExists('dist/node_modules/@nestjs');
   ensureDirectoryExists('dist/node_modules/@nestjs/mongoose/dist/decorators');
   
+  // Créer les décorateurs d'authentification qui sont souvent manquants
+  fixAuthDecorators();
+  
   // Copier les fichiers clés depuis src/dist
   const mainJsPath = path.join('dist', 'main.js');
   if (!fs.existsSync(mainJsPath)) {
@@ -387,6 +390,102 @@ function fixCriticalFiles() {
   
   // Copier reflect-metadata de node_modules vers dist/node_modules
   copyFile('node_modules/reflect-metadata/Reflect.js', 'dist/node_modules/reflect-metadata/Reflect.js');
+}
+
+// Fonction pour créer les décorateurs d'authentification manquants
+function fixAuthDecorators() {
+  console.log('🔍 Vérification des décorateurs d\'authentification...');
+  
+  // Créer le décorateur Public s'il est manquant
+  const publicDecoratorDir = path.join('dist', 'modules', 'auth', 'decorators');
+  const publicDecoratorPath = path.join(publicDecoratorDir, 'public.decorator.js');
+  
+  ensureDirectoryExists(publicDecoratorDir);
+  
+  if (!fs.existsSync(publicDecoratorPath)) {
+    console.log('⚠️ Décorateur Public manquant, création...');
+    
+    const publicDecoratorContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Public = exports.IS_PUBLIC_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.IS_PUBLIC_KEY = 'isPublic';
+exports.Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
+`;
+    
+    try {
+      fs.writeFileSync(publicDecoratorPath, publicDecoratorContent, 'utf8');
+      console.log(`✅ Décorateur Public créé avec succès dans ${publicDecoratorPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du décorateur Public: ${error}`);
+    }
+  } else {
+    console.log('✅ Décorateur Public existant, vérification du contenu...');
+    fixModuleImports(publicDecoratorPath);
+  }
+  
+  // Créer aussi le fichier index.js dans le dossier decorators pour faciliter les imports
+  const decoratorsIndexPath = path.join(publicDecoratorDir, 'index.js');
+  
+  if (!fs.existsSync(decoratorsIndexPath)) {
+    console.log('⚠️ Index des décorateurs manquant, création...');
+    
+    const indexContent = `
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./public.decorator.js"), exports);
+// Exports d'autres décorateurs si nécessaire
+// __exportStar(require("./roles.decorator.js"), exports);
+`;
+    
+    try {
+      fs.writeFileSync(decoratorsIndexPath, indexContent, 'utf8');
+      console.log(`✅ Index des décorateurs créé avec succès dans ${decoratorsIndexPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création de l'index des décorateurs: ${error}`);
+    }
+  }
+  
+  // Vérifier et créer le décorateur Roles s'il est utilisé
+  const rolesDecoratorPath = path.join(publicDecoratorDir, 'roles.decorator.js');
+  const srcRolesPath = path.join('src', 'modules', 'auth', 'decorators', 'roles.decorator.ts');
+  
+  if (fs.existsSync(srcRolesPath) && !fs.existsSync(rolesDecoratorPath)) {
+    console.log('⚠️ Décorateur Roles manquant alors que la source existe, création...');
+    
+    const rolesDecoratorContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Roles = exports.ROLES_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.ROLES_KEY = 'roles';
+exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
+`;
+    
+    try {
+      fs.writeFileSync(rolesDecoratorPath, rolesDecoratorContent, 'utf8');
+      console.log(`✅ Décorateur Roles créé avec succès dans ${rolesDecoratorPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du décorateur Roles: ${error}`);
+    }
+  }
 }
 
 // Fonction principale
