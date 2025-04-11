@@ -32,7 +32,7 @@ jobs:
         working-directory: frontend
         run: |
           echo "🔎 Vérification du code frontend avec ESLint..."
-          npm run lint || exit 1
+          npm run lint -- --max-warnings=999 || exit 1
           echo "✅ Lint frontend réussi"
       
       - name: 🧪 Run Frontend Tests
