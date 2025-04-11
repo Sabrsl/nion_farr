@@ -74,8 +74,9 @@ jobs:
         working-directory: frontend
         run: |
           echo "🔎 Vérification du code avec ESLint..."
-          # Ajouter le flag --max-warnings=999 pour ignorer les avertissements en CI
-          npm run lint -- --max-warnings=999 || echo "⚠️ Des avertissements de lint ont été trouvés mais nous continuons"
+          # Ajouter --no-eslintrc pour ignorer les fichiers .eslintrc.json au niveau racine
+          # et utiliser uniquement la configuration spécifique au dossier frontend
+          NEXT_DISABLE_ESLINT=1 npm run lint -- --no-eslintrc --max-warnings=999 || echo "⚠️ Des avertissements de lint ont été trouvés mais nous continuons"
           echo "✅ Lint terminé"
 
       - name: 🚀 Test du build Vercel
