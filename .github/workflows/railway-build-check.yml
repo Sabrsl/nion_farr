@@ -269,7 +269,7 @@ jobs:
           cat railway-verification-report.txt
 
       - name: 📤 Sauvegarder rapport comme artefact
-        uses: actions/upload-artifact@v3.0.0
+        uses: actions/upload-artifact@v2
         with:
           name: railway-verification-report
           path: backend/railway-verification-report.txt
