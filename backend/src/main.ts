@@ -77,9 +77,9 @@ async function bootstrap() {
       const port = parseInt(process.env.PORT || '3000', 10);
       console.log(`🚨 DIAGNOSTIC NESTJS: process.env.PORT=${process.env.PORT}, utilisant le port ${port}`);
       
-      // Détection du mode serverless (Vercel)
-      const isServerless = process.env.VERCEL === '1' || process.env.SERVERLESS === 'true';
-      console.log(`Mode serverless: ${isServerless ? 'OUI' : 'NON'}`);
+      // Détection du mode Render
+      const isRender = process.env.IS_RENDER === 'true';
+      console.log(`Déploiement sur Render: ${isRender ? 'OUI' : 'NON'}`);
       
       // Configuration Sentry en production - disabled for memory optimization
       if (environment === 'production' && !memoryConfig.isConstrained) {
@@ -117,7 +117,7 @@ async function bootstrap() {
       const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
       const allowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS')?.split(',') || [frontendUrl];
       
-      // Configuration CORS plus permissive pour assurer la compatibilité avec Vercel
+      // Configuration CORS
       console.log(`🔒 Configuration CORS pour: ${frontendUrl}`);
       app.enableCors({
         origin: (origin, callback) => {
@@ -128,10 +128,8 @@ async function bootstrap() {
           }
           
           // Vérifier si l'origine est dans la liste des origines autorisées
-          // Si allowedOrigins est 'true', toutes les origines sont autorisées
           if (allowedOrigins.includes(origin) || 
               allowedOrigins.includes('*') || 
-              origin.includes('vercel.app') || 
               origin.includes('localhost')) {
             callback(null, true);
           } else {
@@ -196,7 +194,7 @@ async function bootstrap() {
           status: 'ok',
           message: 'API running',
           timestamp: new Date().toISOString(),
-          deployment: 'vercel',
+          deployment: 'render',
           uptime: process.uptime(),
           is_alive: true
         });
@@ -213,7 +211,7 @@ async function bootstrap() {
           environment,
           deployment: {
             platform: memoryConfig.deploymentPlatform,
-            vercel: process.env.VERCEL === '1',
+            render: process.env.IS_RENDER === 'true',
           },
           system: {
             uptime: process.uptime(),
@@ -237,42 +235,35 @@ async function bootstrap() {
         return res.send('pong');
       });
 
-      // En mode serverless, on n'appelle pas app.listen()
-      if (!isServerless) {
-        // Démarrage du serveur - point critique, doit toujours être exécuté
-        await app.listen(port, '0.0.0.0');
-        
-        // Marquer que le bootstrap est complété
-        isBootstrapComplete = true;
-        
-        console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
-        console.log(`✅ NionFar API est prêt et écoute sur http://0.0.0.0:${port}`);
-        console.log(`✅ Routes de Healthcheck disponibles:`);
-        console.log(`  - http://0.0.0.0:${port}/health`);
-        console.log(`  - http://0.0.0.0:${port}/health/ping`);
-        console.log(`  - http://0.0.0.0:${port}/api/health`);
-        
-        // Afficher l'information sur le déploiement
-        const isVercel = process.env.VERCEL === '1';
-        const appUrl = configService.get<string>('APP_URL') || `http://localhost:${port}`;
-        
-        console.log(`Serveur NionFar API démarré sur le port ${port}`);
-        console.log(`🚀 Environnement: ${environment} (${memoryConfig.deploymentPlatform})`);
-        console.log(`🚀 URL: ${appUrl}`);
-        
-        if (memoryConfig.isConstrained) {
-          console.log(`🧠 Mode d'optimisation mémoire activé - certaines fonctionnalités sont désactivées`);
-        }
-
-        // Start memory monitoring 
-        startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
-
-        // Log CORS configuration
-        console.log(`🔒 CORS configuré pour: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
-      } else {
-        console.log('🚀 Mode serverless détecté, pas de démarrage du serveur HTTP');
-        console.log('✅ NionFar API est configuré pour fonctionner en tant que fonction serverless sur Vercel');
+      // Démarrage du serveur - point critique, doit toujours être exécuté
+      await app.listen(port, '0.0.0.0');
+      
+      // Marquer que le bootstrap est complété
+      isBootstrapComplete = true;
+      
+      console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
+      console.log(`✅ NionFar API est prêt et écoute sur http://0.0.0.0:${port}`);
+      console.log(`✅ Routes de Healthcheck disponibles:`);
+      console.log(`  - http://0.0.0.0:${port}/health`);
+      console.log(`  - http://0.0.0.0:${port}/health/ping`);
+      console.log(`  - http://0.0.0.0:${port}/api/health`);
+      
+      // Afficher l'information sur le déploiement
+      const appUrl = configService.get<string>('APP_URL') || `http://localhost:${port}`;
+      
+      console.log(`Serveur NionFar API démarré sur le port ${port}`);
+      console.log(`🚀 Environnement: ${environment} (${memoryConfig.deploymentPlatform})`);
+      console.log(`🚀 URL: ${appUrl}`);
+      
+      if (memoryConfig.isConstrained) {
+        console.log(`🧠 Mode d'optimisation mémoire activé - certaines fonctionnalités sont désactivées`);
       }
+
+      // Start memory monitoring 
+      startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
+
+      // Log CORS configuration
+      console.log(`🔒 CORS configuré pour: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
 
     } catch (error) {
       console.error('❌ Erreur catastrophique lors de la création de l\'application NestJS:', error);
@@ -282,7 +273,6 @@ async function bootstrap() {
     }
   } catch (outerError) {
     console.error('❌ ERREUR FATALE lors du démarrage:', outerError);
-    // Ne pas terminer le processus pour éviter que Vercel ne redémarre en boucle
     
     // Démarrer un serveur HTTP minimal de secours
     const http = require('http');
@@ -305,7 +295,6 @@ async function bootstrap() {
 }
 
 // Garde supplémentaire pour maintenir le processus en vie même après le bootstrap
-// Important: cette fonction est cruciale pour Vercel
 process.nextTick(() => {
   setTimeout(() => {
     if (!isBootstrapComplete) {

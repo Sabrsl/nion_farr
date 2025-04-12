@@ -13,7 +13,7 @@ services:
       - key: APP_URL
         value: https://nionfar-backend.onrender.com
       - key: FRONTEND_URL
-        value: https://nion-farr.vercel.app
+        value: https://nionfar-frontend.onrender.com
       - key: PORT
         value: 3001
       - key: IS_RENDER
@@ -21,7 +21,7 @@ services:
       - key: API_PREFIX
         value: api
       - key: CORS_ALLOWED_ORIGINS
-        value: https://nion-farr.vercel.app,https://www.nion-farr.vercel.app,http://localhost:3000
+        value: https://nionfar-frontend.onrender.com,http://localhost:3000
       - key: DB_HOST
         value: clusternionfar.rjuvvf7.mongodb.net
       - key: DB_PORT

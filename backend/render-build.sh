@@ -20,7 +20,7 @@ rimraf dist
 if [ -n "$MONGODB_URI" ]; then
   echo "🔍 Vérification de l'URL MongoDB..."
   # Suppression de l'option batchsize qui cause l'erreur
-  FIXED_MONGODB_URI=$(echo "$MONGODB_URI" | sed 's/&batchsize=[^&]*//g' | sed 's/?batchsize=[^&]*&/?/g')
+  FIXED_MONGODB_URI=$(echo "$MONGODB_URI" | sed 's/&batchsize=[^&]*//g' | sed 's/?batchsize=[^&]*&/?/g' | sed 's/\?batchsize=[^&]*$/g/')
   
   # Si l'URL a été modifiée, on la met à jour
   if [ "$MONGODB_URI" != "$FIXED_MONGODB_URI" ]; then
@@ -56,8 +56,8 @@ echo "IS_RENDER=true" > .env.render
 echo "NODE_ENV=production" >> .env.render
 echo "PORT=${PORT:-3001}" >> .env.render
 echo "APP_URL=https://nionfar-backend.onrender.com" >> .env.render
-echo "FRONTEND_URL=https://nion-farr.vercel.app" >> .env.render
-echo "CORS_ALLOWED_ORIGINS=https://nion-farr.vercel.app,https://www.nion-farr.vercel.app,http://localhost:3000" >> .env.render
+echo "FRONTEND_URL=https://nionfar-frontend.onrender.com" >> .env.render
+echo "CORS_ALLOWED_ORIGINS=https://nionfar-frontend.onrender.com,http://localhost:3000" >> .env.render
 
 # Si nous avons corrigé l'URL MongoDB, l'écrire dans .env.render
 if [ -n "$MONGODB_URI" ] && [ "$MONGODB_URI" != "$FIXED_MONGODB_URI" ]; then

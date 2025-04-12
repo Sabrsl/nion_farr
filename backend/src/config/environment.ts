@@ -20,16 +20,10 @@ export const isMemoryConstrainedEnvironment = (): boolean => {
   const heapSizeLimit = heapSizeMatch ? parseInt(heapSizeMatch[1], 10) : 0;
   const hasLimitedHeapSize = heapSizeLimit > 0 && heapSizeLimit <= 1024; // 1GB or less
   
-  // Check for Render free tier - désactivé si IS_RENDER est false
+  // Check for Render free tier
   const isRenderFreeTier = process.env.IS_RENDER === 'true' && 
     process.env.RENDER_SERVICE_TYPE === 'web' &&
     !process.env.RENDER_SERVICE_PAID;
-    
-  // Check for Vercel
-  const isVercelDeployment = process.env.VERCEL === '1';
-  
-  // Check if we're on Vercel Pro plan
-  const isVercelPro = isVercelDeployment && process.env.VERCEL_PLAN === 'pro';
     
   // Check for user synchronization disable flag
   const disableUserSync = process.env.DISABLE_USER_SYNC === 'true';
@@ -37,13 +31,8 @@ export const isMemoryConstrainedEnvironment = (): boolean => {
   // Only apply constraints in production
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // If we're on Vercel Pro, we're less constrained
-  if (isVercelPro) {
-    return isProduction && (memoryOptimized || hasLimitedHeapSize || disableUserSync);
-  }
-  
-  // Otherwise use standard constraints
-  return isProduction && (memoryOptimized || hasLimitedHeapSize || isRenderFreeTier || isVercelDeployment || disableUserSync);
+  // Use standard constraints
+  return isProduction && (memoryOptimized || hasLimitedHeapSize || isRenderFreeTier || disableUserSync);
 };
 
 /**
@@ -51,8 +40,6 @@ export const isMemoryConstrainedEnvironment = (): boolean => {
  */
 export const getMemoryConfig = () => {
   const isConstrained = isMemoryConstrainedEnvironment();
-  const isVercel = process.env.VERCEL === '1';
-  const isVercelPro = isVercel && process.env.VERCEL_PLAN === 'pro';
   const isRender = process.env.IS_RENDER === 'true';
   
   // Get heap size from NODE_OPTIONS if available
@@ -62,24 +49,24 @@ export const getMemoryConfig = () => {
   
   return {
     isConstrained,
-    // Adjust pool size based on plan
-    mongoosePoolSize: isConstrained ? (isVercelPro ? 5 : 2) : 10,
-    // Use more detailed logging on Pro plans
-    logLevel: isConstrained ? (isVercelPro ? 'warn' : 'error') : 'info',
-    // Monitoring interval - more frequent on Pro plans
+    // Adjust pool size based on environment
+    mongoosePoolSize: isConstrained ? 2 : 10,
+    // Use more detailed logging in non-constrained environments
+    logLevel: isConstrained ? 'error' : 'info',
+    // Monitoring interval
     memoryMonitoringInterval: isConstrained 
-      ? (isVercelPro ? 10 * 60 * 1000 : 30 * 60 * 1000) // 10 min on Pro, 30 min on free
-      : 60 * 1000, // 1 min in non-constrained mode
+      ? 30 * 60 * 1000  // 30 min in constrained mode
+      : 60 * 1000,      // 1 min in non-constrained mode
     // Only disable features on very constrained environments
-    disableBackups: isConstrained && !isVercelPro,
-    disableScheduledTasks: isConstrained && !isVercelPro,
+    disableBackups: isConstrained,
+    disableScheduledTasks: isConstrained,
     // User sync settings
-    disableUserSync: process.env.DISABLE_USER_SYNC === 'true' || (isConstrained && !isVercelPro),
-    // Memory thresholds - more conservative on Pro plans because we have more memory
-    memoryWarningThreshold: isVercelPro ? 85 : 75, // percentage
-    memoryCriticalThreshold: isVercelPro ? 90 : 85, // percentage
+    disableUserSync: process.env.DISABLE_USER_SYNC === 'true' || isConstrained,
+    // Memory thresholds
+    memoryWarningThreshold: 75, // percentage
+    memoryCriticalThreshold: 85, // percentage
     // Server info
-    deploymentPlatform: isVercel ? `Vercel${isVercelPro ? ' Pro' : ''}` : (isRender ? 'Render' : 'Other'),
+    deploymentPlatform: isRender ? 'Render' : 'Other',
     heapSizeMB: heapSizeLimit || 'unknown',
   };
 }; 
