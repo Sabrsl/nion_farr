@@ -73,20 +73,40 @@ EOF
   fi
   
   # 4. Remplacer next.config.js par la version optimisée pour Vercel
-  if [ -f "next.config.js.vercel" ]; then
+  if [ -f "next.config.vercel.js" ]; then
     echo "🔧 Remplacement de next.config.js par la version optimisée pour Vercel..."
     cp next.config.js next.config.js.backup
-    cp next.config.js.vercel next.config.js
-    echo "✅ next.config.js remplacé par la version optimisée"
+    cp next.config.vercel.js next.config.js
+    echo "✅ next.config.js remplacé par la version optimisée pour Vercel"
+  else
+    echo "⚠️ next.config.vercel.js non trouvé, recherche de next.config.js.vercel..."
+    if [ -f "next.config.js.vercel" ]; then
+      echo "🔧 Utilisation de next.config.js.vercel à la place..."
+      cp next.config.js next.config.js.backup
+      cp next.config.js.vercel next.config.js
+      echo "✅ next.config.js remplacé par la version alternative"
+    fi
   fi
   
   # 5. Vérifier les configurations expérimentales problématiques
   if grep -q "esmExternals" next.config.js; then
     echo "⚠️ Configuration 'esmExternals' détectée dans next.config.js, cela peut causer des problèmes sur Vercel"
     
-    # Si une modification automatique est nécessaire, elle serait ici
-    # Pour ce script, nous allons simplement alerter
-    echo "ℹ️ Considérez supprimer ou modifier cette configuration si des problèmes de build surviennent"
+    # Tenter de corriger directement le fichier
+    echo "🔧 Tentative de correction automatique..."
+    sed -i 's/esmExternals: .*/esmExternals: false,/g' next.config.js
+    echo "✅ Configuration 'esmExternals' corrigée"
+  fi
+  
+  # 6. Vérifier les références à Railway
+  if grep -q "railway" next.config.js; then
+    echo "⚠️ Références à Railway détectées dans next.config.js"
+    echo "🔧 Remplacement des URLs Railway..."
+    
+    # Remplacer toutes les références à Railway
+    sed -i 's|https://[^/]*railway\.app[^"'"'"']*|https://nion-farr-backend.vercel.app/api|g' next.config.js
+    
+    echo "✅ Références à Railway remplacées"
   fi
   
   echo "✅ Configuration Vercel terminée"
