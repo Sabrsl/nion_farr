@@ -4,34 +4,8 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors');
 
-// Essayer différents chemins d'importation pour s'adapter à la structure du dossier dist
-let AppModule;
-try {
-  // Essayer le chemin relatif que nous avons fixé précédemment
-  AppModule = require('../dist/src/app.module').AppModule;
-  console.log('✅ Module chargé depuis ../dist/src/app.module');
-} catch (error) {
-  try {
-    // Essayer le chemin original
-    AppModule = require('../dist/app.module').AppModule;
-    console.log('✅ Module chargé depuis ../dist/app.module');
-  } catch (secondError) {
-    try {
-      // Essayer avec le chemin absolu
-      AppModule = require('/var/task/backend/dist/src/app.module').AppModule;
-      console.log('✅ Module chargé depuis /var/task/backend/dist/src/app.module');
-    } catch (thirdError) {
-      try {
-        // Dernier essai avec un autre chemin absolu
-        AppModule = require('/var/task/backend/dist/app.module').AppModule;
-        console.log('✅ Module chargé depuis /var/task/backend/dist/app.module');
-      } catch (finalError) {
-        console.error('❌ Impossible de trouver le module AppModule:', finalError);
-        throw new Error(`Impossible de trouver le module AppModule. Erreur: ${finalError.message}`);
-      }
-    }
-  }
-}
+// Importer correctement le module depuis le bon chemin
+const { AppModule } = require('../dist/src/app.module');
 
 // Cache l'application pour les requêtes futures
 let cachedApp;
