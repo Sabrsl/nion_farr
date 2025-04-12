@@ -8,13 +8,17 @@ echo "🚀 Démarrage du script de build pour Render..."
 echo "📦 Installation des dépendances..."
 npm install --no-audit --no-fund
 
+# Installer cross-env globalement
+echo "📦 Installation de cross-env..."
+npm install -g cross-env rimraf
+
 # Nettoyer le répertoire de build précédent
 echo "🧹 Nettoyage du répertoire dist..."
-npm run clean
+rimraf dist
 
 # Build de l'application
 echo "🔨 Construction de l'application..."
-npm run build
+NODE_OPTIONS="--max-old-space-size=4096" npx @nestjs/cli build
 
 # Vérifier que le build s'est bien passé
 if [ -d "dist" ] && [ -f "dist/src/main.js" ]; then
