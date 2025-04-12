@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "node vercel-clean-env.js && bash ./setup-vercel.sh && next build",
+    "vercel-build": "node clean-railway-refs.js && node vercel-clean-env.js && bash ./setup-vercel.sh && next build",
     "start": "next start -p 3007",
     "lint": "next lint",
     "analyze": "ANALYZE=true next build",

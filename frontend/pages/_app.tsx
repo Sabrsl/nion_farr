@@ -10,6 +10,7 @@ import { ToastContainer } from 'react-toastify';
 import { ChakraProvider } from '@chakra-ui/react';
 import initWebVitals from '../utils/performance/webVitals';
 import { analyzePageResources } from '../utils/performance/resourceMonitor';
+import Head from 'next/head';
 
 function MyApp({ Component, pageProps }: AppProps) {
   // Monitor for JavaScript errors
@@ -30,11 +31,64 @@ function MyApp({ Component, pageProps }: AppProps) {
     analyzePageResources();
   }, []);
 
+  // Détection et correction des problèmes de backend
+  useEffect(() => {
+    // Fonction pour détecter un problème de connexion au backend
+    const detectBackendIssue = () => {
+      if (typeof window === 'undefined') return false;
+      
+      // Vérifier le statut stocké du backend
+      const backendStatus = localStorage.getItem('backendStatus');
+      
+      // Vérifier si un correctif a déjà été appliqué
+      const alreadyFixed = localStorage.getItem('backend_fixed') === 'true';
+      
+      // Si le backend est marqué comme offline et que le correctif n'a pas été appliqué
+      return backendStatus === 'offline' && !alreadyFixed;
+    };
+    
+    // Fonction pour injecter le script de correction
+    const injectFixScript = () => {
+      console.log('🔧 Injection du script de correction Railway...');
+      const script = document.createElement('script');
+      script.src = '/fix-railway.js';
+      script.async = true;
+      document.head.appendChild(script);
+    };
+    
+    // Si un problème est détecté, injecter le script de correction
+    if (detectBackendIssue()) {
+      injectFixScript();
+    }
+  }, []);
+
   return (
-    <AuthProvider>
-      <ChakraProvider>
-        <Component {...pageProps} />
-      </ChakraProvider>
+    <>
+      <Head>
+        {/* Meta tags existantes */}
+        
+        {/* Script de correction pour les problèmes de backend */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Vérifier si le backend est inaccessible
+              if (localStorage.getItem('backendStatus') === 'offline' && !localStorage.getItem('backend_fixed')) {
+                console.log('⚠️ Problème de backend détecté, chargement du correctif...');
+                const script = document.createElement('script');
+                script.src = '/fix-railway.js';
+                script.async = true;
+                document.head.appendChild(script);
+              }
+            `
+          }}
+        />
+      </Head>
+      
+      <AuthProvider>
+        <ChakraProvider>
+          <Component {...pageProps} />
+        </ChakraProvider>
+      </AuthProvider>
       <ToastContainer 
         position="top-right"
         autoClose={5000}
@@ -46,7 +100,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         draggable
         pauseOnHover
       />
-    </AuthProvider>
+    </>
   );
 }
 

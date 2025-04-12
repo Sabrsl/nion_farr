@@ -5,7 +5,7 @@ import roleService from '../../services/roleService';
 
 interface RoleGuardProps {
   children: ReactNode;
-  allowedRoles: ('client' | 'provider' | 'admin')[];
+  allowedRoles: ('client' | 'freelance' | 'provider' | 'admin')[];
   fallbackPath?: string;
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { FiMail, FiLock, FiLogIn, FiEye, FiEyeOff } from 'react-icons/fi/index.js';
-import { authService } from '../../services/authService';
+import authService from '../../services/authService';
 import { motion } from 'framer-motion';
 
 interface LoginFormProps {

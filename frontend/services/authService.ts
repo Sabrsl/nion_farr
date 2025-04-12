@@ -6,6 +6,11 @@ import { NextRouter } from 'next/router';
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_STORAGE_KEY = 'nionfarUser';
 
+// Constantes pour les URLs de l'API (centralisées et sécurisées)
+const VERCEL_BACKEND_URL = 'https://nion-farr-backend.vercel.app';
+const VERCEL_API_URL = 'https://nion-farr-backend.vercel.app/api';
+const VERCEL_FRONTEND_URL = 'https://nion-farr.vercel.app';
+
 interface LoginCredentials {
   emailOrPhone: string;
   password: string;
@@ -67,8 +72,8 @@ class AuthService {
   constructor() {
     // Initialiser l'URL de l'API en fonction de l'environnement
     const isProduction = process.env.NODE_ENV === 'production';
-    const productionApiUrl = 'https://nion-farr-backend.vercel.app/api';
-    const productionAppUrl = 'https://nion-farr.vercel.app';
+    const productionApiUrl = VERCEL_API_URL;
+    const productionAppUrl = VERCEL_FRONTEND_URL;
     
     const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
     const appUrl = isProduction ? productionAppUrl : (process.env.NEXT_PUBLIC_APP_URL || productionAppUrl);
@@ -948,6 +953,8 @@ class AuthService {
         // Si la réponse est OK, le serveur est accessible
         if (response.ok) {
           console.log('🟢 Serveur backend disponible à', url);
+          localStorage.setItem('backendStatus', 'online');
+          localStorage.setItem('lastBackendCheck', new Date().toISOString());
           return true;
         }
       } catch (error) {
@@ -956,9 +963,25 @@ class AuthService {
       }
     }
     
+    // Si le serveur est inaccessible, afficher un message d'erreur
     console.error('🔴 Serveur backend inaccessible après plusieurs tentatives:', this.apiUrl);
+    
+    // Stocker le statut
     localStorage.setItem('backendStatus', 'offline');
     localStorage.setItem('lastBackendCheck', new Date().toISOString());
+    
+    // Afficher un message utilisateur
+    if (typeof window !== 'undefined') {
+      toast.error(`Serveur indisponible (${VERCEL_BACKEND_URL}). Veuillez réessayer plus tard.`, {
+        position: 'top-center',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+    
     return false;
   }
 
@@ -1003,7 +1026,7 @@ class AuthService {
       // Utiliser l'URL de base du backend
       const apiBaseUrl = this.apiUrl.startsWith('http')
         ? this.apiUrl.replace(/\/api$/, '')
-        : 'https://nion-farr-backend.vercel.app';
+        : VERCEL_BACKEND_URL;
       
       const csrfUrl = `${apiBaseUrl}/sanctum/csrf-cookie`;
       
@@ -1071,7 +1094,7 @@ class AuthService {
     // Déterminer l'URL complète pour l'authentification
     const backendUrl = this.apiUrl.startsWith('http')
       ? this.apiUrl
-      : `https://nion-farr-backend.vercel.app/api`;
+      : VERCEL_API_URL;
       
     const loginUrl = `${backendUrl}/auth/login`;
     
@@ -1267,5 +1290,6 @@ class AuthService {
   }
 }
 
-// Exporter une instance du service
-export const authService = new AuthService(); 
+// Export singleton instance
+const authService = new AuthService();
+export default authService; 

@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { FiAlertCircle, FiCheckCircle, FiUser, FiBriefcase, FiMail, FiPhone, FiLock } from 'react-icons/fi/index.js';
-import { authService } from '../../services/authService';
+import authService from '../../services/authService';
 import { toast } from 'react-toastify';
 
 type UserRole = 'freelance' | 'client';
