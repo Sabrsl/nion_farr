@@ -10,6 +10,7 @@ console.log('🔍 Recherche et remplacement des références à Railway...');
 
 const RAILWAY_PATTERNS = [
   'nionfar.up.railway.app',
+  'nionfar.railway.app',
   'railway.app',
   '.railway.',
   'RAILWAY_'
@@ -28,6 +29,12 @@ const FILE_EXTENSIONS = [
 const IGNORED_DIRS = [
   'node_modules', '.git', '.next', 'out', 'dist', 'build'
 ];
+
+// Forcer les variables d'environnement
+process.env.NEXT_PUBLIC_API_URL = REPLACEMENT_API_URL;
+process.env.NEXT_PUBLIC_APP_URL = 'https://nion-farr.vercel.app';
+process.env.NEXT_PUBLIC_ENVIRONMENT = 'production';
+console.log('✅ Variables d\'environnement forcées pendant l\'exécution');
 
 /**
  * Vérifie si un fichier doit être traité en fonction de son extension
@@ -54,18 +61,40 @@ function processFile(filePath) {
         modified = true;
 
         // Remplace selon le contexte
-        if (pattern.includes('railway.app')) {
-          if (newContent.includes('/api')) {
-            newContent = newContent.replace(new RegExp(`https?://[^/]*${pattern}[^'"\\s)]*?/api[^'"\\s)]*`, 'gi'), REPLACEMENT_API_URL);
-          } else {
-            newContent = newContent.replace(new RegExp(`https?://[^/]*${pattern}[^'"\\s)]*`, 'gi'), REPLACEMENT_URL);
+        if (pattern.includes('railway.app') || pattern.includes('railway')) {
+          // Remplacer les URLs avec /api
+          newContent = newContent.replace(new RegExp(`https?://[^/'"\\s]*${pattern}[^/'"\\s)]*?/api[^'"\\s)]*`, 'gi'), REPLACEMENT_API_URL);
+          
+          // Remplacer les URLs sans /api
+          newContent = newContent.replace(new RegExp(`https?://[^/'"\\s]*${pattern}[^'"\\s)]*`, 'gi'), REPLACEMENT_URL);
+          
+          // Remplacer les chaînes textuelles
+          if (pattern === 'nionfar.up.railway.app') {
+            newContent = newContent.replace(new RegExp(pattern, 'gi'), 'nion-farr-backend.vercel.app');
           }
-        } else {
-          // Pour les autres motifs, afficher seulement
-          console.log(`⚠️ Motif '${pattern}' détecté mais non remplacé automatiquement`);
+        } else if (pattern === 'RAILWAY_') {
+          // Remplacer les variables d'environnement
+          newContent = newContent.replace(/RAILWAY_DEPLOYMENT=true/gi, 'VERCEL_DEPLOYMENT=true');
         }
       }
     });
+
+    // Recherche supplémentaire pour les cas spéciaux
+    if (filePath.endsWith('next.config.js')) {
+      // Forcer apiUrl à toujours être l'URL Vercel
+      newContent = newContent.replace(
+        /(const\s+)(productionApiUrl|apiUrl)(\s*=\s*)([^;]+)/g, 
+        `$1$2$3'${REPLACEMENT_API_URL}'`
+      );
+      
+      // Forcer la destination à toujours utiliser REPLACEMENT_API_URL
+      newContent = newContent.replace(
+        /(destination:\s*`)(\${apiUrl}|[^`]+)(`)/g,
+        `$1${REPLACEMENT_API_URL}$3`
+      );
+      
+      modified = true;
+    }
 
     // Si des modifications ont été faites, écrire le fichier
     if (modified) {

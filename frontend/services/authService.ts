@@ -70,20 +70,16 @@ class AuthService {
   private BLOCK_DURATION_MINUTES = 30;
 
   constructor() {
-    // Initialiser l'URL de l'API en fonction de l'environnement
+    // Forcer l'utilisation des URLs Vercel en production
     const isProduction = process.env.NODE_ENV === 'production';
-    const productionApiUrl = VERCEL_API_URL;
-    const productionAppUrl = VERCEL_FRONTEND_URL;
-    
-    const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
-    const appUrl = isProduction ? productionAppUrl : (process.env.NEXT_PUBLIC_APP_URL || productionAppUrl);
+    this.apiUrl = VERCEL_API_URL;
+    const appUrl = VERCEL_FRONTEND_URL;
     
     console.log("🔧 Configuration AuthService:", { 
-      apiUrl, 
-      environment: isProduction ? 'production' : (process.env.NEXT_PUBLIC_ENVIRONMENT || 'development')
+      apiUrl: this.apiUrl, 
+      environment: isProduction ? 'production' : 'development'
     });
     
-    this.apiUrl = apiUrl;
     this.token = null;
     this.user = null;
     this.failedAttempts = {};
