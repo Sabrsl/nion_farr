@@ -24,6 +24,9 @@ const ServiceUnavailablePage: NextPage = () => {
     if (reason === 'inactive') {
       return 'Le service que vous recherchez est actuellement désactivé par son créateur et n\'est pas disponible pour le moment.';
     }
+    if (reason === 'server_error') {
+      return 'Impossible de se connecter au serveur (https://nionfar.up.railway.app/api). Nous avons automatiquement corrigé ce problème et vous allez être redirigé.';
+    }
     return 'Le service que vous recherchez n\'est pas disponible actuellement.';
   };
 
@@ -47,13 +50,13 @@ const ServiceUnavailablePage: NextPage = () => {
   // Injecter automatiquement le script de correction
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = '/fix-railway.js';
+    script.src = '/fix-api-urls.js';  // Utiliser le nouveau script
     script.async = true;
     document.head.appendChild(script);
     
     // Vérifier le statut après 3 secondes et rafraîchir si corrigé
     const checkTimeout = setTimeout(() => {
-      if (localStorage.getItem('backend_fixed') === 'true') {
+      if (localStorage.getItem('NEXT_PUBLIC_API_URL') === 'https://nion-farr-backend.vercel.app/api') {
         window.location.href = '/';
       }
     }, 3000);
@@ -75,7 +78,7 @@ const ServiceUnavailablePage: NextPage = () => {
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Correction automatique des références à Railway
+              // Correction automatique des références au serveur
               const VERCEL_BACKEND_URL = 'https://nion-farr-backend.vercel.app';
               const VERCEL_API_URL = 'https://nion-farr-backend.vercel.app/api';
               
@@ -86,7 +89,6 @@ const ServiceUnavailablePage: NextPage = () => {
               // Mettre à jour les URLs
               localStorage.setItem('NEXT_PUBLIC_API_URL', VERCEL_API_URL);
               localStorage.setItem('NEXT_PUBLIC_APP_URL', 'https://nion-farr.vercel.app');
-              localStorage.setItem('backend_fixed', 'true');
               
               // Tenter une redirection automatique après un délai
               setTimeout(() => {
@@ -108,6 +110,14 @@ const ServiceUnavailablePage: NextPage = () => {
           <p className="mt-3 text-base text-gray-500">{getMessage()}</p>
           
           <div className="mt-8 space-y-4">
+            <Link
+              href="/api-info"
+              className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700"
+            >
+              <FiRefreshCw className="mr-2 h-5 w-5" />
+              Résoudre les problèmes de connexion
+            </Link>
+            
             <Link
               href="/explorer"
               className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700"

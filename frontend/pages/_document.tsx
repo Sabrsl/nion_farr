@@ -8,6 +8,9 @@ export default function Document() {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <link rel="icon" href="/favicon.ico" />
+        
+        {/* Script pour corriger les APIs URLs en cas de problème */}
+        <script src="/fix-api-urls.js" />
       </Head>
       <body>
         <Main />

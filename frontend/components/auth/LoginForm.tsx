@@ -99,20 +99,29 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
         <motion.div 
           initial={{ opacity: 0, x: -10 }} 
           animate={{ opacity: 1, x: 0 }} 
-          className={`mb-6 border-l-4 rounded-md p-3 sm:p-4 flex items-start ${
+          className={`mb-6 border-l-4 rounded-md p-3 sm:p-4 flex flex-col ${
             errorMessage.includes('tentative en cours') 
               ? 'bg-blue-50 border-blue-400 text-blue-700' 
               : 'bg-red-50 border-red-400 text-red-700'
           }`}
         >
-          <div className="flex-shrink-0 mt-0.5">
-            <svg className={`h-5 w-5 ${errorMessage.includes('tentative en cours') ? 'text-blue-400' : 'text-red-400'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9v4a1 1 0 102 0V9a1 1 0 10-2 0zm0-4a1 1 0 112 0 1 1 0 01-2 0z" clipRule="evenodd" />
-            </svg>
+          <div className="flex items-start">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg className={`h-5 w-5 ${errorMessage.includes('tentative en cours') ? 'text-blue-400' : 'text-red-400'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-9v4a1 1 0 102 0V9a1 1 0 10-2 0zm0-4a1 1 0 112 0 1 1 0 01-2 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm">{errorMessage}</p>
+            </div>
           </div>
-          <div className="ml-3">
-            <p className="text-sm">{errorMessage}</p>
-          </div>
+          
+          {/* Afficher un lien vers la page api-info si l'erreur mentionne le serveur ou la connexion */}
+          {(errorMessage.includes('serveur') || errorMessage.includes('connexion au serveur') || errorMessage.includes('Serveur indisponible')) && (
+            <div className="mt-3 text-sm border-t border-red-200 pt-2">
+              <p>Problème de connexion au serveur ? <a href="/api-info" className="font-medium underline">Cliquez ici pour résoudre le problème</a></p>
+            </div>
+          )}
         </motion.div>
       )}
 
