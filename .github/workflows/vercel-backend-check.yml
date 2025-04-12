@@ -201,8 +201,8 @@ jobs:
             echo 'FRONTEND_URL=https://nion-farr.vercel.app' >> .env
             echo 'PORT=3001' >> .env
             echo 'CORS_ALLOWED_ORIGINS=https://nion-farr.vercel.app,https://nion-farr-backend.vercel.app' >> .env
-            echo '# Ajoutez les variables MongoDB et d'autres variables sensibles' >> .env
-            echo '# dans la console Vercel ou via les secrets GitHub' >> .env
+            echo "# Ajoutez les variables MongoDB et d'autres variables sensibles" >> .env
+            echo "# dans la console Vercel ou via les secrets GitHub" >> .env
             
             echo "✅ .env créé"
           fi
