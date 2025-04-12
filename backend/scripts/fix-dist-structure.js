@@ -401,85 +401,18 @@ function fixCriticalFiles() {
 
 // Fonction pour créer les décorateurs d'authentification manquants
 function fixAuthDecorators() {
-  console.log('🔍 Vérification des décorateurs d\'authentification...');
+  console.log('🔍 Vérification des decorators auth...');
+  const decoratorsDir = path.join('dist', 'modules', 'auth', 'decorators');
   
-  // Créer le module d'authentification s'il est manquant
-  fixAuthModule();
+  // Création du dossier des decorators si nécessaire
+  ensureDirectoryExists(decoratorsDir);
   
-  // Créer le décorateur Public s'il est manquant
-  const publicDecoratorDir = path.join('dist', 'modules', 'auth', 'decorators');
-  const publicDecoratorPath = path.join(publicDecoratorDir, 'public.decorator.js');
-  
-  ensureDirectoryExists(publicDecoratorDir);
-  
-  if (!fs.existsSync(publicDecoratorPath)) {
-    console.log('⚠️ Décorateur Public manquant, création...');
-    
-    const publicDecoratorContent = `
-require('reflect-metadata');
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Public = exports.IS_PUBLIC_KEY = void 0;
-const common_1 = require("@nestjs/common");
-exports.IS_PUBLIC_KEY = 'isPublic';
-exports.Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
-`;
-    
-    try {
-      fs.writeFileSync(publicDecoratorPath, publicDecoratorContent, 'utf8');
-      console.log(`✅ Décorateur Public créé avec succès dans ${publicDecoratorPath}`);
-    } catch (error) {
-      console.error(`❌ Erreur lors de la création du décorateur Public: ${error}`);
-    }
-  } else {
-    console.log('✅ Décorateur Public existant, vérification du contenu...');
-    fixModuleImports(publicDecoratorPath);
-  }
-  
-  // Créer aussi le fichier index.js dans le dossier decorators pour faciliter les imports
-  const decoratorsIndexPath = path.join(publicDecoratorDir, 'index.js');
-  
-  if (!fs.existsSync(decoratorsIndexPath)) {
-    console.log('⚠️ Index des décorateurs manquant, création...');
-    
-    const indexContent = `
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-__exportStar(require("./public.decorator.js"), exports);
-// Exports d'autres décorateurs si nécessaire
-// __exportStar(require("./roles.decorator.js"), exports);
-`;
-    
-    try {
-      fs.writeFileSync(decoratorsIndexPath, indexContent, 'utf8');
-      console.log(`✅ Index des décorateurs créé avec succès dans ${decoratorsIndexPath}`);
-    } catch (error) {
-      console.error(`❌ Erreur lors de la création de l'index des décorateurs: ${error}`);
-    }
-  }
-  
-  // Vérifier et créer le décorateur Roles s'il est utilisé
-  const rolesDecoratorPath = path.join(publicDecoratorDir, 'roles.decorator.js');
-  const srcRolesPath = path.join('src', 'modules', 'auth', 'decorators', 'roles.decorator.ts');
-  
-  if (fs.existsSync(srcRolesPath) && !fs.existsSync(rolesDecoratorPath)) {
-    console.log('⚠️ Décorateur Roles manquant alors que la source existe, création...');
-    
-    const rolesDecoratorContent = `
+  // Liste des decorators à vérifier/créer
+  const decorators = [
+    {
+      name: 'roles.decorator.js',
+      source: path.join('src', 'modules', 'auth', 'decorators', 'roles.decorator.ts'),
+      content: `
 require('reflect-metadata');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -487,13 +420,49 @@ exports.Roles = exports.ROLES_KEY = void 0;
 const common_1 = require("@nestjs/common");
 exports.ROLES_KEY = 'roles';
 exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
-`;
+`
+    },
+    {
+      name: 'public.decorator.js',
+      source: path.join('src', 'modules', 'auth', 'decorators', 'public.decorator.ts'),
+      content: `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Public = exports.IS_PUBLIC_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.IS_PUBLIC_KEY = 'isPublic';
+exports.Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
+`
+    }
+  ];
+  
+  // Traiter chaque decorator
+  for (const decorator of decorators) {
+    const destPath = path.join(decoratorsDir, decorator.name);
     
+    if (fs.existsSync(destPath)) {
+      console.log(`✅ Decorator ${decorator.name} déjà présent dans ${decoratorsDir}`);
+      continue;
+    }
+    
+    console.log(`⚠️ Decorator ${decorator.name} manquant, tentative de compilation...`);
+    
+    // Si le fichier source TS existe, essayer de le compiler
+    if (fs.existsSync(decorator.source)) {
+      if (compileTypeScriptFile(decorator.source, destPath)) {
+        console.log(`✅ Decorator ${decorator.name} compilé avec succès!`);
+        continue;
+      }
+    }
+    
+    // Fallback: créer le fichier avec un contenu minimal
+    console.log(`⚠️ Création manuelle du decorator ${decorator.name}...`);
     try {
-      fs.writeFileSync(rolesDecoratorPath, rolesDecoratorContent, 'utf8');
-      console.log(`✅ Décorateur Roles créé avec succès dans ${rolesDecoratorPath}`);
+      fs.writeFileSync(destPath, decorator.content, 'utf8');
+      console.log(`✅ Decorator ${decorator.name} créé manuellement avec succès!`);
     } catch (error) {
-      console.error(`❌ Erreur lors de la création du décorateur Roles: ${error}`);
+      console.error(`❌ Erreur lors de la création manuelle du decorator ${decorator.name}:`, error);
     }
   }
 }
@@ -1431,49 +1400,48 @@ function __decorate(decorators, target, key, desc) {
  * Fonction pour générer correctement les fichiers JS à partir des fichiers TS
  */
 function compileTypeScriptFile(tsFilePath, jsOutputPath) {
-  console.log(`🔄 Compilation de ${tsFilePath} vers ${jsOutputPath}...`);
-  
   try {
-    // Vérifier si le fichier source existe
-    if (!fs.existsSync(tsFilePath)) {
-      console.error(`❌ Fichier source ${tsFilePath} introuvable!`);
+    console.log(`🔄 Compilation de ${tsFilePath} vers ${jsOutputPath}...`);
+    const outputDir = path.dirname(jsOutputPath);
+    
+    ensureDirectoryExists(outputDir);
+    
+    // Utiliser tsc pour compiler le fichier
+    const tscPath = path.join('node_modules', '.bin', 'tsc');
+    const nodePath = process.env.RAILWAY_DEPLOYMENT ? '/opt/hostedtoolcache/node/18.20.8/x64/bin/node' : 'node';
+    const command = `"${nodePath}" ${tscPath} "${tsFilePath}" --outDir "${outputDir}" --target ES2018 --module CommonJS --esModuleInterop --skipLibCheck --experimentalDecorators --emitDecoratorMetadata`;
+    
+    console.log(`📝 Exécution de la commande: ${command}`);
+    
+    // Exécuter la commande
+    try {
+      require('child_process').execSync(command, { stdio: 'inherit' });
+    } catch (execError) {
+      console.error(`❌ Erreur lors de la compilation de ${tsFilePath}:`, execError.message);
+      // Fallback pour les decorators critiques - créer un fichier JS minimal si nécessaire
+      if (tsFilePath.includes('roles.decorator.ts')) {
+        console.log(`⚠️ Tentative de création manuelle du fichier ${jsOutputPath}...`);
+        const minimalDecoratorContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Roles = exports.ROLES_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.ROLES_KEY = 'roles';
+exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
+`;
+        fs.writeFileSync(jsOutputPath, minimalDecoratorContent, 'utf8');
+        console.log(`✅ Fichier ${jsOutputPath} créé manuellement avec succès`);
+        return true;
+      }
       return false;
     }
     
-    // Créer les dossiers nécessaires pour le fichier de sortie
-    const outputDir = path.dirname(jsOutputPath);
-    ensureDirectoryExists(outputDir);
-    
-    // Utiliser le chemin absolu vers l'exécutable Node.js
-    const nodePath = process.execPath;
-    const { exec } = require('child_process');
-    const cmd = `"${nodePath}" node_modules/.bin/tsc "${tsFilePath}" --outDir "${path.dirname(jsOutputPath)}" --target ES2018 --module CommonJS --esModuleInterop --skipLibCheck --experimentalDecorators --emitDecoratorMetadata`;
-    
-    console.log(`📝 Exécution de la commande: ${cmd}`);
-    
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`❌ Erreur lors de la compilation: ${error.message}`);
-        console.error(stderr);
-        
-        // Si la compilation échoue, on va essayer de copier de la source compilée si elle existe
-        const alternativeJsPath = tsFilePath.replace('.ts', '.js');
-        if (fs.existsSync(alternativeJsPath)) {
-          console.log(`⚠️ Utilisation de la version compilée existante: ${alternativeJsPath}`);
-          fs.copyFileSync(alternativeJsPath, jsOutputPath);
-          return true;
-        }
-        
-        return false;
-      }
-      
-      if (stderr) {
-        console.warn(`⚠️ Avertissements de compilation: ${stderr}`);
-      }
-      
+    // Vérifier si le fichier a bien été créé
+    if (fs.existsSync(jsOutputPath)) {
       console.log(`✅ Fichier ${jsOutputPath} compilé avec succès!`);
       
-      // Ajouter require('reflect-metadata') au début du fichier généré
+      // Ajouter l'import de reflect-metadata
       let content = fs.readFileSync(jsOutputPath, 'utf8');
       if (!content.includes('require("reflect-metadata")') && !content.includes("require('reflect-metadata')")) {
         content = `require('reflect-metadata');\n${content}`;
@@ -1482,12 +1450,72 @@ function compileTypeScriptFile(tsFilePath, jsOutputPath) {
       }
       
       return true;
-    });
-    
-    // La commande exec étant asynchrone, on simule un succès
-    return true;
+    } else {
+      console.error(`❌ Le fichier compilé ${jsOutputPath} n'existe pas après compilation!`);
+      
+      // Fallback pour les decorators critiques
+      if (tsFilePath.includes('roles.decorator.ts') || tsFilePath.includes('public.decorator.ts')) {
+        console.log(`⚠️ Tentative de création manuelle du fichier ${jsOutputPath}...`);
+        
+        // Contenu minimal pour les decorators
+        let minimalContent = '';
+        
+        if (tsFilePath.includes('roles.decorator.ts')) {
+          minimalContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Roles = exports.ROLES_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.ROLES_KEY = 'roles';
+exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
+`;
+        } else if (tsFilePath.includes('public.decorator.ts')) {
+          minimalContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Public = exports.IS_PUBLIC_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.IS_PUBLIC_KEY = 'isPublic';
+exports.Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
+`;
+        }
+        
+        if (minimalContent) {
+          fs.writeFileSync(jsOutputPath, minimalContent, 'utf8');
+          console.log(`✅ Fichier ${jsOutputPath} créé manuellement avec succès`);
+          return true;
+        }
+      }
+      
+      return false;
+    }
   } catch (error) {
-    console.error(`❌ Erreur lors de la compilation de ${tsFilePath}: ${error.message}`);
+    console.error(`❌ Exception lors de la compilation de ${tsFilePath}:`, error);
+    
+    // Fallback pour les decorators critiques en cas d'exception
+    if (tsFilePath.includes('roles.decorator.ts')) {
+      try {
+        console.log(`⚠️ Tentative de création manuelle d'urgence du fichier ${jsOutputPath}...`);
+        const minimalDecoratorContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Roles = exports.ROLES_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.ROLES_KEY = 'roles';
+exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
+`;
+        ensureDirectoryExists(path.dirname(jsOutputPath));
+        fs.writeFileSync(jsOutputPath, minimalDecoratorContent, 'utf8');
+        console.log(`✅ Fichier ${jsOutputPath} créé manuellement avec succès (mode urgence)`);
+        return true;
+      } catch (fallbackError) {
+        console.error(`❌ Échec du fallback d'urgence:`, fallbackError);
+      }
+    }
+    
     return false;
   }
 }
@@ -1682,107 +1710,70 @@ function copyRequiredModules() {
 
 function main() {
   console.log('🛠️ Correction de la structure du dossier dist/...');
-
-  // 1. Copier les modules et services requis
+  
+  // Copier les modules nécessaires sans génération de stubs
+  console.log('🔍 Copie des modules requis (sans génération de stubs)...');
   copyRequiredModules();
   
-  // 2. Vérifier et corriger les imports dans app.module.js
+  // Vérifier que app.module.js existe et corriger les imports
   console.log('🔍 Vérification des imports dans app.module.js...');
   const appModulePath = path.join('dist', 'app.module.js');
-  
   if (fs.existsSync(appModulePath)) {
-    let content = fs.readFileSync(appModulePath, 'utf8');
-    let modified = false;
-    
-    // Vérifier si l'import du logger existe
-    if (!content.includes('./common/logger/logger.module.js')) {
-      content = content.replace(
-        /const environment_1 = require\(['"]\.\/config\/environment\.js['"]\);/,
-        'const environment_1 = require(\'./config/environment.js\');\nconst logger_module_1 = require(\'./common/logger/logger.module.js\');'
-      );
-      modified = true;
-      console.log('✅ Import de logger.module.js ajouté à app.module.js');
-    }
-    
-    // Vérifier si l'import de l'intercepteur existe
-    if (!content.includes('./common/interceptors/http-exception.interceptor.js')) {
-      content = content.replace(
-        /const sync_control_1 = require\(['"]\.\/scripts\/sync-control\.js['"]\);/,
-        'const sync_control_1 = require(\'./scripts/sync-control.js\');\nconst http_exception_interceptor_1 = require(\'./common/interceptors/http-exception.interceptor.js\');'
-      );
-      modified = true;
-      console.log('✅ Import de http-exception.interceptor.js ajouté à app.module.js');
-    }
-    
-    // Vérifier si le provider APP_FILTER est configuré
-    if (!content.includes('APP_FILTER') || !content.includes('GlobalExceptionFilter')) {
-      // Ajouter le provider
-      content = content.replace(
-        /providers: \[\s*require\(['"]\.\/app\.service\.js['"]\)\.AppService,\s*sync_control_1\.SyncControlService,?\s*\],/,
-        `providers: [
-      require('./app.service.js').AppService,
-      sync_control_1.SyncControlService,
-      {
-        provide: core_1.APP_FILTER,
-        useClass: http_exception_interceptor_1.GlobalExceptionFilter,
-      },
-    ],`
-      );
-      modified = true;
-      console.log('✅ Provider GlobalExceptionFilter ajouté à app.module.js');
-    }
-    
-    if (modified) {
-      fs.writeFileSync(appModulePath, content, 'utf8');
-      console.log('✅ app.module.js mis à jour avec succès');
-    }
+    fixModuleImports(appModulePath);
+  } else {
+    console.error('❌ ERREUR: app.module.js manquant dans dist/');
   }
   
-  // 3. Copier le dossier config/ pour s'assurer que tous les fichiers de configuration sont présents
+  // Copier les fichiers de configuration
   console.log('🔍 Copie du dossier config...');
-  copyDirectoryRecursive(path.join('src', 'config'), path.join('dist', 'config'));
+  const configDir = path.join('dist', 'config');
+  ensureDirectoryExists(configDir);
+  copyDirectoryRecursive(path.join('src', 'config'), configDir);
   
-  // 4. S'assurer que reflect-metadata est disponible
-  const reflectMetadataDir = path.join('dist', 'node_modules', 'reflect-metadata');
-  ensureDirectoryExists(reflectMetadataDir);
+  // S'assurer que reflect-metadata est correctement copié
+  const reflectDir = path.join('dist', 'node_modules', 'reflect-metadata');
+  ensureDirectoryExists(reflectDir);
   copyFile(
     path.join('node_modules', 'reflect-metadata', 'Reflect.js'),
-    path.join(reflectMetadataDir, 'Reflect.js')
+    path.join(reflectDir, 'Reflect.js')
   );
   
-  // 5. Corriger le point d'entrée main.js
+  // Fixer les fichiers de point d'entrée
   fixEntryPoint();
   
-  // 6. Créer ou réparer le fichier dist/src/main.js pour les déploiements qui en ont besoin
-  console.log('🔍 Vérification de dist/src/main.js...');
-  const mainJsPath = path.join('dist', 'main.js');
-  const srcMainJsPath = path.join('dist', 'src', 'main.js');
+  // Fixer les modules spécifiques
+  fixLoggerModule();
+  fixHttpExceptionInterceptor();
+  fixAuthDecorators(); // Ajout de cette ligne
+  fixAuthModule();
+  fixHealthcheckFiles();
   
-  if (fs.existsSync(mainJsPath) && !fs.existsSync(srcMainJsPath)) {
-    ensureDirectoryExists(path.dirname(srcMainJsPath));
-    fs.copyFileSync(mainJsPath, srcMainJsPath);
-    console.log(`✅ main.js copié vers ${srcMainJsPath}`);
-  }
+  // Corriger les modèles MongoDB
+  fixMongoDbConfigFiles();
   
-  console.log('✅ Structure du dossier dist/ corrigée');
-  
+  // Vérification finale des fichiers critiques
   console.log('🔍 Vérification finale des fichiers critiques:');
   const criticalFiles = [
-    'dist/main.js',
-    'dist/app.module.js',
-    'dist/app.service.js',
-    'dist/app.controller.js',
-    'dist/common/logger/logger.module.js',
-    'dist/common/interceptors/http-exception.interceptor.js'
+    path.join('dist', 'main.js'),
+    path.join('dist', 'app.module.js'),
+    path.join('dist', 'app.service.js'),
+    path.join('dist', 'app.controller.js'),
+    path.join('dist', 'common', 'interceptors', 'http-exception.interceptor.js'),
+    path.join('dist', 'modules', 'auth', 'decorators', 'public.decorator.js'),
+    path.join('dist', 'modules', 'auth', 'decorators', 'roles.decorator.js')
   ];
   
+  let allFilesPresent = true;
   for (const file of criticalFiles) {
     if (fs.existsSync(file)) {
       console.log(`✅ ${file} présent`);
     } else {
       console.error(`❌ ERREUR: ${file} manquant!`);
+      allFilesPresent = false;
     }
   }
+  
+  console.log('✅ Structure du dossier dist/ corrigée');
 }
 
 // Exécuter le script
