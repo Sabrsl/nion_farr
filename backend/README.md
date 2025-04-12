@@ -156,4 +156,44 @@ Pour faciliter le diagnostic des problèmes:
 1. Consultez les logs de déploiement sur Railway
 2. Vérifiez les journaux d'application dans `/logs`
 3. Utilisez l'endpoint `/health/detailed` pour un diagnostic complet
-4. Examinez les métriques Prometheus sur `/metrics` 
+4. Examinez les métriques Prometheus sur `/metrics`
+
+## MongoDB Validation Scripts
+
+The project includes several scripts to ensure MongoDB data integrity:
+
+### Running Tests and Audits
+
+```bash
+# Run MongoDB schema validation tests
+npm run test:mongodb
+
+# Run MongoDB data audit
+npm run mongodb:audit
+
+# Run both tests and audit
+npm run mongodb:validate
+```
+
+### Database Maintenance
+
+```bash
+# Fix MongoDB schema issues
+npm run mongodb:fix
+
+# Prepare MongoDB for production (fixes + validators)
+npm run mongodb:prepare
+
+# Schedule automated MongoDB audits
+npm run mongodb:schedule-audit
+```
+
+### Schema Validation
+
+The database uses MongoDB schema validators to ensure data integrity. The validation scripts verify:
+
+- Required fields exist with correct types
+- Indexes are properly created for performance
+- Documents comply with expected schema structure
+
+The validation process creates detailed reports in the `audit-reports` directory. 

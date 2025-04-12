@@ -7,45 +7,54 @@ RUN apt-get update && apt-get install -y --no-install-recommends dumb-init && rm
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de package.json et installer les dépendances
-COPY package.json ./
-RUN npm config set package-lock false && \
-    npm install --legacy-peer-deps --no-audit --no-optional
+# Copier package files et installer les dépendances
+COPY package*.json ./
 
-# S'assurer que les dépendances nécessaires sont installées
-RUN npm install glob prom-client --save
+# Installation optimisée des dépendances
+RUN npm ci --omit=dev --no-audit --ignore-scripts
+
+# Installation des dépendances essentielles
+RUN npm install --save reflect-metadata glob winston
 
 # Copier le reste du code source
 COPY . .
 
-# Créer le dossier de logs
-RUN mkdir -p logs
+# Créer dossiers nécessaires
+RUN mkdir -p logs dist/common/logger dist/common/interceptors
 
-# Exécuter un build complet
+# Exécuter le build complet avec NestJS CLI
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build:railway && \
-    echo "📋 Structure finale de dist/:" && \
+    npm run build && \
+    echo "📋 Exécution du script fix-dist-structure..." && \
+    node scripts/fix-dist-structure.js
+
+# Vérification du build
+RUN echo "📋 Vérification de la structure finale:" && \
     ls -la dist/ && \
     if [ -f "dist/main.js" ]; then \
-      echo "✅ main.js trouvé à la racine de dist/:" && \
+      echo "✅ main.js trouvé à la racine de dist/" && \
       stat -c %s dist/main.js; \
     else \
-      echo "❌ main.js manquant! Application de fix-dist-structure.js..." && \
-      node scripts/fix-dist-structure.js && \
-      if [ ! -f "dist/main.js" ]; then \
-        echo "❌ Échec de la correction! Impossible de continuer."; \
-        exit 1; \
-      fi; \
-    fi
-
-# Exécuter le script de correction de structure dist spécifiquement pour app.service.js
-RUN echo "🔧 Exécution du script de correction de structure dist pour app.service.js..." && \
-    node scripts/fix-dist-structure.js && \
-    echo "📋 Vérification de app.service.js:" && \
-    if [ -f "dist/app.service.js" ]; then \
-      echo "✅ app.service.js trouvé dans dist/:"; \
+      echo "❌ main.js manquant! Impossible de continuer." && \
+      exit 1; \
+    fi && \
+    if [ -f "dist/app.module.js" ]; then \
+      echo "✅ app.module.js trouvé" && \
+      grep -q "logger" dist/app.module.js && echo "✅ Module logger trouvé dans app.module.js"; \
     else \
-      echo "❌ app.service.js toujours manquant après correction!"; \
+      echo "❌ app.module.js manquant!" && \
+      exit 1; \
+    fi && \
+    if [ -f "dist/common/logger/logger.module.js" ]; then \
+      echo "✅ logger.module.js trouvé"; \
+    else \
+      echo "❌ logger.module.js manquant!"; \
+      exit 1; \
+    fi && \
+    if [ -f "dist/common/interceptors/http-exception.interceptor.js" ]; then \
+      echo "✅ http-exception.interceptor.js trouvé"; \
+    else \
+      echo "❌ http-exception.interceptor.js manquant!"; \
       exit 1; \
     fi
 
@@ -57,8 +66,8 @@ RUN echo '#!/bin/bash\n\necho "🧩 Vérification de reflect-metadata..."\nnode 
 # Rendre le script de démarrage exécutable
 RUN chmod +x ./start-railway.sh
 
-# Exposer les ports (Railway réaffecte PORT via la variable d'environnement)
-EXPOSE 3000 8080
+# Exposer les ports
+EXPOSE 8080
 
 # Utiliser dumb-init pour gérer correctement les signaux
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

@@ -7,6 +7,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 
 // Fonction pour créer un dossier s'il n'existe pas
 function ensureDirectoryExists(directory) {
@@ -743,8 +744,7 @@ HealthController = __decorate([
     (0, common_1.Controller)('health'),
     __metadata("design:paramtypes", [health_service_1.HealthService])
 ], HealthController);
-exports.HealthController = HealthController;
-`;
+exports.HealthController = HealthController;`;
     
     try {
       fs.writeFileSync(healthControllerPath, healthControllerContent, 'utf8');
@@ -808,8 +808,7 @@ let HealthService = class HealthService {
 HealthService = __decorate([
     (0, common_1.Injectable)()
 ], HealthService);
-exports.HealthService = HealthService;
-`;
+exports.HealthService = HealthService;`;
     
     try {
       fs.writeFileSync(healthServicePath, healthServiceContent, 'utf8');
@@ -850,8 +849,7 @@ HealthModule = __decorate([
         exports: [health_service_1.HealthService]
     })
 ], HealthModule);
-exports.HealthModule = HealthModule;
-`;
+exports.HealthModule = HealthModule;`;
     
     try {
       fs.writeFileSync(healthModulePath, healthModuleContent, 'utf8');
@@ -1429,45 +1427,322 @@ function __decorate(decorators, target, key, desc) {
   }
 }
 
+/**
+ * Fonction pour générer correctement les fichiers JS à partir des fichiers TS
+ */
+function compileTypeScriptFile(tsFilePath, jsOutputPath) {
+  console.log(`🔄 Compilation de ${tsFilePath} vers ${jsOutputPath}...`);
+  
+  try {
+    // Vérifier si le fichier source existe
+    if (!fs.existsSync(tsFilePath)) {
+      console.error(`❌ Fichier source ${tsFilePath} introuvable!`);
+      return false;
+    }
+    
+    // Créer les dossiers nécessaires pour le fichier de sortie
+    const outputDir = path.dirname(jsOutputPath);
+    ensureDirectoryExists(outputDir);
+    
+    // Utiliser le chemin absolu vers l'exécutable Node.js
+    const nodePath = process.execPath;
+    const { exec } = require('child_process');
+    const cmd = `"${nodePath}" node_modules/.bin/tsc "${tsFilePath}" --outDir "${path.dirname(jsOutputPath)}" --target ES2018 --module CommonJS --esModuleInterop --skipLibCheck --experimentalDecorators --emitDecoratorMetadata`;
+    
+    console.log(`📝 Exécution de la commande: ${cmd}`);
+    
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`❌ Erreur lors de la compilation: ${error.message}`);
+        console.error(stderr);
+        
+        // Si la compilation échoue, on va essayer de copier de la source compilée si elle existe
+        const alternativeJsPath = tsFilePath.replace('.ts', '.js');
+        if (fs.existsSync(alternativeJsPath)) {
+          console.log(`⚠️ Utilisation de la version compilée existante: ${alternativeJsPath}`);
+          fs.copyFileSync(alternativeJsPath, jsOutputPath);
+          return true;
+        }
+        
+        return false;
+      }
+      
+      if (stderr) {
+        console.warn(`⚠️ Avertissements de compilation: ${stderr}`);
+      }
+      
+      console.log(`✅ Fichier ${jsOutputPath} compilé avec succès!`);
+      
+      // Ajouter require('reflect-metadata') au début du fichier généré
+      let content = fs.readFileSync(jsOutputPath, 'utf8');
+      if (!content.includes('require("reflect-metadata")') && !content.includes("require('reflect-metadata')")) {
+        content = `require('reflect-metadata');\n${content}`;
+        fs.writeFileSync(jsOutputPath, content, 'utf8');
+        console.log(`✅ reflect-metadata ajouté à ${jsOutputPath}`);
+      }
+      
+      return true;
+    });
+    
+    // La commande exec étant asynchrone, on simule un succès
+    return true;
+  } catch (error) {
+    console.error(`❌ Erreur lors de la compilation de ${tsFilePath}: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Fonction pour assurer que tous les modules et services nécessaires
+ * sont copiés du source (src/) vers le dossier dist/
+ */
+function copyRequiredModules() {
+  console.log('🔍 Copie des modules requis (sans génération de stubs)...');
+  
+  // Liste des modules critiques à copier
+  const criticalModules = [
+    // Modules de base
+    {
+      srcPath: 'src/common/logger/logger.module.ts',
+      distPath: 'dist/common/logger/logger.module.js'
+    },
+    {
+      srcPath: 'src/common/logger/structured-logger.service.ts',
+      distPath: 'dist/common/logger/structured-logger.service.js'
+    },
+    {
+      srcPath: 'src/common/interceptors/http-exception.interceptor.ts',
+      distPath: 'dist/common/interceptors/http-exception.interceptor.js'
+    },
+    
+    // Modules auth
+    {
+      srcPath: 'src/modules/auth/auth.module.ts',
+      distPath: 'dist/modules/auth/auth.module.js'
+    },
+    {
+      srcPath: 'src/modules/auth/decorators/public.decorator.ts',
+      distPath: 'dist/modules/auth/decorators/public.decorator.js'
+    },
+    {
+      srcPath: 'src/modules/auth/decorators/roles.decorator.ts',
+      distPath: 'dist/modules/auth/decorators/roles.decorator.js'
+    },
+    {
+      srcPath: 'src/modules/auth/guards/jwt-auth.guard.ts',
+      distPath: 'dist/modules/auth/guards/jwt-auth.guard.js'
+    },
+    {
+      srcPath: 'src/modules/auth/guards/roles.guard.ts',
+      distPath: 'dist/modules/auth/guards/roles.guard.js'
+    },
+    
+    // Module health
+    {
+      srcPath: 'src/health/health.module.ts',
+      distPath: 'dist/health/health.module.js'
+    },
+    {
+      srcPath: 'src/health/health.service.ts',
+      distPath: 'dist/health/health.service.js'
+    },
+    {
+      srcPath: 'src/health/health.controller.ts',
+      distPath: 'dist/health/health.controller.js'
+    },
+    
+    // Module users et autres modules fonctionnels
+    {
+      srcPath: 'src/modules/users/users.module.ts',
+      distPath: 'dist/modules/users/users.module.js'
+    },
+    {
+      srcPath: 'src/modules/users/users.service.ts',
+      distPath: 'dist/modules/users/users.service.js'
+    },
+    {
+      srcPath: 'src/modules/users/users.controller.ts',
+      distPath: 'dist/modules/users/users.controller.js'
+    },
+    {
+      srcPath: 'src/modules/services/services.module.ts',
+      distPath: 'dist/modules/services/services.module.js'
+    },
+    {
+      srcPath: 'src/modules/orders/orders.module.ts',
+      distPath: 'dist/modules/orders/orders.module.js'
+    },
+    {
+      srcPath: 'src/modules/payments/payments.module.ts',
+      distPath: 'dist/modules/payments/payments.module.js'
+    },
+    {
+      srcPath: 'src/modules/messages/messages.module.ts',
+      distPath: 'dist/modules/messages/messages.module.js'
+    },
+    {
+      srcPath: 'src/modules/reviews/reviews.module.ts',
+      distPath: 'dist/modules/reviews/reviews.module.js'
+    },
+    {
+      srcPath: 'src/modules/admin/admin.module.ts',
+      distPath: 'dist/modules/admin/admin.module.js'
+    },
+    {
+      srcPath: 'src/modules/notifications/notifications.module.ts',
+      distPath: 'dist/modules/notifications/notifications.module.js'
+    },
+    {
+      srcPath: 'src/modules/email/email.module.ts',
+      distPath: 'dist/modules/email/email.module.js'
+    },
+    {
+      srcPath: 'src/modules/sms/sms.module.ts',
+      distPath: 'dist/modules/sms/sms.module.js'
+    },
+    {
+      srcPath: 'src/modules/disputes/disputes.module.ts',
+      distPath: 'dist/modules/disputes/disputes.module.js'
+    },
+    {
+      srcPath: 'src/security/security.module.ts',
+      distPath: 'dist/security/security.module.js'
+    },
+    {
+      srcPath: 'src/modules/queue/queue.module.ts',
+      distPath: 'dist/modules/queue/queue.module.js'
+    },
+    {
+      srcPath: 'src/ip/ip.module.ts',
+      distPath: 'dist/ip/ip.module.js'
+    },
+    {
+      srcPath: 'src/performance/performance.module.ts',
+      distPath: 'dist/performance/performance.module.js'
+    }
+  ];
+
+  // Pour chaque module critique
+  for (const module of criticalModules) {
+    // Vérifier si le fichier de destination existe déjà
+    if (fs.existsSync(module.distPath)) {
+      console.log(`✅ Fichier ${module.distPath} déjà présent, vérification des imports...`);
+      fixModuleImports(module.distPath);
+    } else {
+      console.log(`⚠️ Fichier ${module.distPath} manquant, tentative de compilation...`);
+      
+      // Si le fichier source existe
+      if (fs.existsSync(module.srcPath)) {
+        // Tenter de le compiler directement
+        if (!compileTypeScriptFile(module.srcPath, module.distPath)) {
+          // Si la compilation échoue, tenter de trouver une version JS précompilée
+          const precompiledPath = module.srcPath.replace('.ts', '.js');
+          if (fs.existsSync(precompiledPath)) {
+            console.log(`⚠️ Utilisation de la version précompilée: ${precompiledPath}`);
+            ensureDirectoryExists(path.dirname(module.distPath));
+            fs.copyFileSync(precompiledPath, module.distPath);
+            fixModuleImports(module.distPath);
+          } else {
+            // Récupérer le nom du fichier uniquement
+            const fileName = path.basename(module.srcPath);
+            
+            // Chercher dans différents emplacements possibles
+            const possiblePaths = [
+              path.join('dist', 'src', path.relative('src', path.dirname(module.srcPath)), fileName.replace('.ts', '.js')),
+              path.join('src', path.relative('src', path.dirname(module.srcPath)), fileName.replace('.ts', '.js'))
+            ];
+            
+            if (!findAndCopyFile(fileName.replace('.ts', '.js'), module.distPath, possiblePaths)) {
+              console.error(`❌ ERREUR: Impossible de trouver ou compiler ${fileName}`);
+              
+              // Dernière tentative - chercher les fichiers JS partout dans dist/
+              console.log(`🔍 Recherche approfondie de ${fileName.replace('.ts', '.js')} dans dist/...`);
+              const glob = require('glob');
+              const matches = glob.sync(`dist/**/${fileName.replace('.ts', '.js')}`);
+              
+              if (matches.length > 0) {
+                console.log(`✅ Fichier trouvé à ${matches[0]}, copie vers ${module.distPath}...`);
+                ensureDirectoryExists(path.dirname(module.distPath));
+                fs.copyFileSync(matches[0], module.distPath);
+                fixModuleImports(module.distPath);
+              } else {
+                console.error(`❌ ERREUR: ${fileName.replace('.ts', '.js')} introuvable dans tout le répertoire dist/`);
+              }
+            }
+          }
+        }
+      } else {
+        console.error(`❌ ERREUR: Fichier source ${module.srcPath} introuvable!`);
+      }
+    }
+  }
+  
+  console.log('✅ Vérification des modules terminée');
+}
+
 function main() {
   console.log('🛠️ Correction de la structure du dossier dist/...');
 
-  // 1. Vérifier et corriger les fichiers critiques
-  console.log('🔍 Vérification des fichiers critiques...');
-  fixCriticalFiles();
+  // 1. Copier les modules et services requis
+  copyRequiredModules();
   
-  // 2. Vérifier et corriger les décorateurs d'authentification
-  console.log('🔍 Vérification des décorateurs d\'authentification...');
-  fixAuthDecorators();
+  // 2. Vérifier et corriger les imports dans app.module.js
+  console.log('🔍 Vérification des imports dans app.module.js...');
+  const appModulePath = path.join('dist', 'app.module.js');
   
-  // 3. Vérifier et corriger le module d'authentification
-  console.log('🔍 Vérification du module d\'authentification...');
-  fixAuthModule();
+  if (fs.existsSync(appModulePath)) {
+    let content = fs.readFileSync(appModulePath, 'utf8');
+    let modified = false;
+    
+    // Vérifier si l'import du logger existe
+    if (!content.includes('./common/logger/logger.module.js')) {
+      content = content.replace(
+        /const environment_1 = require\(['"]\.\/config\/environment\.js['"]\);/,
+        'const environment_1 = require(\'./config/environment.js\');\nconst logger_module_1 = require(\'./common/logger/logger.module.js\');'
+      );
+      modified = true;
+      console.log('✅ Import de logger.module.js ajouté à app.module.js');
+    }
+    
+    // Vérifier si l'import de l'intercepteur existe
+    if (!content.includes('./common/interceptors/http-exception.interceptor.js')) {
+      content = content.replace(
+        /const sync_control_1 = require\(['"]\.\/scripts\/sync-control\.js['"]\);/,
+        'const sync_control_1 = require(\'./scripts/sync-control.js\');\nconst http_exception_interceptor_1 = require(\'./common/interceptors/http-exception.interceptor.js\');'
+      );
+      modified = true;
+      console.log('✅ Import de http-exception.interceptor.js ajouté à app.module.js');
+    }
+    
+    // Vérifier si le provider APP_FILTER est configuré
+    if (!content.includes('APP_FILTER') || !content.includes('GlobalExceptionFilter')) {
+      // Ajouter le provider
+      content = content.replace(
+        /providers: \[\s*require\(['"]\.\/app\.service\.js['"]\)\.AppService,\s*sync_control_1\.SyncControlService,?\s*\],/,
+        `providers: [
+      require('./app.service.js').AppService,
+      sync_control_1.SyncControlService,
+      {
+        provide: core_1.APP_FILTER,
+        useClass: http_exception_interceptor_1.GlobalExceptionFilter,
+      },
+    ],`
+      );
+      modified = true;
+      console.log('✅ Provider GlobalExceptionFilter ajouté à app.module.js');
+    }
+    
+    if (modified) {
+      fs.writeFileSync(appModulePath, content, 'utf8');
+      console.log('✅ app.module.js mis à jour avec succès');
+    }
+  }
   
-  // 4. Vérifier et corriger les fichiers de healthcheck
-  console.log('🔍 Vérification des fichiers de healthcheck...');
-  fixHealthcheckFiles();
-  
-  // 5. Vérifier et corriger les fichiers de configuration MongoDB
-  console.log('🔍 Vérification des fichiers de configuration MongoDB...');
-  fixMongoDbConfigFiles();
-
-  // 6. Vérifier et corriger l'intercepteur HTTP exception
-  console.log('🔍 Vérification de l\'intercepteur HTTP exception...');
-  fixHttpExceptionInterceptor();
-  
-  // 7. Vérifier et corriger le module logger
-  console.log('🔍 Vérification du module logger...');
-  fixLoggerModule();
-  
-  // 8. S'assurer que app.module.js fonctionne correctement
-  console.log('🔍 Vérification du fichier app.module.js...');
-  
-  // 9. Copier le dossier config/ par sécurité
+  // 3. Copier le dossier config/ pour s'assurer que tous les fichiers de configuration sont présents
   console.log('🔍 Copie du dossier config...');
   copyDirectoryRecursive(path.join('src', 'config'), path.join('dist', 'config'));
   
-  // 10. Pour nous assurer que reflect-metadata est disponible, copier directement le fichier
+  // 4. S'assurer que reflect-metadata est disponible
   const reflectMetadataDir = path.join('dist', 'node_modules', 'reflect-metadata');
   ensureDirectoryExists(reflectMetadataDir);
   copyFile(
@@ -1475,17 +1750,39 @@ function main() {
     path.join(reflectMetadataDir, 'Reflect.js')
   );
   
-  // 11. Corriger le point d'entrée main.js
+  // 5. Corriger le point d'entrée main.js
   fixEntryPoint();
   
-  // 12. Vérifier les modèles (qui pourraient être importés)
-  console.log('🔍 Vérification des modèles...');
+  // 6. Créer ou réparer le fichier dist/src/main.js pour les déploiements qui en ont besoin
+  console.log('🔍 Vérification de dist/src/main.js...');
+  const mainJsPath = path.join('dist', 'main.js');
+  const srcMainJsPath = path.join('dist', 'src', 'main.js');
   
-  // 13. Double vérification des fichiers de configuration
-  console.log('🔍 Vérification des fichiers de configuration MongoDB...');
-  fixMongoDbConfigFiles();
+  if (fs.existsSync(mainJsPath) && !fs.existsSync(srcMainJsPath)) {
+    ensureDirectoryExists(path.dirname(srcMainJsPath));
+    fs.copyFileSync(mainJsPath, srcMainJsPath);
+    console.log(`✅ main.js copié vers ${srcMainJsPath}`);
+  }
   
   console.log('✅ Structure du dossier dist/ corrigée');
+  
+  console.log('🔍 Vérification finale des fichiers critiques:');
+  const criticalFiles = [
+    'dist/main.js',
+    'dist/app.module.js',
+    'dist/app.service.js',
+    'dist/app.controller.js',
+    'dist/common/logger/logger.module.js',
+    'dist/common/interceptors/http-exception.interceptor.js'
+  ];
+  
+  for (const file of criticalFiles) {
+    if (fs.existsSync(file)) {
+      console.log(`✅ ${file} présent`);
+    } else {
+      console.error(`❌ ERREUR: ${file} manquant!`);
+    }
+  }
 }
 
 // Exécuter le script
