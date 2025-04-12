@@ -351,6 +351,9 @@ function fixCriticalFiles() {
   // Créer les décorateurs d'authentification qui sont souvent manquants
   fixAuthDecorators();
   
+  // Créer les fichiers de healthcheck
+  fixHealthcheckFiles();
+  
   // Copier les fichiers clés depuis src/dist
   const mainJsPath = path.join('dist', 'main.js');
   if (!fs.existsSync(mainJsPath)) {
@@ -653,6 +656,243 @@ __exportStar(require("./auth.service.js"), exports);
       console.log(`✅ Index du module auth créé avec succès dans ${authIndexPath}`);
     } catch (error) {
       console.error(`❌ Erreur lors de la création de l'index du module auth: ${error}`);
+    }
+  }
+}
+
+// Fonction pour créer les fichiers de healthcheck
+function fixHealthcheckFiles() {
+  console.log('🔍 Vérification des fichiers de healthcheck...');
+  
+  const healthDir = path.join('dist', 'health');
+  ensureDirectoryExists(healthDir);
+  
+  // Créer health.controller.js
+  const healthControllerPath = path.join(healthDir, 'health.controller.js');
+  if (!fs.existsSync(healthControllerPath)) {
+    console.log('⚠️ Contrôleur de healthcheck manquant, création...');
+    
+    const healthControllerContent = `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HealthController = void 0;
+const common_1 = require("@nestjs/common");
+const health_service_1 = require("./health.service.js");
+const public_decorator_1 = require("../modules/auth/decorators/public.decorator.js");
+
+let HealthController = class HealthController {
+    constructor(healthService) {
+        this.healthService = healthService;
+    }
+    
+    check() {
+        return {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV || 'development',
+            version: '1.0.0',
+            components: {
+                app: { status: 'ok' }
+            },
+            uptime: process.uptime(),
+            memory: {
+                rss: \`\${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB\`,
+                heapTotal: \`\${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)} MB\`,
+                heapUsed: \`\${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB\`,
+                external: \`\${Math.round(process.memoryUsage().external / 1024 / 1024)} MB\`,
+                percentUsed: Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100)
+            }
+        };
+    }
+    
+    ping() {
+        return {
+            status: 'ok',
+            timestamp: new Date().toISOString()
+        };
+    }
+};
+__decorate([
+    (0, common_1.Get)(),
+    (0, public_decorator_1.Public)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Object)
+], HealthController.prototype, "check", null);
+__decorate([
+    (0, common_1.Get)('ping'),
+    (0, public_decorator_1.Public)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Object)
+], HealthController.prototype, "ping", null);
+HealthController = __decorate([
+    (0, common_1.Controller)('health'),
+    __metadata("design:paramtypes", [health_service_1.HealthService])
+], HealthController);
+exports.HealthController = HealthController;
+`;
+    
+    try {
+      fs.writeFileSync(healthControllerPath, healthControllerContent, 'utf8');
+      console.log(`✅ Contrôleur de healthcheck créé avec succès dans ${healthControllerPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du contrôleur de healthcheck: ${error}`);
+    }
+  } else {
+    console.log('✅ Contrôleur de healthcheck existant, vérification...');
+    fixModuleImports(healthControllerPath);
+  }
+  
+  // Créer health.service.js
+  const healthServicePath = path.join(healthDir, 'health.service.js');
+  if (!fs.existsSync(healthServicePath)) {
+    console.log('⚠️ Service de healthcheck manquant, création...');
+    
+    const healthServiceContent = `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HealthService = void 0;
+const common_1 = require("@nestjs/common");
+
+let HealthService = class HealthService {
+    constructor() {
+        console.log('✅ HealthService initialisé');
+    }
+    
+    check() {
+        return {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV || 'development',
+            version: '1.0.0',
+            components: {
+                app: { status: 'ok' },
+                system: { status: 'ok' }
+            },
+            uptime: process.uptime(),
+            memory: {
+                rss: \`\${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB\`,
+                heapTotal: \`\${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)} MB\`,
+                heapUsed: \`\${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB\`,
+                external: \`\${Math.round(process.memoryUsage().external / 1024 / 1024)} MB\`,
+                percentUsed: Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100)
+            }
+        };
+    }
+    
+    checkDetailed() {
+        return this.check();
+    }
+};
+HealthService = __decorate([
+    (0, common_1.Injectable)()
+], HealthService);
+exports.HealthService = HealthService;
+`;
+    
+    try {
+      fs.writeFileSync(healthServicePath, healthServiceContent, 'utf8');
+      console.log(`✅ Service de healthcheck créé avec succès dans ${healthServicePath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du service de healthcheck: ${error}`);
+    }
+  } else {
+    console.log('✅ Service de healthcheck existant, vérification...');
+    fixModuleImports(healthServicePath);
+  }
+  
+  // Créer health.module.js
+  const healthModulePath = path.join(healthDir, 'health.module.js');
+  if (!fs.existsSync(healthModulePath)) {
+    console.log('⚠️ Module de healthcheck manquant, création...');
+    
+    const healthModuleContent = `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HealthModule = void 0;
+const common_1 = require("@nestjs/common");
+const health_controller_1 = require("./health.controller.js");
+const health_service_1 = require("./health.service.js");
+
+let HealthModule = class HealthModule {};
+HealthModule = __decorate([
+    (0, common_1.Module)({
+        controllers: [health_controller_1.HealthController],
+        providers: [health_service_1.HealthService],
+        exports: [health_service_1.HealthService]
+    })
+], HealthModule);
+exports.HealthModule = HealthModule;
+`;
+    
+    try {
+      fs.writeFileSync(healthModulePath, healthModuleContent, 'utf8');
+      console.log(`✅ Module de healthcheck créé avec succès dans ${healthModulePath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du module de healthcheck: ${error}`);
+    }
+  } else {
+    console.log('✅ Module de healthcheck existant, vérification...');
+    fixModuleImports(healthModulePath);
+  }
+  
+  // Créer index.js pour faciliter les imports
+  const healthIndexPath = path.join(healthDir, 'index.js');
+  if (!fs.existsSync(healthIndexPath)) {
+    console.log('⚠️ Index du module health manquant, création...');
+    
+    const indexContent = `
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./health.module.js"), exports);
+__exportStar(require("./health.controller.js"), exports);
+__exportStar(require("./health.service.js"), exports);
+`;
+    
+    try {
+      fs.writeFileSync(healthIndexPath, indexContent, 'utf8');
+      console.log(`✅ Index du module health créé avec succès dans ${healthIndexPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création de l'index du module health: ${error}`);
     }
   }
 }
