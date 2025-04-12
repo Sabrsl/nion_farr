@@ -1,3 +1,28 @@
+// Définir des variables d'environnement par défaut pour les validations NestJS
+process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://vynalapp:uVmENC9K21dkMfma@clusternionfar.rjuvvf7.mongodb.net/nionfar?retryWrites=true&w=majority&appName=Clusternionfar';
+process.env.DB_HOST = process.env.DB_HOST || 'clusternionfar.rjuvvf7.mongodb.net';
+process.env.DB_PORT = process.env.DB_PORT || '27017';
+process.env.DB_USERNAME = process.env.DB_USERNAME || 'vynalapp';
+process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'uVmENC9K21dkMfma';
+process.env.DB_DATABASE = process.env.DB_DATABASE || 'nionfar';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'tempkey123456789';
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'temprefreshkey123456789';
+process.env.APP_URL = process.env.APP_URL || 'https://nion-farr-backend.vercel.app';
+process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'https://nion-farr.vercel.app';
+process.env.MAIL_HOST = process.env.MAIL_HOST || 'smtp.example.com';
+process.env.MAIL_USER = process.env.MAIL_USER || 'test@example.com';
+process.env.MAIL_PASSWORD = process.env.MAIL_PASSWORD || 'temppassword';
+process.env.MAIL_FROM = process.env.MAIL_FROM || 'noreply@nionfar.com';
+process.env.WAVE_API_KEY = process.env.WAVE_API_KEY || 'tempkey';
+process.env.WAVE_API_SECRET = process.env.WAVE_API_SECRET || 'tempsecret';
+process.env.WAVE_API_URL = process.env.WAVE_API_URL || 'https://api.wave.com';
+process.env.ORANGE_MONEY_API_KEY = process.env.ORANGE_MONEY_API_KEY || 'tempkey';
+process.env.ORANGE_MONEY_API_SECRET = process.env.ORANGE_MONEY_API_SECRET || 'tempsecret';
+process.env.ORANGE_MONEY_API_URL = process.env.ORANGE_MONEY_API_URL || 'https://api.orange.com';
+process.env.FREE_MONEY_API_KEY = process.env.FREE_MONEY_API_KEY || 'tempkey';
+process.env.FREE_MONEY_API_SECRET = process.env.FREE_MONEY_API_SECRET || 'tempsecret';
+process.env.FREE_MONEY_API_URL = process.env.FREE_MONEY_API_URL || 'https://api.free.com';
+
 // Handler simple pour Vercel sans dépendance à NestJS
 const express = require('express');
 const cors = require('cors');
