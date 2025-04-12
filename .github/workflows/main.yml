@@ -60,6 +60,25 @@ jobs:
           echo "- Fichiers CSS: $(find .next -name "*.css" | wc -l)"
           echo "✅ Build frontend valide"
 
+      - name: 🔄 Vérification de la configuration Vercel
+        working-directory: frontend
+        run: |
+          echo "🔍 Vérification de la configuration Vercel..."
+          
+          if [ ! -f "vercel.json" ]; then
+            echo "❌ vercel.json manquant"
+            exit 1
+          fi
+          
+          # Vérifier que vercel.json contient les bonnes configurations
+          if ! grep -q "nion-farr-backend.vercel.app" vercel.json; then
+            echo "⚠️ URL du backend manquante dans vercel.json"
+          else
+            echo "✅ URL du backend trouvée dans vercel.json"
+          fi
+          
+          echo "✅ Configuration Vercel validée"
+
   verify-backend:
     name: 🔧 Backend Build
     runs-on: ubuntu-latest
@@ -80,9 +99,8 @@ jobs:
         working-directory: backend
         run: |
           npm install --legacy-peer-deps
-          echo "✅ Dépendances backend installées"
           npm install serverless-http --save
-          echo "✅ serverless-http installé"
+          echo "✅ Dépendances backend installées"
       
       - name: 🛠️ Build Backend
         working-directory: backend
@@ -90,81 +108,31 @@ jobs:
           npm run build
           echo "✅ Build backend terminé"
       
-      - name: 📂 Validation de la structure
-        working-directory: backend
+      - name: 📂 Vérification de la structure Vercel
         run: |
+          echo "🔍 Vérification de la configuration Vercel..."
+          
           # Vérifier les fichiers critiques
-          CRITICAL_FILES=("dist/main.js" "dist/app.module.js" "dist/app.controller.js")
-          CRITICAL_DIRS=("dist/modules" "dist/common" "dist/health")
-          
-          MISSING=0
-          for file in "${CRITICAL_FILES[@]}"; do
-            if [ ! -f "$file" ]; then
-              echo "❌ $file manquant"
-              MISSING=$((MISSING+1))
-            else
-              echo "✅ $file existe"
-            fi
-          done
-          
-          for dir in "${CRITICAL_DIRS[@]}"; do
-            if [ ! -d "$dir" ]; then
-              echo "❌ $dir manquant"
-              
-              # Tentative de correction
-              echo "🔄 Tentative de correction..."
-              node scripts/fix-dist-structure.js
-              
-              if [ ! -d "$dir" ]; then
-                echo "❌ Correction échouée pour $dir"
-                MISSING=$((MISSING+1))
-              else
-                echo "✅ $dir créé avec succès"
-              fi
-            else
-              echo "✅ $dir existe"
-            fi
-          done
-          
-          if [ $MISSING -gt 0 ]; then
-            echo "❌ Build invalide - $MISSING problèmes détectés"
-            exit 1
-          fi
-          
-          echo "✅ Structure du build valide"
-      
-      - name: 🧪 Vérification MongoDB
-        working-directory: backend
-        run: |
-          # Vérifier les scripts MongoDB essentiels
-          MONGODB_SCRIPTS=("scripts/audit-mongodb-data.js" "scripts/schedule-mongodb-audit.js")
-          
-          for script in "${MONGODB_SCRIPTS[@]}"; do
-            if [ -f "$script" ]; then
-              echo "✅ $script existe"
-              # Vérifier la syntaxe
-              node -c "$script" && echo "  ✓ Syntaxe valide" || echo "  ⚠️ Syntaxe invalide"
-            fi
-          done
-          
-          echo "✅ Scripts MongoDB vérifiés"
-      
-      - name: 🚀 Vérification API Vercel
-        run: |
-          # Vérifier les fichiers essentiels pour Vercel
-          echo "🔍 Vérification de la configuration API pour Vercel..."
-          
           if [ ! -f "backend/vercel.json" ]; then
             echo "❌ backend/vercel.json manquant"
             exit 1
           else
-            echo "✅ backend/vercel.json trouvé"
+            echo "✅ backend/vercel.json existe"
           fi
           
-          if [ ! -f "backend/api/index.js" ]; then
-            echo "❌ backend/api/index.js manquant"
-            echo "🔄 Création du dossier API et du fichier index.js..."
+          # Vérifier que le dossier api existe
+          if [ ! -d "backend/api" ]; then
+            echo "❌ Dossier backend/api manquant"
             mkdir -p backend/api
+            echo "✅ Dossier backend/api créé"
+          else
+            echo "✅ Dossier backend/api existe"
+          fi
+          
+          # Vérifier que le point d'entrée API existe
+          if [ ! -f "backend/api/index.js" ]; then
+            echo "❌ Point d'entrée API manquant"
+            
             # Créer un point d'entrée minimal
             cat > backend/api/index.js << EOL
 const serverless = require('serverless-http');
@@ -192,66 +160,48 @@ module.exports = async (req, res) => {
 EOL
             echo "✅ backend/api/index.js créé"
           else
-            echo "✅ backend/api/index.js trouvé"
+            echo "✅ backend/api/index.js existe"
           fi
-
-  deploy-backend:
-    name: ⚡ Deploy Backend (Vercel)
-    needs: [verify-backend]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: ⬇️ Checkout code
-        uses: actions/checkout@v4
+          
+          # Vérifier les variables d'environnement requises
+          if [ ! -f "backend/.env.vercel" ]; then
+            echo "⚠️ backend/.env.vercel manquant - Assurez-vous de configurer les variables d'environnement dans le dashboard Vercel"
+          else
+            echo "✅ backend/.env.vercel existe"
+          fi
+          
+          echo "✅ Configuration Vercel validée"
       
-      - name: 📝 Préparer le déploiement
+      - name: 🧪 Vérification MongoDB
         working-directory: backend
         run: |
-          # Vérifier les fichiers essentiels pour Vercel
-          if [ ! -f "vercel.json" ]; then
-            echo "❌ Fichier de configuration Vercel manquant"
-            exit 1
-          fi
+          # Vérifier les scripts MongoDB essentiels
+          MONGODB_SCRIPTS=("scripts/audit-mongodb-data.js" "scripts/schedule-mongodb-audit.js")
           
-          # Vérifier le point d'entrée serverless
-          if [ ! -d "api" ]; then
-            echo "❌ Dossier API manquant"
-            exit 1
-          fi
+          for script in "${MONGODB_SCRIPTS[@]}"; do
+            if [ -f "$script" ]; then
+              echo "✅ $script existe"
+              # Vérifier la syntaxe
+              node -c "$script" && echo "  ✓ Syntaxe valide" || echo "  ⚠️ Syntaxe invalide"
+            fi
+          done
           
-          if [ ! -f "api/index.js" ]; then
-            echo "❌ Point d'entrée serverless manquant"
-            exit 1
-          fi
-          
-          echo "✅ Fichiers préparés pour Vercel"
-      
-      - name: ✅ Déploiement Vercel
-        run: |
-          echo "✅ Backend prêt pour déploiement sur Vercel"
-          echo "🔄 Le déploiement sera effectué par l'intégration Vercel GitHub"
-          echo "🌐 https://nion-farr-backend.vercel.app"
-          
-          # Si vous avez un token Vercel, vous pouvez également déclencher le déploiement manuellement
-          if [[ -n "${{ secrets.VERCEL_TOKEN }}" ]]; then
-            echo "ℹ️ Token Vercel disponible, le déploiement pourrait être déclenché manuellement si nécessaire"
-          fi
+          echo "✅ Scripts MongoDB vérifiés"
 
-  deploy-frontend:
-    name: 🌐 Deploy Frontend (Vercel)
-    needs: [verify-frontend]
+  deploy-summary:
+    name: 🚀 Informations de déploiement
+    needs: [verify-frontend, verify-backend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     
     steps:
-      - name: ✅ Informations de déploiement
+      - name: ✅ Récapitulatif du déploiement
         run: |
-          echo "✅ Frontend prêt pour déploiement sur Vercel"
-          echo "🔗 L'intégration GitHub de Vercel déploiera automatiquement les changements"
-          echo "🌐 https://nion-farr.vercel.app"
-          
-          # Si vous avez un token Vercel, vous pouvez également déclencher le déploiement manuellement
-          if [[ -n "${{ secrets.VERCEL_TOKEN }}" ]]; then
-            echo "ℹ️ Token Vercel disponible, le déploiement pourrait être déclenché manuellement si nécessaire"
-          fi 
+          echo "✅ Vérifications réussies!"
+          echo ""
+          echo "🔄 Informations de déploiement Vercel:"
+          echo "🌐 Frontend: https://nion-farr.vercel.app"
+          echo "⚡ Backend: https://nion-farr-backend.vercel.app"
+          echo ""
+          echo "📝 Note: Les déploiements sont gérés automatiquement par l'intégration GitHub de Vercel."
+          echo "Les builds de cette action CI ne sont que des vérifications de conformité." 

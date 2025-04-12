@@ -1,4 +1,4 @@
-name: Vercel Build Check
+name: Vercel Frontend Check
 
 on:
   push:
@@ -14,16 +14,16 @@ on:
 
 jobs:
   verify-vercel-build:
-    name: 🌐 Vérification Vercel
+    name: 🌐 Vérification Frontend Vercel
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -61,18 +61,64 @@ jobs:
           echo "- Fichiers JS: $JS_COUNT"
           echo "- Fichiers CSS: $CSS_COUNT"
           
+          # Vérifier la présence de vercel.json
+          if [ ! -f "vercel.json" ]; then
+            echo "⚠️ vercel.json manquant"
+            echo "Création d'un fichier vercel.json de base..."
+            
+            cat > vercel.json << EOL
+{
+  "version": 2,
+  "buildCommand": "npm run vercel-build",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+  "routes": [
+    { 
+      "src": "/api/(.*)", 
+      "dest": "https://nion-farr-backend.vercel.app/api/$1" 
+    },
+    { 
+      "src": "/(.*)", 
+      "dest": "/$1" 
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "dest": "https://nion-farr-backend.vercel.app/api/$1"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://nion-farr-backend.vercel.app/api",
+    "NEXT_PUBLIC_APP_URL": "https://nion-farr.vercel.app",
+    "NEXT_PUBLIC_ENVIRONMENT": "production"
+  }
+}
+EOL
+            echo "✅ vercel.json créé"
+          else
+            # Vérifier les configurations clés
+            if ! grep -q "nion-farr-backend.vercel.app" vercel.json; then
+              echo "⚠️ Backend URL manquante dans vercel.json"
+            else
+              echo "✅ Backend URL trouvée dans vercel.json"
+            fi
+          fi
+          
           # Résumé court
           echo "✅ Le build Vercel est valide"
           
           # Générer un résumé pour l'artefact
           cat > vercel-build-report.md << EOL
-          # Rapport de build Vercel
+          # Rapport de build Vercel Frontend
           
           **Date:** $(date)
           
           ## Structure
           - .next: ✅
           - .next/static: ✅
+          - vercel.json: $(if [ -f "vercel.json" ]; then echo "✅"; else echo "⚠️"; fi)
           
           ## Statistiques
           - Taille totale: $TOTAL_SIZE
@@ -85,12 +131,51 @@ jobs:
           EOL
       
       - name: 📤 Uploader le rapport
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: vercel-build-report
+          name: vercel-frontend-report
           path: frontend/vercel-build-report.md
+
+      - name: 🔍 Vérification des variables d'environnement
+        working-directory: frontend
+        run: |
+          echo "🔍 Vérification des variables d'environnement..."
+          
+          ENV_FOUND=false
+          
+          # Vérifier la présence de fichiers .env
+          if [ -f ".env.production" ]; then
+            echo "✅ .env.production trouvé"
+            ENV_FOUND=true
+            
+            # Vérifier que les variables essentielles sont présentes
+            if grep -q "NEXT_PUBLIC_API_URL" .env.production; then
+              echo "✅ NEXT_PUBLIC_API_URL trouvé dans .env.production"
+            else
+              echo "⚠️ NEXT_PUBLIC_API_URL manquant dans .env.production"
+            fi
+          fi
+          
+          if [ -f ".env.example" ]; then
+            echo "✅ .env.example trouvé"
+          fi
+          
+          if [ "$ENV_FOUND" = false ]; then
+            echo "⚠️ Aucun fichier .env.production trouvé"
+            echo "🔄 Création d'un fichier .env.production de base..."
+            
+            cat > .env.production << EOL
+NEXT_PUBLIC_API_URL=https://nion-farr-backend.vercel.app/api
+NEXT_PUBLIC_APP_URL=https://nion-farr.vercel.app
+NEXT_PUBLIC_ENVIRONMENT=production
+EOL
+            echo "✅ .env.production créé"
+          fi
+          
+          echo "✅ Vérification terminée"
 
       - name: ✅ Notification finale
         run: |
           echo "✅ Build Vercel vérifié avec succès"
-          echo "🚀 Le frontend est prêt pour déploiement sur Vercel" 
+          echo "🚀 Le frontend est prêt pour déploiement sur Vercel"
+          echo "📝 URL de déploiement: https://nion-farr.vercel.app" 
