@@ -17,7 +17,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "dest": "https://nion-farr-backend.vercel.app/api/$1"
+      "destination": "https://nion-farr-backend.vercel.app/api/:path*"
     }
   ],
   "env": {
