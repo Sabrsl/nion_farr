@@ -35,19 +35,19 @@ export const validate = (config: Record<string, unknown>) => {
     MAIL_FROM: Joi.string().required(),
     
     // Payment (Wave)
-    WAVE_API_KEY: Joi.string().required(),
-    WAVE_API_SECRET: Joi.string().required(),
-    WAVE_API_URL: Joi.string().required(),
+    WAVE_API_KEY: Joi.string().optional(),
+    WAVE_API_SECRET: Joi.string().optional(),
+    WAVE_API_URL: Joi.string().optional(),
     
     // Payment (Orange Money)
-    ORANGE_MONEY_API_KEY: Joi.string().required(),
-    ORANGE_MONEY_API_SECRET: Joi.string().required(),
-    ORANGE_MONEY_API_URL: Joi.string().required(),
+    ORANGE_MONEY_API_KEY: Joi.string().optional(),
+    ORANGE_MONEY_API_SECRET: Joi.string().optional(),
+    ORANGE_MONEY_API_URL: Joi.string().optional(),
     
     // Payment (Free Money)
-    FREE_MONEY_API_KEY: Joi.string().required(),
-    FREE_MONEY_API_SECRET: Joi.string().required(),
-    FREE_MONEY_API_URL: Joi.string().required(),
+    FREE_MONEY_API_KEY: Joi.string().optional(),
+    FREE_MONEY_API_SECRET: Joi.string().optional(),
+    FREE_MONEY_API_URL: Joi.string().optional(),
   });
 
   const { error, value } = schema.validate(config, { allowUnknown: true });
