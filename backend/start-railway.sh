@@ -8,18 +8,92 @@ echo "- Port: $PORT"
 echo "- Railway deployment: $RAILWAY_DEPLOYMENT"
 echo "- MongoDB URI configuré: $(if [ -n "$MONGODB_URI" ]; then echo "oui"; else echo "non"; fi)"
 
+echo "📔 Exécution des scripts de correction critiques..."
+
+# Script d'urgence pour créer l'entité User directement
+if [ -f "scripts/create-user-entity.js" ]; then
+  echo "🔧 Exécution du script d'urgence create-user-entity.js"
+  node scripts/create-user-entity.js
+  
+  # Vérification de l'entité User
+  if [ -f "scripts/verify-user-entity.js" ]; then
+    echo "🔍 Vérification de l'entité User avec verify-user-entity.js"
+    node scripts/verify-user-entity.js
+  else
+    echo "⚠️ Le script verify-user-entity.js n'a pas été trouvé"
+  fi
+else
+  echo "⚠️ Le script create-user-entity.js n'a pas été trouvé"
+fi
+
+# Exécuter le script fix-entity-relations.js s'il existe
+if [ -f "scripts/fix-entity-relations.js" ]; then
+  echo "🔧 Exécution du script fix-entity-relations.js"
+  node scripts/fix-entity-relations.js
+else
+  echo "⚠️ Le script fix-entity-relations.js n'a pas été trouvé"
+fi
+
+# Exécuter le script fix-missing-entities.js s'il existe
+if [ -f "scripts/fix-missing-entities.js" ]; then
+  echo "🔧 Exécution du script fix-missing-entities.js"
+  node scripts/fix-missing-entities.js
+else
+  echo "⚠️ Le script fix-missing-entities.js n'a pas été trouvé"
+fi
+
+# Assurer que les dossiers d'entités existent
+mkdir -p dist/modules/users/entities
+mkdir -p dist/modules/auth/entities
+
+# Vérifier des fichiers critiques
+if [ ! -f "dist/modules/users/entities/user.entity.js" ]; then
+  echo "⚠️ ATTENTION: user.entity.js est manquant - tentative de correction..."
+  # Tenter la création une dernière fois avec le script d'urgence
+  node scripts/create-user-entity.js
+fi
+
+# S'assurer que le fichier env.validation.js existe dans le répertoire dist
+if [ ! -f "dist/env.validation.js" ]; then
+  echo "⚠️ Le fichier env.validation.js est manquant dans dist, tentative de correction..."
+  node scripts/fix-dist-structure.js
+fi
+
+# Exécuter le script fix-dist-structure.js pour corriger la structure du dossier dist
+echo "🔧 Exécution du script fix-dist-structure.js"
+node scripts/fix-dist-structure.js
+
+# Exécution de prisma generate si nécessaire
+if [ -f "prisma/schema.prisma" ]; then
+  echo "🔧 Génération des clients Prisma..."
+  npx prisma generate
+fi
+
+# Vérifier si le .env existe, sinon créer un .env minimal à partir des variables d'environnement
+if [ ! -f ".env" ]; then
+  echo "⚠️ Le fichier .env est manquant, création à partir des variables d'environnement..."
+  echo "DATABASE_URL=$DATABASE_URL" > .env
+  echo "PORT=$PORT" >> .env
+  echo "JWT_SECRET=$JWT_SECRET" >> .env
+fi
+
 echo "👉 Création préventive des dossiers critiques..."
 # Création des répertoires critiques
 mkdir -p dist/common/logger
 mkdir -p dist/common/interceptors
 mkdir -p dist/modules/users
+mkdir -p dist/modules/users/entities
 mkdir -p dist/modules/auth/guards
 mkdir -p dist/modules/auth/decorators
 mkdir -p dist/modules/services
+mkdir -p dist/modules/services/entities
 mkdir -p dist/modules/orders
+mkdir -p dist/modules/orders/entities
 mkdir -p dist/modules/payments
 mkdir -p dist/modules/messages
+mkdir -p dist/modules/messages/entities
 mkdir -p dist/modules/reviews
+mkdir -p dist/modules/reviews/entities
 mkdir -p dist/modules/admin
 mkdir -p dist/modules/notifications
 mkdir -p dist/modules/email
@@ -40,6 +114,7 @@ CRITICAL_FILES=(
   "dist/common/logger/logger.module.js"
   "dist/common/interceptors/http-exception.interceptor.js"
   "dist/modules/users/users.module.js"
+  "dist/modules/users/entities/user.entity.js"
 )
 
 # Vérifier chaque fichier critique
@@ -57,6 +132,12 @@ done
 if [ $MISSING_FILES -gt 0 ]; then
   echo "🔄 Fichiers manquants détectés, exécution du script de correction..."
   node scripts/fix-dist-structure.js
+  
+  # Exécuter à nouveau fix-entity-relations.js pour s'assurer que les entités sont créées
+  if [ -f "scripts/fix-entity-relations.js" ]; then
+    echo "🔄 Réexécution de fix-entity-relations.js..."
+    node scripts/fix-entity-relations.js
+  fi
   
   # Vérifier à nouveau les fichiers critiques
   MISSING_FILES_AFTER=0
@@ -98,19 +179,6 @@ if [ -z "$PORT" ]; then
 fi
 
 echo "✅ PORT est correctement défini à $PORT"
-
-echo "👉 Vérification et correction des fichiers d'entité..."
-# Exécuter le script de correction des entités
-if [ -f "scripts/fix-missing-entities.js" ]; then
-  node scripts/fix-missing-entities.js
-  if [ $? -ne 0 ]; then
-    echo "⚠️ Problèmes détectés avec les fichiers d'entité, exécution de fix-entity-relations.js..."
-    node scripts/fix-entity-relations.js
-  fi
-else
-  echo "⚠️ Le script fix-missing-entities.js n'existe pas, utilisation de fix-entity-relations.js..."
-  node scripts/fix-entity-relations.js
-fi
 
 echo "✅ Démarrage de l'application principale..."
 
