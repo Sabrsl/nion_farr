@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
-# Hook pre-push temporairement désactivé
-echo "⚠️ Hook pre-push désactivé - Mode bypass"
-exit 0
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🧪 Exécution des tests avant le push..."
+npm test
