@@ -315,136 +315,122 @@ class AuthService {
     }
   }
 
-  async login(credentials: LoginCredentials, autoRedirect = true, redirectUrl?: string): Promise<LoginResponse> {
-    console.log("🔐 Tentative de connexion avec:", {
-      email: credentials.emailOrPhone,
-      password: "********",
-      rememberMe: credentials.rememberMe
+  async login(credentials: LoginCredentials, rememberMe: boolean = false, redirectUrl?: string): Promise<LoginResponse> {
+    console.log("🔐 Tentative de connexion avec:", { 
+      emailOrPhone: credentials.emailOrPhone,
+      rememberMe,
+      redirectUrl,
+      apiUrl: this.apiUrl
     });
 
-    if (!credentials.emailOrPhone || !credentials.password) {
-      return {
-        success: false,
-        error: "Veuillez fournir un email/téléphone et un mot de passe"
-      };
-    }
-
     // Vérifier si l'utilisateur est bloqué
-    if (this.isBlocked(credentials.emailOrPhone)) {
+    const isBlocked = this.isBlocked(credentials.emailOrPhone);
+    if (isBlocked) {
       const remainingBlockTime = this.getRemainingBlockTime(credentials.emailOrPhone);
-      const minutesRemaining = Math.ceil(remainingBlockTime / 60000);
-      
+      const remainingMinutes = Math.ceil(remainingBlockTime / (1000 * 60));
+      console.log(`🚫 Utilisateur bloqué jusqu'à: ${new Date(Date.now() + remainingBlockTime).toISOString()}`);
       return {
         success: false,
-        error: `Trop de tentatives échouées. Compte temporairement bloqué. Réessayez dans ${minutesRemaining} minute${minutesRemaining > 1 ? 's' : ''}.`
+        error: `Trop de tentatives. Veuillez réessayer dans ${remainingMinutes} minutes.`
       };
     }
 
     try {
-      // Récupérer les tokens CSRF avant la connexion
-      const csrfTokensRetrieved = await this.fetchCsrfTokens();
-      if (!csrfTokensRetrieved) {
-        console.warn("⚠️ Impossible de récupérer les tokens CSRF, tentative de connexion sans tokens");
-      }
-      
-      // Vérifier la disponibilité du serveur avant de tenter la connexion
+      // Vérifier la disponibilité du serveur
       const isServerAvailable = await this.checkServerAvailability();
+      console.log("🌐 État du serveur:", { 
+        isAvailable: isServerAvailable,
+        serverUrl: this.apiUrl
+      });
+
       if (!isServerAvailable) {
-        const serverUrl = this.apiUrl || 'le serveur';
-        return { 
-          success: false, 
-          error: `Serveur indisponible (${serverUrl}). Veuillez réessayer plus tard.`
+        return {
+          success: false,
+          error: "Le serveur est temporairement indisponible. Veuillez réessayer dans quelques instants."
         };
       }
 
-      // Préparer les données pour l'API
-      const requestBody = {
-        email: credentials.emailOrPhone.includes('@') ? credentials.emailOrPhone : undefined,
-        phoneNumber: !credentials.emailOrPhone.includes('@') ? credentials.emailOrPhone : undefined,
-        password: credentials.password,
-        rememberMe: credentials.rememberMe
-      };
-
-      // Utilisez un timeout pour éviter les attentes trop longues
-      let timeoutId: NodeJS.Timeout | null = null;
-      const timeoutPromise = new Promise<LoginResponse>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error("La requête a pris trop de temps"));
-        }, 15000); // 15 secondes de timeout
+      // Récupérer les tokens CSRF
+      const csrfTokensRetrieved = await this.fetchCsrfTokens();
+      console.log("🔑 Tokens CSRF:", { 
+        retrieved: csrfTokensRetrieved,
+        token: localStorage.getItem('csrf_token') ? 'présent' : 'absent'
       });
 
+      // Construire l'URL de connexion
+      const url = `${this.apiUrl}/auth/login`;
+      console.log("🌐 URL de connexion:", url);
+
+      // Préparer les données
+      const loginData = {
+        emailOrPhone: credentials.emailOrPhone,
+        password: credentials.password,
+        rememberMe
+      };
+
+      // Effectuer la requête
+      console.log("📤 Envoi de la requête de connexion...");
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-Token': localStorage.getItem('csrf_token') || ''
+        },
+        body: JSON.stringify(loginData),
+        credentials: 'include'
+      });
+
+      // Log de la réponse
+      console.log("📥 Réponse reçue:", {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      // Traiter la réponse
+      const responseText = await response.text();
+      console.log("📦 Contenu de la réponse:", responseText);
+
+      let responseData;
       try {
-        // Tenter d'abord via notre API proxy locale pour éviter les problèmes CORS
-        console.log("🔄 Tentative via proxy API local");
-        const proxyUrl = '/api/auth/login';
+        responseData = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.error("❌ Erreur parsing JSON:", e);
+        responseData = { message: responseText || "Réponse non-JSON du serveur" };
+      }
+
+      if (response.ok) {
+        console.log("✅ Connexion réussie:", responseData);
         
-        console.log("🔗 URL de proxy local:", proxyUrl);
-        
-        const proxyResponse = await fetch(proxyUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify(requestBody),
-          credentials: 'same-origin'
-        });
-        
-        if (timeoutId) clearTimeout(timeoutId);
-        
-        if (proxyResponse.ok) {
-          try {
-            const data = await proxyResponse.json();
-            console.log("✅ Connexion via proxy réussie");
-            
-            // Stocker le token
-            const token = data.accessToken || data.token;
-            if (token) {
-              if (typeof window !== 'undefined') {
-                localStorage.setItem(AUTH_TOKEN_KEY, token);
-              }
-              this.token = token;
-            }
-            
-            // Stocker les données utilisateur
-            if (data.user) {
-              localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-              this.user = data.user;
-              
-              // Redirection si nécessaire
-              if (autoRedirect) {
-                const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
-                this.forceRedirectAfterLogin(targetUrl);
-              }
-            }
-            
-            // Réinitialiser les tentatives échouées
-            this.resetFailedAttempts(credentials.emailOrPhone);
-            
-            return {
-              success: true,
-              user: data.user,
-              token: token
-            };
-          } catch (jsonError) {
-            console.error("❌ Erreur lors du parsing de la réponse JSON:", jsonError);
-            return {
-              success: false,
-              error: "Erreur lors du traitement de la réponse du serveur"
-            };
-          }
-        } else {
-          // Si le proxy local a échoué, essayer directement avec l'API backend
-          console.warn(`❌ Échec de la connexion via proxy (${proxyResponse.status}), tentative directe`);
-          return this.tryDirectBackendLogin(requestBody, autoRedirect, redirectUrl);
+        // Stocker le token
+        const token = responseData.accessToken || responseData.token;
+        if (token) {
+          localStorage.setItem(AUTH_TOKEN_KEY, token);
         }
-      } catch (proxyError) {
-        if (timeoutId) clearTimeout(timeoutId);
-        console.error("❌ Erreur lors de la connexion via proxy:", proxyError);
         
-        // Si le proxy a échoué, essayer directement avec l'API backend
-        return this.tryDirectBackendLogin(requestBody, autoRedirect, redirectUrl);
+        // Stocker les données utilisateur
+        if (responseData.user) {
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(responseData.user));
+          this.user = responseData.user;
+          
+          // Redirection si nécessaire
+          if (redirectUrl) {
+            this.forceRedirectAfterLogin(redirectUrl);
+          }
+        }
+        
+        return {
+          success: true,
+          user: responseData.user,
+          token: token
+        };
+      } else {
+        console.error("❌ Échec de la connexion:", responseData.message || responseData.error || `Erreur ${response.status}: ${response.statusText}`);
+        return {
+          success: false,
+          error: responseData.message || responseData.error || `Erreur ${response.status}: ${response.statusText}`
+        };
       }
     } catch (error) {
       console.error("🔥 Erreur générale lors de la connexion:", error);
