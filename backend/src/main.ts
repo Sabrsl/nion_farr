@@ -27,6 +27,20 @@ async function bootstrap() {
   console.log('Démarrage du serveur NionFar API...');
   
   try {
+    // Correction manuelle de l'URL MongoDB si elle contient le paramètre batchsize
+    if (process.env.MONGODB_URI) {
+      const originalUri = process.env.MONGODB_URI;
+      const correctedUri = originalUri
+        .replace(/&batchsize=[^&]*/g, '')
+        .replace(/\?batchsize=[^&]*&/g, '?')
+        .replace(/\?batchsize=[^&]*$/g, '');
+      
+      if (originalUri !== correctedUri) {
+        console.log('🔧 Correction de l\'URL MongoDB (suppression du paramètre batchsize)');
+        process.env.MONGODB_URI = correctedUri;
+      }
+    }
+    
     // Setup graceful shutdown handlers
     setupGracefulShutdown();
     
