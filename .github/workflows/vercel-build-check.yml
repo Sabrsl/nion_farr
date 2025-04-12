@@ -1,4 +1,4 @@
-name: Vercel Frontend Check
+name: 🌐 Frontend Build
 
 on:
   push:
