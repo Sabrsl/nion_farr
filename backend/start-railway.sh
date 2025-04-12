@@ -99,6 +99,19 @@ fi
 
 echo "✅ PORT est correctement défini à $PORT"
 
+echo "👉 Vérification et correction des fichiers d'entité..."
+# Exécuter le script de correction des entités
+if [ -f "scripts/fix-missing-entities.js" ]; then
+  node scripts/fix-missing-entities.js
+  if [ $? -ne 0 ]; then
+    echo "⚠️ Problèmes détectés avec les fichiers d'entité, exécution de fix-entity-relations.js..."
+    node scripts/fix-entity-relations.js
+  fi
+else
+  echo "⚠️ Le script fix-missing-entities.js n'existe pas, utilisation de fix-entity-relations.js..."
+  node scripts/fix-entity-relations.js
+fi
+
 echo "✅ Démarrage de l'application principale..."
 
 # Créer le dossier logs s'il n'existe pas

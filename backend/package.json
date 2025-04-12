@@ -65,7 +65,8 @@
     "mongodb:schedule-audit": "node scripts/schedule-mongodb-audit.js",
     "mongodb:validate": "npm run test:mongodb && npm run mongodb:audit",
     "fix:dist": "node scripts/fix-dist-structure.js",
-    "fix:entities": "node scripts/fix-entity-relations.js"
+    "fix:entities": "node scripts/fix-entity-relations.js",
+    "fix:missing-entities": "node scripts/fix-missing-entities.js"
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.1",

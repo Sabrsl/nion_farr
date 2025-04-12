@@ -26,7 +26,9 @@ RUN mkdir -p logs dist/common/logger dist/common/interceptors
 RUN echo "🔨 Lancement du build NestJS..." && \
     npm run build && \
     echo "📋 Exécution du script fix-dist-structure..." && \
-    node scripts/fix-dist-structure.js
+    node scripts/fix-dist-structure.js && \
+    echo "📋 Vérification et correction des entités..." && \
+    node scripts/fix-entity-relations.js
 
 # Vérification du build
 RUN echo "📋 Vérification de la structure finale:" && \
