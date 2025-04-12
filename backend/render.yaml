@@ -9,7 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
-        sync: false # Configure this in Render dashboard
+        value: mongodb+srv://vynalapp:uVmENC9K21dkMfma@clusternionfar.rjuvvf7.mongodb.net/?retryWrites=true&w=majority&appName=Clusternionfar
       - key: APP_URL
         value: https://nionfar-backend.onrender.com
       - key: FRONTEND_URL
