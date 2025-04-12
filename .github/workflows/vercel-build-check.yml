@@ -66,7 +66,7 @@ jobs:
             echo "⚠️ vercel.json manquant"
             echo "Création d'un fichier vercel.json de base..."
             
-            cat > vercel.json << EOL
+            cat > vercel.json << 'EOFMARKER'
 {
   "version": 2,
   "buildCommand": "npm run vercel-build",
@@ -95,7 +95,7 @@ jobs:
     "NEXT_PUBLIC_ENVIRONMENT": "production"
   }
 }
-EOL
+EOFMARKER
             echo "✅ vercel.json créé"
           else
             # Vérifier les configurations clés
@@ -110,25 +110,25 @@ EOL
           echo "✅ Le build Vercel est valide"
           
           # Générer un résumé pour l'artefact
-          cat > vercel-build-report.md << EOL
-          # Rapport de build Vercel Frontend
-          
-          **Date:** $(date)
-          
-          ## Structure
-          - .next: ✅
-          - .next/static: ✅
-          - vercel.json: $(if [ -f "vercel.json" ]; then echo "✅"; else echo "⚠️"; fi)
-          
-          ## Statistiques
-          - Taille totale: $TOTAL_SIZE
-          - Taille statique: $STATIC_SIZE
-          - Fichiers JS: $JS_COUNT
-          - Fichiers CSS: $CSS_COUNT
-          
-          ## Statut
-          **✅ PRÊT POUR DÉPLOIEMENT**
-          EOL
+          cat > vercel-build-report.md << 'EOFMARKER'
+# Rapport de build Vercel Frontend
+
+**Date:** $(date)
+
+## Structure
+- .next: ✅
+- .next/static: ✅
+- vercel.json: $(if [ -f "vercel.json" ]; then echo "✅"; else echo "⚠️"; fi)
+
+## Statistiques
+- Taille totale: $TOTAL_SIZE
+- Taille statique: $STATIC_SIZE
+- Fichiers JS: $JS_COUNT
+- Fichiers CSS: $CSS_COUNT
+
+## Statut
+**✅ PRÊT POUR DÉPLOIEMENT**
+EOFMARKER
       
       - name: 📤 Uploader le rapport
         uses: actions/upload-artifact@v4
@@ -164,11 +164,11 @@ EOL
             echo "⚠️ Aucun fichier .env.production trouvé"
             echo "🔄 Création d'un fichier .env.production de base..."
             
-            cat > .env.production << EOL
+            cat > .env.production << 'EOFMARKER'
 NEXT_PUBLIC_API_URL=https://nion-farr-backend.vercel.app/api
 NEXT_PUBLIC_APP_URL=https://nion-farr.vercel.app
 NEXT_PUBLIC_ENVIRONMENT=production
-EOL
+EOFMARKER
             echo "✅ .env.production créé"
           fi
           

@@ -134,7 +134,7 @@ jobs:
             echo "❌ Point d'entrée API manquant"
             
             # Créer un point d'entrée minimal
-            cat > backend/api/index.js << EOL
+            cat > backend/api/index.js << 'EOFMARKER'
 const serverless = require('serverless-http');
 const { NestFactory } = require('@nestjs/core');
 const { AppModule } = require('../dist/app.module');
@@ -157,7 +157,7 @@ module.exports = async (req, res) => {
   const handler = serverless(app);
   return handler(req, res);
 };
-EOL
+EOFMARKER
             echo "✅ backend/api/index.js créé"
           else
             echo "✅ backend/api/index.js existe"

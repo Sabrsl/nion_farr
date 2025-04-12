@@ -58,7 +58,7 @@ jobs:
                 echo "🔄 Création du fichier api/index.js..."
                 mkdir -p backend/api
                 
-                cat > backend/api/index.js << EOL
+                cat > backend/api/index.js << 'EOFMARKER'
 const serverless = require('serverless-http');
 const { NestFactory } = require('@nestjs/core');
 const { AppModule } = require('../dist/app.module');
@@ -99,7 +99,7 @@ module.exports = async (req, res) => {
   const handler = serverless(app);
   return handler(req, res);
 };
-EOL
+EOFMARKER
                 echo "✅ backend/api/index.js créé"
               else
                 MISSING_FILES=$((MISSING_FILES+1))
@@ -238,19 +238,19 @@ EOL
           echo "📝 Génération du rapport de vérification..."
           
           # Création d'un rapport de vérification concis
-          cat > vercel-backend-report.md << EOL
-          # Rapport de vérification Backend Vercel
-          
-          **Date:** $(date)
-          
-          ## Structure du build
-          - Fichier vercel.json: $(if [ -f "backend/vercel.json" ]; then echo "✅"; else echo "❌"; fi)
-          - Point d'entrée serverless: $(if [ -f "backend/api/index.js" ]; then echo "✅"; else echo "❌"; fi)
-          - Build NestJS: $(if [ -f "backend/dist/main.js" ]; then echo "✅"; else echo "❌"; fi)
-          
-          ## Résultat final
-          **Statut:** $(if [ -f "backend/vercel.json" ] && [ -f "backend/api/index.js" ] && [ -f "backend/dist/main.js" ]; then echo "✅ PRÊT POUR DÉPLOIEMENT"; else echo "❌ NON DÉPLOYABLE"; fi)
-          EOL
+          cat > vercel-backend-report.md << 'EOFMARKER'
+# Rapport de vérification Backend Vercel
+
+**Date:** $(date)
+
+## Structure du build
+- Fichier vercel.json: $(if [ -f "backend/vercel.json" ]; then echo "✅"; else echo "❌"; fi)
+- Point d'entrée serverless: $(if [ -f "backend/api/index.js" ]; then echo "✅"; else echo "❌"; fi)
+- Build NestJS: $(if [ -f "backend/dist/main.js" ]; then echo "✅"; else echo "❌"; fi)
+
+## Résultat final
+**Statut:** $(if [ -f "backend/vercel.json" ] && [ -f "backend/api/index.js" ] && [ -f "backend/dist/main.js" ]; then echo "✅ PRÊT POUR DÉPLOIEMENT"; else echo "❌ NON DÉPLOYABLE"; fi)
+EOFMARKER
           
           cat vercel-backend-report.md
 
