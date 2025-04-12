@@ -176,7 +176,7 @@ function fixEntryPoint() {
       // Correction spécifique pour l'import de app.service
       if (content.includes("require('./app.service')") || content.includes("require(\"./app.service\")")) {
         content = content.replace(/require\(['"]\.\/app\.service['"]\)/g, "require('./app.service.js')");
-        console.log('✅ Fixed app.service import to include .js extension in app.controller.js');
+        console.log('✅ Import de app.service corrigé pour inclure l\'extension .js dans app.controller.js');
         fs.writeFileSync(appControllerPath, content, 'utf8');
       }
       
