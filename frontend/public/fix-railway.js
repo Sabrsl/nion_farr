@@ -1,134 +1,96 @@
-// Script de correction des problèmes de connexion au backend
-(function() {
-  console.log('🔧 Exécution du script de correction backend...');
+/**
+ * Script de correction des URLs Railway vers les URLs Render
+ */
+
+const RENDER_BACKEND_URL = 'https://nionfar-backend.onrender.com';
+const RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
+
+// Anciens URLs (obsolètes)
+const VERCEL_BACKEND_URL = 'https://nion-farr-backend.vercel.app';
+const VERCEL_API_URL = 'https://nion-farr-backend.vercel.app/api';
+
+// Exécuter après le chargement du DOM
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🔄 Vérification et correction des URLs Railway...');
   
-  // Définir les URLs Vercel
-  const VERCEL_BACKEND_URL = 'https://nion-farr-backend.vercel.app';
-  const VERCEL_API_URL = 'https://nion-farr-backend.vercel.app/api';
-  const VERCEL_FRONTEND_URL = 'https://nion-farr.vercel.app';
-  
-  // Nettoyer les valeurs liées à l'ancien backend
-  function cleanStoredValues() {
-    console.log('🧹 Nettoyage des valeurs stockées...');
+  try {
+    // Définir les variables globales
+    window.__CORRECT_API_URL = RENDER_API_URL;
+    window.__CORRECT_BACKEND_URL = RENDER_BACKEND_URL;
     
-    // Liste des clés à nettoyer
-    const keysToClean = [
-      'backendStatus',
-      'lastBackendCheck',
-      'NEXT_PUBLIC_API_URL',
-      'apiUrl',
-      'backend_url'
-    ];
-    
-    // Vider completement le localStorage pour être sûr
-    try {
-      localStorage.clear();
-      console.log('✅ localStorage entièrement vidé');
-    } catch (e) {
-      console.error('❌ Erreur lors du nettoyage du localStorage:', e);
+    // Vérifier localStorage
+    if (typeof localStorage === 'undefined') {
+      console.warn('⚠️ localStorage n\'est pas disponible');
+      return;
     }
     
-    // Définir les nouvelles valeurs
-    try {
-      localStorage.setItem('NEXT_PUBLIC_API_URL', VERCEL_API_URL);
-      localStorage.setItem('NEXT_PUBLIC_APP_URL', VERCEL_FRONTEND_URL);
-      localStorage.setItem('backend_fixed', 'true');
-      localStorage.setItem('backend_fix_timestamp', new Date().toISOString());
-      localStorage.setItem('backend_provider', 'vercel');
-      console.log('✅ Nouvelles valeurs définies');
-    } catch (e) {
-      console.error('❌ Erreur lors de la définition des nouvelles valeurs:', e);
-    }
-  }
-  
-  // Vérifier si une erreur de Railway est présente sur la page
-  function checkForRailwayError() {
-    console.log('🔍 Recherche d\'erreurs Railway ou de backend...');
-    
-    // Vérifier le contenu de la page
-    const pageContent = document.body.textContent || '';
-    const errorMessages = [
-      'railway.app',
-      'nionfar.up.railway',
-      'Serveur indisponible',
-      'Railway indisponible'
-    ];
-    
-    // Chercher les messages d'erreur
-    let errorFound = false;
-    errorMessages.forEach(msg => {
-      if (pageContent.includes(msg)) {
-        console.log(`⚠️ Erreur trouvée: "${msg}"`);
-        errorFound = true;
+    // Vérifier si la correction a déjà été effectuée récemment
+    const lastFixTimestamp = localStorage.getItem('railway_fixed_timestamp');
+    if (lastFixTimestamp) {
+      const lastFixDate = new Date(lastFixTimestamp);
+      const now = new Date();
+      const hoursSinceLastFix = (now - lastFixDate) / (1000 * 60 * 60);
+      
+      // Si moins de 24 heures se sont écoulées depuis la dernière correction, ne pas réexécuter
+      if (hoursSinceLastFix < 24) {
+        console.log(`ℹ️ Dernière correction il y a ${hoursSinceLastFix.toFixed(2)} heures. Ignore.`);
+        return;
       }
-    });
-    
-    // Forcer la détection d'erreur pour assurer la migration vers Vercel
-    if (!errorFound) {
-      console.log('⚠️ Forçage de la migration vers Vercel');
-      errorFound = true;
     }
     
-    return errorFound;
-  }
-  
-  // Corriger les références à Railway dans le DOM
-  function fixDomReferences() {
-    console.log('🔧 Correction des références dans le DOM...');
+    // Variables pour suivre les corrections
+    let fixed = false;
     
-    // Rechercher toutes les références textuelles à Railway
-    const textNodes = [];
-    function findTextNodes(node) {
-      if (node.nodeType === 3) {
-        // Node de type texte
-        if (node.nodeValue.includes('railway') || node.nodeValue.includes('Serveur indisponible')) {
-          textNodes.push(node);
+    // Rechercher et corriger les URLs Railway dans localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const value = localStorage.getItem(key);
+      
+      if (value && typeof value === 'string') {
+        // Vérifier et corriger les URLs Railway
+        if (value.includes('railway.app')) {
+          let newValue = value;
+          
+          // Remplacer les URLs complètes
+          newValue = newValue.replace(/https:\/\/[^\/]*railway\.app\/api/gi, RENDER_API_URL);
+          newValue = newValue.replace(/https:\/\/[^\/]*railway\.app/gi, RENDER_BACKEND_URL);
+          
+          // Si la valeur a été modifiée, mettre à jour localStorage
+          if (newValue !== value) {
+            localStorage.setItem(key, newValue);
+            console.log(`✅ Corrigé ${key}: ${value} → ${newValue}`);
+            fixed = true;
+          }
         }
-      } else if (node.nodeType === 1) {
-        // Élément
-        Array.from(node.childNodes).forEach(findTextNodes);
+        
+        // Vérifier et corriger les anciennes URLs Vercel
+        if (value === VERCEL_API_URL || value === VERCEL_BACKEND_URL) {
+          const newValue = value === VERCEL_API_URL ? RENDER_API_URL : RENDER_BACKEND_URL;
+          localStorage.setItem(key, newValue);
+          console.log(`✅ Corrigé ${key}: ${value} → ${newValue}`);
+          fixed = true;
+        }
       }
     }
     
-    findTextNodes(document.body);
+    // Forcer les valeurs correctes pour les clés importantes
+    localStorage.setItem('NEXT_PUBLIC_API_URL', RENDER_API_URL);
+    localStorage.setItem('API_URL', RENDER_API_URL);
     
-    // Remplacer les références trouvées
-    textNodes.forEach(node => {
-      node.nodeValue = node.nodeValue
-        .replace(/https?:\/\/[^\/]*railway\.app[^\/]*\/api/gi, VERCEL_API_URL)
-        .replace(/https?:\/\/[^\/]*railway\.app[^\/]*/gi, VERCEL_BACKEND_URL)
-        .replace(/Serveur indisponible \(.*\)/gi, 'Connexion au serveur en cours...');
-    });
+    // Marquer comme corrigé
+    localStorage.setItem('railway_fixed', 'true');
+    localStorage.setItem('railway_fixed_timestamp', new Date().toISOString());
     
-    console.log(`✅ ${textNodes.length} références corrigées dans le DOM`);
-  }
-  
-  // Exécuter les réparations
-  function runFix() {
-    cleanStoredValues();
+    console.log('✅ Correction des URLs Railway terminée');
     
-    const errorFound = checkForRailwayError();
-    if (errorFound) {
-      fixDomReferences();
-      
-      // Ajouter une notification visuelle
-      try {
-        const notification = document.createElement('div');
-        notification.style = 'position: fixed; top: 20px; right: 20px; background-color: #4CAF50; color: white; padding: 16px; border-radius: 4px; z-index: 9999;';
-        notification.textContent = 'Migration vers Vercel en cours... La page va se recharger automatiquement.';
-        document.body.appendChild(notification);
-      } catch (e) {
-        console.error('Erreur lors de l\'affichage de la notification:', e);
-      }
-      
-      // Rafraîchir la page après un court délai
+    // Si des corrections ont été effectuées, recharger la page après un délai
+    if (fixed) {
+      console.log('🔄 Rechargement de la page dans 1 seconde...');
       setTimeout(() => {
-        console.log('🔄 Rechargement de la page');
         window.location.reload();
-      }, 1500);
+      }, 1000);
     }
+  } catch (error) {
+    console.error('❌ Erreur lors de la correction des URLs Railway:', error);
   }
-  
-  // Exécuter immédiatement
-  runFix();
-})(); 
+}); 

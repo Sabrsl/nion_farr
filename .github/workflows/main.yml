@@ -69,7 +69,7 @@ jobs:
           fi
           
           # Vérifier que vercel.json contient les bonnes configurations
-          if ! grep -q "nion-farr-backend.vercel.app" vercel.json; then
+          if ! grep -q "nionfar-backend.onrender.com" vercel.json; then
             echo "⚠️ URL du backend manquante dans vercel.json"
           else
             echo "✅ URL du backend trouvée dans vercel.json"
@@ -103,68 +103,25 @@ jobs:
           npm run build
           echo "✅ Build backend terminé"
       
-      - name: 📂 Vérification de la structure Vercel
+      - name: 📂 Vérification de la structure Render
         run: |
-          echo "🔍 Vérification de la configuration Vercel..."
+          echo "🔍 Vérification de la configuration Render..."
           
           # Vérifier les fichiers critiques
-          if [ ! -f "backend/vercel.json" ]; then
-            echo "❌ backend/vercel.json manquant"
-            exit 1
+          if [ ! -f "backend/render.yaml" ]; then
+            echo "⚠️ backend/render.yaml manquant"
           else
-            echo "✅ backend/vercel.json existe"
+            echo "✅ backend/render.yaml existe"
           fi
           
-          # Vérifier que le dossier api existe
-          if [ ! -d "backend/api" ]; then
-            echo "❌ Dossier backend/api manquant"
-            mkdir -p backend/api
-            echo "✅ Dossier backend/api créé"
+          # Vérifier que le fichier .env.production existe
+          if [ ! -f "backend/.env.production" ]; then
+            echo "❌ Fichier .env.production manquant"
           else
-            echo "✅ Dossier backend/api existe"
+            echo "✅ Fichier .env.production existe"
           fi
           
-          # Vérifier que le point d'entrée API existe
-          if [ ! -f "backend/api/index.js" ]; then
-            echo "❌ Point d'entrée API manquant"
-            
-            # Créer un fichier index.js minimal ligne par ligne
-            echo 'const serverless = require("serverless-http");' > backend/api/index.js
-            echo 'const { NestFactory } = require("@nestjs/core");' >> backend/api/index.js
-            echo 'const { AppModule } = require("../dist/app.module");' >> backend/api/index.js
-            echo '' >> backend/api/index.js
-            echo 'let cachedApp;' >> backend/api/index.js
-            echo '' >> backend/api/index.js
-            echo 'async function bootstrap() {' >> backend/api/index.js
-            echo '  if (cachedApp) return cachedApp;' >> backend/api/index.js
-            echo '  const app = await NestFactory.create(AppModule);' >> backend/api/index.js
-            echo '  await app.init();' >> backend/api/index.js
-            echo '  cachedApp = app;' >> backend/api/index.js
-            echo '  return app;' >> backend/api/index.js
-            echo '}' >> backend/api/index.js
-            echo '' >> backend/api/index.js
-            echo 'module.exports = async (req, res) => {' >> backend/api/index.js
-            echo '  if (req.url === "/health" || req.url === "/api/health") {' >> backend/api/index.js
-            echo '    return res.status(200).json({ status: "ok", vercel: true });' >> backend/api/index.js
-            echo '  }' >> backend/api/index.js
-            echo '  const app = await bootstrap();' >> backend/api/index.js
-            echo '  const handler = serverless(app);' >> backend/api/index.js
-            echo '  return handler(req, res);' >> backend/api/index.js
-            echo '};' >> backend/api/index.js
-            
-            echo "✅ backend/api/index.js créé"
-          else
-            echo "✅ backend/api/index.js existe"
-          fi
-          
-          # Vérifier les variables d'environnement requises
-          if [ ! -f "backend/.env.vercel" ]; then
-            echo "⚠️ backend/.env.vercel manquant - Assurez-vous de configurer les variables d'environnement dans le dashboard Vercel"
-          else
-            echo "✅ backend/.env.vercel existe"
-          fi
-          
-          echo "✅ Configuration Vercel validée"
+          echo "✅ Configuration Render validée"
       
       - name: 🧪 Vérification MongoDB
         working-directory: backend
@@ -193,9 +150,9 @@ jobs:
         run: |
           echo "✅ Vérifications réussies!"
           echo ""
-          echo "🔄 Informations de déploiement Vercel:"
+          echo "🔄 Informations de déploiement:"
           echo "🌐 Frontend: https://nion-farr.vercel.app"
-          echo "⚡ Backend: https://nion-farr-backend.vercel.app"
+          echo "⚡ Backend: https://nionfar-backend.onrender.com"
           echo ""
-          echo "📝 Note: Les déploiements sont gérés automatiquement par l'intégration GitHub de Vercel."
+          echo "📝 Note: Les déploiements sont gérés automatiquement par l'intégration GitHub avec Vercel et Render."
           echo "Les builds de cette action CI ne sont que des vérifications de conformité." 

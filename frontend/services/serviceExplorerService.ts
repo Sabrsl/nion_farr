@@ -2,35 +2,20 @@ import { Service, User, Category } from '../types';
 import type { OrderStatus } from '../types';
 import { NextRouter } from 'next/router';
 import axios from 'axios';
+import { getApiBaseUrl } from '../config';
 
 // Define missing types that were imported
 type CategoryId = string;
 type ServiceId = string;
 type ServiceQuery = any;
 
-// API URLs
-const LOCAL_API_URL = 'http://localhost:3001/api';
-const RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
+// API URLs - En commentaire car nous utilisons maintenant getApiBaseUrl() de config.ts
+// const LOCAL_API_URL = 'http://localhost:3001/api';
+// const RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
 
 // Get the base API URL based on environment
 const getBaseApiUrl = () => {
-  // Priorité 1: Variable d'environnement
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-  
-  // Priorité 2: URL stockée dans localStorage
-  if (typeof window !== 'undefined' && localStorage.getItem('API_URL')) {
-    return localStorage.getItem('API_URL');
-  }
-
-  // Priorité 3: Localhost en développement
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return LOCAL_API_URL;
-  }
-  
-  // Par défaut: URL de production Render
-  return RENDER_API_URL;
+  return getApiBaseUrl();
 };
 
 // Types

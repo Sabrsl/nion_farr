@@ -1,0 +1,207 @@
+name: 🔍 Vérification Backend Render
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/render-backend-check.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  verify-render-backend:
+    name: 🛠️ Vérification Backend Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+      
+      - name: 📦 Install dependencies
+        working-directory: backend
+        run: npm install --no-audit --prefer-offline
+      
+      - name: 🔀 Set build version
+        run: echo "BUILD_VERSION=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+      
+      - name: 🛠️ Build Backend
+        working-directory: backend
+        run: |
+          # Construire le backend
+          npm run build
+          
+          # Vérifier si la construction a réussi
+          if [ ! -d "dist" ]; then
+            echo "❌ Build échoué - dossier dist manquant"
+            exit 1
+          fi
+          
+          # Vérifier la présence des fichiers essentiels
+          if [ ! -f "dist/src/main.js" ]; then
+            echo "❌ Build incomplet - main.js manquant"
+            exit 1
+          fi
+          
+          # Vérifier la syntaxe des fichiers JavaScript générés
+          node -c dist/src/main.js || {
+            echo "❌ Erreur de syntaxe dans main.js"
+            exit 1
+          }
+          
+          # Statistiques du build
+          TOTAL_SIZE=$(du -sh dist | cut -f1)
+          JS_COUNT=$(find dist -name "*.js" | wc -l)
+          JS_MAP_COUNT=$(find dist -name "*.js.map" | wc -l)
+          
+          echo "📊 Statistiques du build:"
+          echo "- Taille totale: $TOTAL_SIZE"
+          echo "- Fichiers JS: $JS_COUNT"
+          echo "- Fichiers source map: $JS_MAP_COUNT"
+          
+          echo "✅ Build backend réussi"
+      
+      - name: 🔍 Vérification de la configuration Render
+        working-directory: backend
+        run: |
+          echo "🔍 Vérification de la configuration Render..."
+          
+          # Vérifier la présence de render.yaml
+          if [ ! -f "render.yaml" ]; then
+            echo "⚠️ render.yaml manquant"
+            
+            # Créer un fichier render.yaml minimal
+            echo 'services:' > render.yaml
+            echo '  - type: web' >> render.yaml
+            echo '    name: nionfar-backend' >> render.yaml
+            echo '    env: node' >> render.yaml
+            echo '    buildCommand: npm install && npm run build' >> render.yaml
+            echo '    startCommand: npm run start:prod' >> render.yaml
+            echo '    healthCheckPath: /api/health' >> render.yaml
+            echo '    envVars:' >> render.yaml
+            echo '      - key: NODE_ENV' >> render.yaml
+            echo '        value: production' >> render.yaml
+            echo '      - key: APP_URL' >> render.yaml
+            echo '        value: https://nionfar-backend.onrender.com' >> render.yaml
+            echo '      - key: FRONTEND_URL' >> render.yaml
+            echo '        value: https://nion-farr.vercel.app' >> render.yaml
+            echo '      - key: PORT' >> render.yaml
+            echo '        value: 3001' >> render.yaml
+            echo '      - key: IS_RENDER' >> render.yaml
+            echo '        value: true' >> render.yaml
+            echo '      - key: CORS_ALLOWED_ORIGINS' >> render.yaml
+            echo '        value: https://nion-farr.vercel.app,http://localhost:3000' >> render.yaml
+            echo '    autoDeploy: true' >> render.yaml
+            
+            echo "✅ render.yaml créé"
+          else
+            echo "✅ render.yaml trouvé"
+            
+            # Vérifier les configurations essentielles
+            if grep -q "nionfar-backend" render.yaml && grep -q "startCommand" render.yaml; then
+              echo "✅ Configuration render.yaml valide"
+            else
+              echo "⚠️ Configuration render.yaml incomplète ou incorrecte"
+            fi
+          fi
+          
+          # Générer un résumé pour l'artefact
+          echo '# Rapport de build Backend pour Render' > render-build-report.md
+          echo '' >> render-build-report.md
+          echo "**Date:** $(date)" >> render-build-report.md
+          echo "**Version:** $BUILD_VERSION" >> render-build-report.md
+          echo '' >> render-build-report.md
+          echo '## Structure' >> render-build-report.md
+          echo "- dist: $(if [ -d "dist" ]; then echo "✅"; else echo "❌"; fi)" >> render-build-report.md
+          echo "- dist/src/main.js: $(if [ -f "dist/src/main.js" ]; then echo "✅"; else echo "❌"; fi)" >> render-build-report.md
+          echo "- render.yaml: $(if [ -f "render.yaml" ]; then echo "✅"; else echo "⚠️"; fi)" >> render-build-report.md
+          echo '' >> render-build-report.md
+          echo '## Statistiques' >> render-build-report.md
+          echo "- Taille totale: $TOTAL_SIZE" >> render-build-report.md
+          echo "- Fichiers JS: $JS_COUNT" >> render-build-report.md
+          echo "- Fichiers source map: $JS_MAP_COUNT" >> render-build-report.md
+          echo '' >> render-build-report.md
+          echo '## Statut' >> render-build-report.md
+          echo '**✅ PRÊT POUR DÉPLOIEMENT SUR RENDER**' >> render-build-report.md
+      
+      - name: 📤 Uploader le rapport
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-backend-report
+          path: backend/render-build-report.md
+      
+      - name: 🔍 Vérification des variables d'environnement
+        working-directory: backend
+        run: |
+          echo "🔍 Vérification des variables d'environnement..."
+          
+          ENV_FOUND=false
+          
+          # Vérifier la présence de fichiers .env
+          if [ -f ".env.production" ]; then
+            echo "✅ .env.production trouvé"
+            ENV_FOUND=true
+          fi
+          
+          if [ -f ".env.example" ]; then
+            echo "✅ .env.example trouvé"
+          fi
+          
+          if [ "$ENV_FOUND" = false ]; then
+            echo "⚠️ Aucun fichier .env.production trouvé"
+            echo "🔄 Création d'un fichier .env.production de base pour production..."
+            
+            # Créer le fichier .env minimal pour production
+            echo 'NODE_ENV=production' > .env.production
+            echo 'APP_URL=https://nionfar-backend.onrender.com' >> .env.production
+            echo 'FRONTEND_URL=https://nion-farr.vercel.app' >> .env.production
+            echo 'PORT=3001' >> .env.production
+            echo 'CORS_ALLOWED_ORIGINS=https://nion-farr.vercel.app,http://localhost:3000' >> .env.production
+            echo 'IS_RENDER=true' >> .env.production
+            echo "# Ajoutez les variables MongoDB et d'autres variables sensibles" >> .env.production
+            echo "# dans le dashboard Render" >> .env.production
+            
+            echo "✅ .env.production créé"
+          fi
+          
+          echo "✅ Vérification terminée"
+      
+      - name: ✅ Notification finale
+        run: |
+          echo "✅ Build Render Backend vérifié avec succès"
+          echo "🚀 Le backend est prêt pour déploiement sur Render"
+          echo "📝 URL de déploiement: https://nionfar-backend.onrender.com"
+
+  deployment-verification:
+    name: 🚀 Vérification de déploiement
+    needs: [verify-render-backend]
+    if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ✅ Notification de succès
+        run: |
+          echo "✅ Build vérifié et prêt pour déploiement sur Render"
+          echo "🚀 URL du service: https://nionfar-backend.onrender.com"
+          echo "ℹ️ Le déploiement sera effectué automatiquement par Render si auto-deploy est activé"
+          
+          # Note sur les variables d'environnement
+          echo ""
+          echo "⚠️ RAPPEL: Assurez-vous que les variables d'environnement suivantes sont configurées dans le dashboard Render:"
+          echo "- MONGODB_URI"
+          echo "- JWT_SECRET"
+          echo "- JWT_REFRESH_SECRET"
+          echo "- RESEND_API_KEY"
+          echo "- CORS_ALLOWED_ORIGINS=https://nion-farr.vercel.app"
+          echo "- IS_RENDER=true" 

@@ -76,7 +76,7 @@ jobs:
             echo '  "routes": [' >> vercel.json
             echo '    {' >> vercel.json 
             echo '      "src": "/api/(.*)",' >> vercel.json 
-            echo '      "dest": "https://nion-farr-backend.vercel.app/api/$1"' >> vercel.json 
+            echo '      "dest": "https://nionfar-backend.onrender.com/api/$1"' >> vercel.json 
             echo '    },' >> vercel.json
             echo '    {' >> vercel.json 
             echo '      "src": "/(.*)",' >> vercel.json 
@@ -86,11 +86,11 @@ jobs:
             echo '  "rewrites": [' >> vercel.json
             echo '    {' >> vercel.json
             echo '      "source": "/api/:path*",' >> vercel.json
-            echo '      "dest": "https://nion-farr-backend.vercel.app/api/$1"' >> vercel.json
+            echo '      "dest": "https://nionfar-backend.onrender.com/api/$1"' >> vercel.json
             echo '    }' >> vercel.json
             echo '  ],' >> vercel.json
             echo '  "env": {' >> vercel.json
-            echo '    "NEXT_PUBLIC_API_URL": "https://nion-farr-backend.vercel.app/api",' >> vercel.json
+            echo '    "NEXT_PUBLIC_API_URL": "https://nionfar-backend.onrender.com/api",' >> vercel.json
             echo '    "NEXT_PUBLIC_APP_URL": "https://nion-farr.vercel.app",' >> vercel.json
             echo '    "NEXT_PUBLIC_ENVIRONMENT": "production"' >> vercel.json
             echo '  }' >> vercel.json
@@ -99,7 +99,7 @@ jobs:
             echo "✅ vercel.json créé"
           else
             # Vérifier les configurations clés
-            if ! grep -q "nion-farr-backend.vercel.app" vercel.json; then
+            if ! grep -q "nionfar-backend.onrender.com" vercel.json; then
               echo "⚠️ Backend URL manquante dans vercel.json"
             else
               echo "✅ Backend URL trouvée dans vercel.json"
@@ -163,7 +163,7 @@ jobs:
             echo "🔄 Création d'un fichier .env.production de base..."
             
             # Créer le fichier .env.production
-            echo 'NEXT_PUBLIC_API_URL=https://nion-farr-backend.vercel.app/api' > .env.production
+            echo 'NEXT_PUBLIC_API_URL=https://nionfar-backend.onrender.com/api' > .env.production
             echo 'NEXT_PUBLIC_APP_URL=https://nion-farr.vercel.app' >> .env.production
             echo 'NEXT_PUBLIC_ENVIRONMENT=production' >> .env.production
             

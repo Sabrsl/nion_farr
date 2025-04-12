@@ -13,23 +13,25 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   
   // Définir les origines autorisées
-  const allowedOrigins = [
+  const ALLOWED_ORIGINS = [
+    'localhost:3000',
+    'localhost:3001',
     'https://nion-farr.vercel.app',
-    'https://nion-farr-backend.vercel.app',
+    'https://nionfar-backend.onrender.com',
     'https://www.nionfar.sn',
     'https://nionfar.sn'
   ];
   
   // En développement, autoriser localhost
   if (process.env.NODE_ENV === 'development') {
-    allowedOrigins.push('http://localhost:3000');
+    ALLOWED_ORIGINS.push('http://localhost:3000');
   }
   
   // Obtenir l'origine de la requête
   const origin = request.headers.get('origin');
   
   // Si l'origine est dans la liste des origines autorisées, l'ajouter à l'en-tête
-  if (origin && allowedOrigins.includes(origin)) {
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
     response.headers.set('Access-Control-Allow-Origin', origin);
   }
   

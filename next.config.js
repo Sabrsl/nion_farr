@@ -70,7 +70,29 @@ const nextConfig = {
         'node_modules/@esbuild/darwin-*',
       ],
     },
-  }
+    // Désactiver l'Edge Runtime qui cause des erreurs
+    runtime: 'nodejs',
+    serverComponents: {
+      useServerComponents: true
+    },
+    // Fix pour l'erreur de l'image-response.js
+    images: {
+      disableStaticImages: false,
+      unoptimized: true,
+      remotePatterns: [
+        // ... existing remotePatterns ...
+      ],
+    },
+  },
+  webpack: (config, { isServer }) => {
+    // Exclure image-response.js du bundle Edge
+    if (isServer) {
+      config.externals.push({
+        'next/dist/server/web/spec-extension/image-response': 'next/dist/server/web/spec-extension/image-response',
+      });
+    }
+    return config;
+  },
 }
 
 // Check if we're in a memory-constrained environment

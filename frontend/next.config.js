@@ -7,7 +7,7 @@ const nextConfig = {
   
   // Configuration des images
   images: {
-    domains: ['nion-farr.vercel.app', 'nion-farr-backend.vercel.app', 'localhost', 'res.cloudinary.com'],
+    domains: ['nion-farr.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
     unoptimized: true, // Désactive l'optimisation d'images qui utilise Edge Runtime
   },
@@ -59,7 +59,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_ENVIRONMENT: process.env.NODE_ENV || 'development',
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api',
   },
 
   // Forcer l'utilisation du runtime React et désactiver Edge Runtime
@@ -140,7 +140,7 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nion-farr-backend.vercel.app',
+            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nionfar-backend.onrender.com',
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -162,7 +162,7 @@ const nextConfig = {
   async rewrites() {
     // En production, utiliser toujours l'URL de production Vercel
     const isProduction = process.env.NODE_ENV === 'production';
-    const productionApiUrl = 'https://nion-farr-backend.vercel.app/api';
+    const productionApiUrl = 'https://nionfar-backend.onrender.com/api';
     // Forcer l'URL de production en production
     const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
     
@@ -261,7 +261,7 @@ const nextConfig = {
   // Variables publiques pour le CSP
   publicRuntimeConfig: {
     cors: {
-      value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nion-farr-backend.vercel.app',
+      value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nionfar-backend.onrender.com',
       key: 'CORS_ALLOWED_ORIGINS',
     },
   },
@@ -305,11 +305,11 @@ if (process.env.MEMORY_OPTIMIZED === 'true') {
 // Configuration des proxies pour le développement
 const setupDevProxies = () => {
   // Si les urls locales ne sont pas définies, utiliser les URLs de production
-  const productionApiUrl = 'https://nion-farr-backend.vercel.app/api';
+  const productionApiUrl = 'https://nionfar-backend.onrender.com/api';
   // ... existing code ...
 };
 
 // Afficher la configuration dans les logs
-console.log(`[Next.js Config] URL de l'API configurée: ${process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api'}`);
+console.log(`[Next.js Config] URL de l'API configurée: ${process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api'}`);
 
 module.exports = nextConfig 

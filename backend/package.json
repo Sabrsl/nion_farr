@@ -12,9 +12,6 @@
     "build:verbose": "npm run clean && cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" nest build --verbose",
     "build:debug": "echo \"📋 Debug du build...\" && npm run clean && cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" nest build --verbose",
     "build:clean": "npm run clean && cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" nest build",
-    "build:vercel": "rimraf dist && cross-env NODE_OPTIONS=\"--max-old-space-size=1024\" nest build && node prepare-vercel.js",
-    "vercel-build": "rimraf dist && cross-env NODE_OPTIONS=\"--max-old-space-size=1024\" npx @nestjs/cli build && node prepare-vercel.js",
-    "prepare:vercel": "node prepare-vercel.js",
     "postbuild": "node scripts/check-dist.js && npm run check:main-js",
     "clean:source-js": "node scripts/clean-source-js.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -22,7 +19,6 @@
     "start:dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" nest start --watch",
     "start:debug": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" nest start --debug --watch",
     "start:prod": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" node dist/src/main.js",
-    "start:prod:vercel": "cross-env NODE_OPTIONS=\"--max-old-space-size=1024\" cross-env MEMORY_OPTIMIZED=true node dist/src/main.js",
     "start:low-memory": "cross-env NODE_OPTIONS=\"--max-old-space-size=1024\" cross-env MEMORY_OPTIMIZED=true node dist/src/main.js",
     "start:backup": "node server.js",
     "export:env": "node -e \"console.log(require('fs').readFileSync('.env', 'utf8').split('\\n').filter(line => !line.startsWith('#') && line.trim()).join('\\n'))\" > env-export.txt",
@@ -60,7 +56,8 @@
     "mongodb:validate": "npm run test:mongodb && npm run mongodb:audit",
     "fix:dist": "node scripts/fix-dist-structure.js",
     "fix:entities": "node scripts/fix-entity-relations.js",
-    "fix:missing-entities": "node scripts/fix-missing-entities.js"
+    "fix:missing-entities": "node scripts/fix-missing-entities.js",
+    "prepare:railway": "node scripts/prepare-railway.js"
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.1",

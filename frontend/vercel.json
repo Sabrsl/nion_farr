@@ -13,11 +13,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://nion-farr-backend.vercel.app/api/:path*"
+      "destination": "https://nionfar-backend.onrender.com/api/:path*"
     }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://nion-farr-backend.vercel.app/api",
+    "NEXT_PUBLIC_API_URL": "https://nionfar-backend.onrender.com/api",
     "NEXT_PUBLIC_APP_URL": "https://nion-farr.vercel.app",
     "NEXT_PUBLIC_ENVIRONMENT": "production",
     "NEXT_DISABLE_ESLINT": "1",

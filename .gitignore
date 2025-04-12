@@ -231,6 +231,7 @@ next-env.d.ts
 
 # Vercel
 .vercel
+api/
 
 # Turborepo
 .turbo
@@ -455,4 +456,7 @@ lerna-debug.log*
 
 # Dependency lock files - include them for reproducible builds
 # package-lock.json
-# yarn.lock 
+# yarn.lock
+
+# Render
+.env.render 
