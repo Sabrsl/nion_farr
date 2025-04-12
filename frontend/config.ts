@@ -1,13 +1,25 @@
 // Configuration de l'application
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api';
-export const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'https://nion-farr-backend.vercel.app';
-export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app';
+export const API_BASE_URL = 'https://nion-farr-backend.vercel.app/api';
+export const BACKEND_URL = 'https://nion-farr-backend.vercel.app';
+export const APP_BASE_URL = 'https://nion-farr.vercel.app';
 
 // Log pour le débogage en développement
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   console.log('API_BASE_URL:', API_BASE_URL);
   console.log('BACKEND_URL:', BACKEND_URL);
   console.log('APP_BASE_URL:', APP_BASE_URL);
+}
+
+// Si nous sommes côté client, forcer l'API URL dans le localStorage
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.setItem('NEXT_PUBLIC_API_URL', API_BASE_URL);
+    localStorage.setItem('apiBaseUrl', API_BASE_URL);
+    localStorage.setItem('backendUrl', BACKEND_URL);
+    localStorage.setItem('appBaseUrl', APP_BASE_URL);
+  } catch (e) {
+    console.error('Erreur lors de la définition des URLs dans localStorage', e);
+  }
 }
 
 // Autres paramètres de configuration
