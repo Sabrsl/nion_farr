@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "develop": false
+    }
+  },
   "buildCommand": "npm run vercel-build",
   "framework": "nextjs",
   "installCommand": "npm install",
@@ -16,6 +22,6 @@
     "NEXT_PUBLIC_ENVIRONMENT": "production",
     "NEXT_DISABLE_ESLINT": "1",
     "NODE_ENV": "production",
-    "TAILWIND_MODE": "watch"
+    "TAILWIND_MODE": "build"
   }
 } 

@@ -1,0 +1,82 @@
+name: Vercel Deployments
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  # Permettre l'exécution manuelle depuis l'interface GitHub
+  workflow_dispatch:
+
+jobs:
+  wait-for-checks:
+    name: 🕒 Attente des vérifications
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⌛ Attente des autres vérifications GitHub Actions
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: '🔧 Vérification Frontend Vercel'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      
+      - name: ⌛ Attente des vérifications backend
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: '🔧 Vérification Backend Vercel'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+  deploy-frontend:
+    name: 🚀 Déploiement Frontend Vercel
+    needs: wait-for-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+        
+      - name: ⌛ Attente supplémentaire de sécurité
+        run: sleep 10
+        
+      - name: 🚀 Déploiement vers Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_FRONTEND }}
+          working-directory: ./frontend
+          vercel-args: '--prod'
+      
+      - name: ✅ Notification de déploiement
+        if: success()
+        run: |
+          echo "✅ Frontend déployé sur Vercel"
+          echo "🔗 URL: https://nion-farr.vercel.app"
+
+  deploy-backend:
+    name: 🚀 Déploiement Backend Vercel
+    needs: wait-for-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+        
+      - name: ⌛ Attente supplémentaire de sécurité
+        run: sleep 15
+        
+      - name: 🚀 Déploiement vers Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_BACKEND }}
+          working-directory: ./backend
+          vercel-args: '--prod'
+      
+      - name: ✅ Notification de déploiement
+        if: success()
+        run: |
+          echo "✅ Backend déployé sur Vercel"
+          echo "🔗 URL: https://nion-farr-backend.vercel.app" 
