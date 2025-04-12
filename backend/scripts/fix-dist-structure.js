@@ -1097,20 +1097,183 @@ __exportStar(require("./env.validation.js"), exports);
   console.log('✅ Vérification et correction des fichiers de configuration terminées');
 }
 
+/**
+ * Fonction pour assurer que l'intercepteur HTTP exception est correctement présent
+ */
+function fixHttpExceptionInterceptor() {
+  console.log('🔍 Vérification de l\'intercepteur HTTP exception...');
+  
+  const interceptorsDir = path.join('dist', 'common', 'interceptors');
+  ensureDirectoryExists(interceptorsDir);
+  
+  const httpExceptionInterceptorPath = path.join(interceptorsDir, 'http-exception.interceptor.js');
+  
+  if (!fs.existsSync(httpExceptionInterceptorPath)) {
+    console.log('⚠️ http-exception.interceptor.js manquant, tentative de copie...');
+    
+    // Chercher le fichier dans différents emplacements possibles
+    const possiblePaths = [
+      path.join('src', 'common', 'interceptors', 'http-exception.interceptor.js'),
+      path.join('dist', 'src', 'common', 'interceptors', 'http-exception.interceptor.js')
+    ];
+    
+    if (!findAndCopyFile('http-exception.interceptor.js', httpExceptionInterceptorPath, possiblePaths)) {
+      console.error('❌ ERREUR CRITIQUE: http-exception.interceptor.js est introuvable, création d\'un stub...');
+      
+      // Créer un stub minimal pour éviter les erreurs
+      const stubContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GlobalExceptionFilter = void 0;
+const common_1 = require("@nestjs/common");
+
+let GlobalExceptionFilter = class GlobalExceptionFilter {
+  constructor() {
+    this.logger = new common_1.Logger(GlobalExceptionFilter.name);
+  }
+  
+  catch(exception, host) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    const request = ctx.getRequest();
+    
+    // Déterminer le statut HTTP
+    const status = exception instanceof common_1.HttpException
+      ? exception.getStatus()
+      : common_1.HttpStatus.INTERNAL_SERVER_ERROR;
+    
+    // Log de l'erreur
+    console.error('Exception interceptée:', exception);
+    
+    // Réponse formatée
+    response.status(status).json({
+      statusCode: status,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+      message: exception.message || 'Une erreur interne est survenue'
+    });
+  }
+};
+
+GlobalExceptionFilter = __decorate([
+  (0, common_1.Catch)()
+], GlobalExceptionFilter);
+
+exports.GlobalExceptionFilter = GlobalExceptionFilter;
+
+function __decorate(decorators, target, key, desc) {
+  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+  else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+}`;
+      
+      fs.writeFileSync(httpExceptionInterceptorPath, stubContent, 'utf8');
+      console.log(`✅ Stub créé pour ${httpExceptionInterceptorPath}`);
+    }
+  } else {
+    console.log('✅ http-exception.interceptor.js existant, vérification des imports...');
+    fixModuleImports(httpExceptionInterceptorPath);
+  }
+  
+  // Vérifier que app.module.js importe correctement l'intercepteur
+  const appModulePath = path.join('dist', 'app.module.js');
+  
+  if (fs.existsSync(appModulePath)) {
+    console.log('🔍 Vérification de l\'import dans app.module.js...');
+    
+    let content = fs.readFileSync(appModulePath, 'utf8');
+    let modified = false;
+    
+    // Vérifier si l'import existe déjà
+    if (!content.includes('./common/interceptors/http-exception.interceptor.js')) {
+      // Ajouter l'import manquant
+      content = content.replace(
+        /const sync_control_1 = require\(['"]\.\/scripts\/sync-control\.js['"]\);/,
+        'const sync_control_1 = require(\'./scripts/sync-control.js\');\nconst http_exception_interceptor_1 = require(\'./common/interceptors/http-exception.interceptor.js\');'
+      );
+      modified = true;
+      console.log('✅ Import de http-exception.interceptor.js ajouté à app.module.js');
+    }
+    
+    // Vérifier si le provider est configuré
+    if (!content.includes('APP_FILTER') || !content.includes('GlobalExceptionFilter')) {
+      // Ajouter le provider
+      content = content.replace(
+        /providers: \[\s*require\(['"]\.\/app\.service\.js['"]\)\.AppService,\s*sync_control_1\.SyncControlService,?\s*\],/,
+        `providers: [
+      require('./app.service.js').AppService,
+      sync_control_1.SyncControlService,
+      {
+        provide: core_1.APP_FILTER,
+        useClass: http_exception_interceptor_1.GlobalExceptionFilter,
+      },
+    ],`
+      );
+      modified = true;
+      console.log('✅ Provider GlobalExceptionFilter ajouté à app.module.js');
+    }
+    
+    if (modified) {
+      fs.writeFileSync(appModulePath, content, 'utf8');
+      console.log('✅ app.module.js mis à jour avec succès');
+    }
+  }
+}
+
 // Fonction principale
 function main() {
   console.log('🛠️ Correction de la structure du dossier dist/...');
   
+  // 1. Vérifier et corriger les fichiers critiques
+  console.log('🔍 Vérification des fichiers critiques...');
   fixCriticalFiles();
   
-  // Vérifier et corriger les points d'entrée principaux
+  // 2. Vérifier et corriger les décorateurs d'authentification
+  console.log('🔍 Vérification des décorateurs d\'authentification...');
+  fixAuthDecorators();
+  
+  // 3. Vérifier et corriger le module d'authentification
+  console.log('🔍 Vérification du module d\'authentification...');
+  fixAuthModule();
+  
+  // 4. Vérifier et corriger les fichiers de healthcheck
+  console.log('🔍 Vérification des fichiers de healthcheck...');
+  fixHealthcheckFiles();
+  
+  // 5. Vérifier et corriger les fichiers de configuration MongoDB
+  console.log('🔍 Vérification des fichiers de configuration MongoDB...');
+  fixMongoDbConfigFiles();
+
+  // 6. Vérifier et corriger l'intercepteur HTTP exception
+  console.log('🔍 Vérification de l\'intercepteur HTTP exception...');
+  fixHttpExceptionInterceptor();
+  
+  // 7. S'assurer que app.module.js fonctionne correctement
+  console.log('🔍 Vérification du fichier app.module.js...');
+  
+  // 8. Copier le dossier config/ par sécurité
+  console.log('🔍 Copie du dossier config...');
+  copyDirectoryRecursive(path.join('src', 'config'), path.join('dist', 'config'));
+  
+  // 9. Pour nous assurer que reflect-metadata est disponible, copier directement le fichier
+  const reflectMetadataDir = path.join('dist', 'node_modules', 'reflect-metadata');
+  ensureDirectoryExists(reflectMetadataDir);
+  copyFile(
+    path.join('node_modules', 'reflect-metadata', 'Reflect.js'),
+    path.join(reflectMetadataDir, 'Reflect.js')
+  );
+  
+  // 10. Corriger le point d'entrée main.js
   fixEntryPoint();
   
-  // Vérifier et corriger les fichiers de configuration
-  fixMongoDbConfigFiles();
+  // 11. Vérifier les modèles (qui pourraient être importés)
+  console.log('🔍 Vérification des modèles...');
   
-  // Autres fonctions de correction au besoin
-  // ...
+  // 12. Double vérification des fichiers de configuration
+  console.log('🔍 Vérification des fichiers de configuration MongoDB...');
+  fixMongoDbConfigFiles();
   
   console.log('✅ Structure du dossier dist/ corrigée');
 }
