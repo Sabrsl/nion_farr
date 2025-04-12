@@ -2,7 +2,8 @@ services:
   - type: web
     name: nionfar-backend
     env: node
-    buildCommand: npm install && npm run build
+    rootDir: backend
+    buildCommand: chmod +x render-build.sh && ./render-build.sh
     startCommand: npm run start:prod
     healthCheckPath: /api/health
     envVars:
