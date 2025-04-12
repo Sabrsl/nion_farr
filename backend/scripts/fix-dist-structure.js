@@ -412,28 +412,24 @@ function fixAuthDecorators() {
     {
       name: 'roles.decorator.js',
       source: path.join('src', 'modules', 'auth', 'decorators', 'roles.decorator.ts'),
-      content: `
-require('reflect-metadata');
+      content: `require('reflect-metadata');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Roles = exports.ROLES_KEY = void 0;
 const common_1 = require("@nestjs/common");
 exports.ROLES_KEY = 'roles';
-exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);
-`
+exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles);`
     },
     {
       name: 'public.decorator.js',
       source: path.join('src', 'modules', 'auth', 'decorators', 'public.decorator.ts'),
-      content: `
-require('reflect-metadata');
+      content: `require('reflect-metadata');
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Public = exports.IS_PUBLIC_KEY = void 0;
 const common_1 = require("@nestjs/common");
 exports.IS_PUBLIC_KEY = 'isPublic';
-exports.Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
-`
+exports.Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);`
     }
   ];
   
@@ -443,26 +439,194 @@ exports.Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
     
     if (fs.existsSync(destPath)) {
       console.log(`✅ Decorator ${decorator.name} déjà présent dans ${decoratorsDir}`);
+      
+      // S'assurer que le contenu est correct même s'il existe déjà
+      try {
+        const content = fs.readFileSync(destPath, 'utf8');
+        // Vérifier si le fichier contient les exports essentiels
+        if (decorator.name === 'roles.decorator.js' && !content.includes('exports.ROLES_KEY')) {
+          console.log(`⚠️ Le fichier ${decorator.name} existe mais semble invalide, réécriture...`);
+          fs.writeFileSync(destPath, decorator.content, 'utf8');
+          console.log(`✅ Fichier ${decorator.name} corrigé avec succès`);
+        } else if (decorator.name === 'public.decorator.js' && !content.includes('exports.IS_PUBLIC_KEY')) {
+          console.log(`⚠️ Le fichier ${decorator.name} existe mais semble invalide, réécriture...`);
+          fs.writeFileSync(destPath, decorator.content, 'utf8');
+          console.log(`✅ Fichier ${decorator.name} corrigé avec succès`);
+        }
+      } catch (error) {
+        console.error(`❌ Erreur lors de la vérification du decorator ${decorator.name}:`, error);
+      }
+      
       continue;
     }
     
-    console.log(`⚠️ Decorator ${decorator.name} manquant, tentative de compilation...`);
+    console.log(`⚠️ Decorator ${decorator.name} manquant, tentative de création...`);
     
-    // Si le fichier source TS existe, essayer de le compiler
+    let success = false;
+    
+    // Étape 1: Essayer de compiler à partir du fichier TypeScript source
     if (fs.existsSync(decorator.source)) {
-      if (compileTypeScriptFile(decorator.source, destPath)) {
-        console.log(`✅ Decorator ${decorator.name} compilé avec succès!`);
-        continue;
+      console.log(`🔍 Fichier source ${decorator.source} trouvé, tentative de compilation...`);
+      try {
+        if (compileTypeScriptFile(decorator.source, destPath)) {
+          console.log(`✅ Decorator ${decorator.name} compilé avec succès!`);
+          success = true;
+        }
+      } catch (error) {
+        console.error(`❌ Erreur lors de la compilation de ${decorator.source}:`, error);
+      }
+    } else {
+      console.log(`⚠️ Fichier source ${decorator.source} non trouvé, création manuelle requise`);
+    }
+    
+    // Étape 2: Si la compilation a échoué, créer manuellement
+    if (!success) {
+      console.log(`⚠️ Création manuelle du decorator ${decorator.name}...`);
+      try {
+        fs.writeFileSync(destPath, decorator.content, 'utf8');
+        console.log(`✅ Decorator ${decorator.name} créé manuellement avec succès!`);
+        success = true;
+      } catch (error) {
+        console.error(`❌ Erreur lors de la création manuelle du decorator ${decorator.name}:`, error);
       }
     }
     
-    // Fallback: créer le fichier avec un contenu minimal
-    console.log(`⚠️ Création manuelle du decorator ${decorator.name}...`);
+    // Étape 3: Vérification finale
+    if (!fs.existsSync(destPath)) {
+      console.error(`❌ ERREUR CRITIQUE: Impossible de créer ${decorator.name} malgré plusieurs tentatives!`);
+    }
+  }
+  
+  // Créer aussi le fichier index.js pour faciliter les imports
+  const indexPath = path.join(decoratorsDir, 'index.js');
+  if (!fs.existsSync(indexPath)) {
+    console.log('⚠️ Création du fichier index.js pour les décorateurs...');
+    const indexContent = `
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Public = exports.Roles = exports.IS_PUBLIC_KEY = exports.ROLES_KEY = void 0;
+
+var roles_decorator_1 = require("./roles.decorator.js");
+Object.defineProperty(exports, "ROLES_KEY", { enumerable: true, get: function () { return roles_decorator_1.ROLES_KEY; } });
+Object.defineProperty(exports, "Roles", { enumerable: true, get: function () { return roles_decorator_1.Roles; } });
+
+var public_decorator_1 = require("./public.decorator.js");
+Object.defineProperty(exports, "IS_PUBLIC_KEY", { enumerable: true, get: function () { return public_decorator_1.IS_PUBLIC_KEY; } });
+Object.defineProperty(exports, "Public", { enumerable: true, get: function () { return public_decorator_1.Public; } });
+`;
+    
     try {
-      fs.writeFileSync(destPath, decorator.content, 'utf8');
-      console.log(`✅ Decorator ${decorator.name} créé manuellement avec succès!`);
+      fs.writeFileSync(indexPath, indexContent, 'utf8');
+      console.log(`✅ Fichier index.js créé avec succès dans ${decoratorsDir}`);
     } catch (error) {
-      console.error(`❌ Erreur lors de la création manuelle du decorator ${decorator.name}:`, error);
+      console.error(`❌ Erreur lors de la création du fichier index.js pour les décorateurs:`, error);
+    }
+  }
+  
+  // Créer aussi le dossier guards et les fichiers de guards si nécessaire
+  const guardsDir = path.join('dist', 'modules', 'auth', 'guards');
+  ensureDirectoryExists(guardsDir);
+  
+  // Liste des guards critiques
+  const guards = [
+    {
+      name: 'jwt-auth.guard.js',
+      content: `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.JwtAuthGuard = void 0;
+const common_1 = require("@nestjs/common");
+const passport_1 = require("@nestjs/passport");
+
+let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
+    canActivate(context) {
+        return super.canActivate(context);
+    }
+    handleRequest(err, user, info) {
+        if (err || !user) {
+            throw err || new common_1.UnauthorizedException('Authentification requise');
+        }
+        return user;
+    }
+};
+JwtAuthGuard = __decorate([
+    (0, common_1.Injectable)()
+], JwtAuthGuard);
+exports.JwtAuthGuard = JwtAuthGuard;
+`
+    },
+    {
+      name: 'roles.guard.js',
+      content: `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RolesGuard = void 0;
+const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
+const roles_decorator_1 = require("../decorators/roles.decorator.js");
+
+let RolesGuard = class RolesGuard {
+    constructor(reflector) {
+        this.reflector = reflector;
+    }
+    canActivate(context) {
+        const requiredRoles = this.reflector.getAllAndOverride(roles_decorator_1.ROLES_KEY, [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+        if (!requiredRoles || requiredRoles.length === 0) {
+            return true;
+        }
+        const { user } = context.switchToHttp().getRequest();
+        if (!user) {
+            throw new common_1.ForbiddenException('Authentification requise');
+        }
+        // Admin a tous les droits
+        if (user.role === 'admin' || user.role === 'ADMIN') {
+            return true;
+        }
+        return requiredRoles.some(role => user.role === role);
+    }
+};
+RolesGuard = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [core_1.Reflector])
+], RolesGuard);
+exports.RolesGuard = RolesGuard;
+`
+    }
+  ];
+  
+  // Créer chaque guard si nécessaire
+  for (const guard of guards) {
+    const guardPath = path.join(guardsDir, guard.name);
+    if (!fs.existsSync(guardPath)) {
+      console.log(`⚠️ Guard ${guard.name} manquant, création...`);
+      try {
+        fs.writeFileSync(guardPath, guard.content, 'utf8');
+        console.log(`✅ Guard ${guard.name} créé avec succès dans ${guardsDir}`);
+      } catch (error) {
+        console.error(`❌ Erreur lors de la création du guard ${guard.name}:`, error);
+      }
+    } else {
+      console.log(`✅ Guard ${guard.name} déjà présent dans ${guardsDir}`);
     }
   }
 }
@@ -1711,6 +1875,20 @@ function copyRequiredModules() {
 function main() {
   console.log('🛠️ Correction de la structure du dossier dist/...');
   
+  // Créer les dossiers essentiels en premier
+  ensureDirectoryExists(path.join('dist', 'modules', 'auth', 'decorators'));
+  ensureDirectoryExists(path.join('dist', 'modules', 'auth', 'guards'));
+  ensureDirectoryExists(path.join('dist', 'common', 'interceptors'));
+  ensureDirectoryExists(path.join('dist', 'common', 'logger'));
+  
+  // Fixer les décorateurs auth en premier car ils sont souvent la source des erreurs
+  console.log('🔍 Préparation des décorateurs d\'authentification...');
+  fixAuthDecorators();
+  
+  // Fixer le module d'authentification ensuite
+  console.log('🔍 Préparation du module d\'authentification...');
+  fixAuthModule();
+  
   // Copier les modules nécessaires sans génération de stubs
   console.log('🔍 Copie des modules requis (sans génération de stubs)...');
   copyRequiredModules();
@@ -1744,14 +1922,15 @@ function main() {
   // Fixer les modules spécifiques
   fixLoggerModule();
   fixHttpExceptionInterceptor();
-  fixAuthDecorators(); // Ajout de cette ligne
-  fixAuthModule();
   fixHealthcheckFiles();
   
   // Corriger les modèles MongoDB
   fixMongoDbConfigFiles();
   
-  // Vérification finale des fichiers critiques
+  // Vérification finale et nouveau contrôle des décorateurs auth
+  console.log('🔍 Vérification finale et nouveau contrôle des décorateurs auth...');
+  fixAuthDecorators(); // Vérifier une seconde fois pour être sûr
+  
   console.log('🔍 Vérification finale des fichiers critiques:');
   const criticalFiles = [
     path.join('dist', 'main.js'),
