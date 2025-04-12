@@ -16,6 +16,19 @@ npm install -g cross-env rimraf
 echo "🧹 Nettoyage du répertoire dist..."
 rimraf dist
 
+# Vérifier et corriger l'URL MongoDB si nécessaire
+if [ -n "$MONGODB_URI" ]; then
+  echo "🔍 Vérification de l'URL MongoDB..."
+  # Suppression de l'option batchsize qui cause l'erreur
+  FIXED_MONGODB_URI=$(echo "$MONGODB_URI" | sed 's/&batchsize=[^&]*//g' | sed 's/?batchsize=[^&]*&/?/g')
+  
+  # Si l'URL a été modifiée, on la met à jour
+  if [ "$MONGODB_URI" != "$FIXED_MONGODB_URI" ]; then
+    echo "🔧 Correction de l'URL MongoDB (suppression de l'option batchsize)"
+    export MONGODB_URI="$FIXED_MONGODB_URI"
+  fi
+fi
+
 # Build de l'application
 echo "🔨 Construction de l'application..."
 NODE_OPTIONS="--max-old-space-size=4096" npx @nestjs/cli build
@@ -45,6 +58,11 @@ echo "PORT=${PORT:-3001}" >> .env.render
 echo "APP_URL=https://nionfar-backend.onrender.com" >> .env.render
 echo "FRONTEND_URL=https://nion-farr.vercel.app" >> .env.render
 echo "CORS_ALLOWED_ORIGINS=https://nion-farr.vercel.app,https://www.nion-farr.vercel.app,http://localhost:3000" >> .env.render
+
+# Si nous avons corrigé l'URL MongoDB, l'écrire dans .env.render
+if [ -n "$MONGODB_URI" ] && [ "$MONGODB_URI" != "$FIXED_MONGODB_URI" ]; then
+  echo "MONGODB_URI=$FIXED_MONGODB_URI" >> .env.render
+fi
 
 # Créer le dossier logs s'il n'existe pas
 mkdir -p logs

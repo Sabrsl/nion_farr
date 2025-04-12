@@ -60,8 +60,6 @@ import { PerformanceModule } from './performance/performance.module';
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           ...(memoryConfig.isConstrained ? getTypeOrmMemoryOptions() : {
             synchronize: false,
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             retryAttempts: 3,
             retryDelay: 3000,
           }),
@@ -105,8 +103,6 @@ import { PerformanceModule } from './performance/performance.module';
         return {
           uri: configService.get<string>('MONGODB_URI'),
           ...(memoryConfig.isConstrained ? getMongooseMemoryOptions() : {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             retryAttempts: 3,
             retryDelay: 3000,
             serverSelectionTimeoutMS: 5000,
