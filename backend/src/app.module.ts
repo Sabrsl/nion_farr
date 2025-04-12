@@ -12,7 +12,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { getMongooseMemoryOptions, getTypeOrmMemoryOptions } from './config/mongodb-memory-options';
 import { getMemoryConfig } from './config/environment';
-import { SyncControlService } from './scripts/sync-control';
 import { GlobalExceptionFilter } from './common/interceptors/http-exception.interceptor';
 import { LoggerModule } from './common/logger/logger.module';
 
@@ -141,7 +140,6 @@ import { PerformanceModule } from './performance/performance.module';
   controllers: [AppController, RootController],
   providers: [
     AppService,
-    SyncControlService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
