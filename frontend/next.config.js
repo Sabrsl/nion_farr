@@ -9,6 +9,7 @@ const nextConfig = {
   images: {
     domains: ['nion-farr.vercel.app', 'nion-farr-backend.vercel.app', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
+    unoptimized: true, // Désactive l'optimisation d'images qui utilise Edge Runtime
   },
   
   // Configuration de production
@@ -59,10 +60,29 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api',
   },
 
-  // Forcer l'utilisation du runtime React
+  // Forcer l'utilisation du runtime React et désactiver Edge Runtime
   experimental: {
     esmExternals: 'loose',
-    serverComponentsExternalPackages: ['mongoose']
+    serverComponentsExternalPackages: ['mongoose'],
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+    // Désactiver les fonctionnalités Edge Runtime problématiques
+    disableOptimizedLoading: true,
+    externalDir: true,
+    // Désactiver complètement les OG Images et Edge Runtime
+    images: {
+      disableStaticImages: false,
+      unoptimized: true
+    },
+    // Désactiver le Edge Runtime complètement
+    runtime: 'nodejs'
+  },
+
+  // Désactiver explicitement l'Edge Runtime
+  serverRuntimeConfig: {
+    // Utilise le runtime Node.js au lieu de Edge
+    runtime: 'nodejs',
   },
 
   // Désactiver certains avertissements React
@@ -129,7 +149,7 @@ const nextConfig = {
     // Forcer l'URL de production en production
     const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
     
-    // Forçage de l'URL de production pour assurer la migration Railway -> Vercel
+    // Configuration des redirections API vers Vercel
     console.log(`[Next.js Config] Configuration des redirections API vers: ${productionApiUrl}`);
     console.log(`[Next.js Config] Environnement: ${process.env.NODE_ENV}`);
     

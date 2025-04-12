@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import roleService from './services/roleService';
 
+// Explicitly set to use Node.js runtime instead of Edge Runtime
+export const runtime = 'nodejs';
+
 export async function middleware(request: NextRequest) {
   // Obtenir l'URL actuelle
   const url = request.nextUrl.clone();
@@ -12,6 +15,7 @@ export async function middleware(request: NextRequest) {
   // Définir les origines autorisées
   const allowedOrigins = [
     'https://nion-farr.vercel.app',
+    'https://nion-farr-backend.vercel.app',
     'https://www.nionfar.sn',
     'https://nionfar.sn'
   ];

@@ -3,8 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   // Configuration des images
   images: {
-    unoptimized: false, // Optimize images for production
-    domains: ['images.unsplash.com', 'placehold.co', 'placeimg.com', 'randomuser.me', 'nionfar.sn', 'api.nionfar.sn'],
+    unoptimized: true, // Set to true to avoid Edge Runtime issues
+    domains: ['images.unsplash.com', 'placehold.co', 'placeimg.com', 'randomuser.me', 'nionfar.sn', 'api.nionfar.sn', 'nion-farr-backend.vercel.app'],
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
@@ -32,6 +32,11 @@ const nextConfig = {
         hostname: 'api.nionfar.sn',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'nion-farr-backend.vercel.app',
+        pathname: '/**',
+      },
     ],
   },
   // Configuration pour la production
@@ -45,6 +50,10 @@ const nextConfig = {
   },
   // Optimisations supplémentaires
   swcMinify: true, // Utiliser SWC pour la minification (plus rapide que Terser)
+  // Disable Edge Runtime for problematic routes
+  experimental: {
+    runtime: 'nodejs',
+  },
   // Configuration pour la mise en cache
   onDemandEntries: {
     // Période (en ms) pendant laquelle les pages compilées sont conservées en mémoire
