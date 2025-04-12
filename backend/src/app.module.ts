@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD, APP_FILTER } from '@nestjs/core';
@@ -14,6 +14,7 @@ import { getMongooseMemoryOptions, getTypeOrmMemoryOptions } from './config/mong
 import { getMemoryConfig } from './config/environment';
 import { GlobalExceptionFilter } from './common/interceptors/http-exception.interceptor';
 import { LoggerModule } from './common/logger/logger.module';
+import { MemoryTrackerMiddleware } from './middleware/memory-tracker.middleware';
 
 // Modules
 import { UsersModule } from './modules/users/users.module';
@@ -158,7 +159,7 @@ import { PerformanceModule } from './performance/performance.module';
     },
   ],
 })
-export class AppModule {
+export class AppModule implements NestModule {
   constructor(private configService: ConfigService) {
     // Chargement conditionnel du BackupService si nous ne sommes pas en production
     if (configService.get('NODE_ENV') !== 'production' && !getMemoryConfig().disableBackups) {
@@ -185,6 +186,13 @@ export class AppModule {
       }
     } else {
       console.log('ℹ️ BackupService désactivé en production ou en mode économie de mémoire');
+    }
+  }
+
+  configure(consumer: MiddlewareConsumer) {
+    // Apply memory tracker middleware to all routes if in memory optimized mode
+    if (process.env.MEMORY_OPTIMIZED === 'true') {
+      consumer.apply(MemoryTrackerMiddleware).forRoutes('*');
     }
   }
 } 

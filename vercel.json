@@ -3,5 +3,11 @@
   "buildCommand": "cd frontend && npm install && npm run vercel-build",
   "installCommand": "npm install",
   "outputDirectory": "frontend/.next",
-  "rootDirectory": "frontend"
+  "rootDirectory": "frontend",
+  "env": {
+    "NODE_OPTIONS": "--max-old-space-size=1024",
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "MEMORY_OPTIMIZED": "true",
+    "VERCEL_PLAN": "pro"
+  }
 } 

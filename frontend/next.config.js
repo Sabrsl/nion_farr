@@ -22,7 +22,9 @@ const nextConfig = {
   // Configuration du compilateur
   compiler: {
     // Suppression des console.log en production
-    removeConsole: false, // Désactivé pour déboguer les problèmes d'API
+    removeConsole: {
+      exclude: ['error'], // Only keep error logs
+    },
     // Configuration explicite du JSX runtime
     reactRemoveProperties: true,
     styledComponents: true,
@@ -34,7 +36,7 @@ const nextConfig = {
   // Configuration du cache
   onDemandEntries: {
     // période (en ms) où les pages compilées sont gardées en mémoire
-    maxInactiveAge: 25 * 1000,
+    maxInactiveAge: 15 * 1000, // Reduced from 25s to 15s to save memory
     // nombre de pages à garder en mémoire
     pagesBufferLength: 2,
   },
@@ -76,7 +78,22 @@ const nextConfig = {
       unoptimized: true
     },
     // Désactiver le Edge Runtime complètement
-    runtime: 'nodejs'
+    runtime: 'nodejs',
+    // Memory optimization - add these specifically for low memory environments
+    disableStaticGenerationConcurrency: process.env.MEMORY_OPTIMIZED === 'true',
+    // Exclude unnecessary files from the build
+    outputFileTracingExcludes: {
+      '*': [
+        'node_modules/@swc/core-linux-x64-gnu',
+        'node_modules/@swc/core-linux-x64-musl',
+        'node_modules/@esbuild/linux-x64',
+        // Exclude unnecessary platform-specific packages
+        'node_modules/@swc/core-darwin-*',
+        'node_modules/@swc/core-win32-*',
+        'node_modules/@esbuild/win32-*',
+        'node_modules/@esbuild/darwin-*',
+      ],
+    },
   },
 
   // Désactiver explicitement l'Edge Runtime
@@ -248,6 +265,41 @@ const nextConfig = {
       key: 'CORS_ALLOWED_ORIGINS',
     },
   },
+}
+
+// Check if we're in a memory-constrained environment
+if (process.env.MEMORY_OPTIMIZED === 'true') {
+  // Reduce log output during build to save memory
+  console.log = (function(originalConsoleLog) {
+    return function() {
+      // Only log errors, warnings and critical messages
+      if (
+        arguments[0] && 
+        typeof arguments[0] === 'string' && 
+        (arguments[0].includes('error') || arguments[0].includes('warn') || arguments[0].includes('critical'))
+      ) {
+        originalConsoleLog.apply(console, arguments);
+      }
+    };
+  })(console.log);
+
+  // Further reduce build-time memory usage
+  nextConfig.webpack = (config, { isServer }) => {
+    // Optimize webpack for lower memory usage
+    config.optimization.minimize = true;
+    
+    if (!isServer) {
+      // Smaller chunks for client builds
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        maxInitialRequests: 25,
+        minSize: 20000,
+        maxSize: 80000, // Smaller chunks
+      };
+    }
+    
+    return config;
+  };
 }
 
 // Configuration des proxies pour le développement

@@ -1,71 +1,41 @@
 /**
- * Memory Monitoring Script
+ * Memory monitoring script for Node.js
  * 
- * This script provides real-time monitoring of Node.js memory usage
+ * This script helps monitor memory usage in the application.
  * Run with: node src/scripts/memory-monitor.js
  */
 
-// Format bytes to human-readable format
-function formatBytes(bytes, decimals = 2) {
-  if (bytes === 0) return '0 Bytes';
+const logMemoryUsage = () => {
+  const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
   
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const memoryData = process.memoryUsage();
   
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const memoryUsage = {
+    rss: `${formatMemoryUsage(memoryData.rss)} -> Resident Set Size - total memory allocated for the process execution`,
+    heapTotal: `${formatMemoryUsage(memoryData.heapTotal)} -> Total size of the allocated heap`,
+    heapUsed: `${formatMemoryUsage(memoryData.heapUsed)} -> Actual memory used during the execution`,
+    external: `${formatMemoryUsage(memoryData.external)} -> V8 external memory`,
+  };
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-}
-
-// Calculate percentage
-function calculatePercentage(used, total) {
-  return Math.round((used / total) * 100);
-}
-
-// Print memory usage with colors
-function printMemoryUsage() {
-  const memUsage = process.memoryUsage();
-  
-  const heapUsed = memUsage.heapUsed;
-  const heapTotal = memUsage.heapTotal;
-  const rss = memUsage.rss;
-  const external = memUsage.external;
-  
-  const heapPercentage = calculatePercentage(heapUsed, heapTotal);
-  
-  // Define color codes
-  const reset = "\x1b[0m";
-  const red = "\x1b[31m";
-  const green = "\x1b[32m";
-  const yellow = "\x1b[33m";
-  
-  // Determine color based on usage percentage
-  let color = green;
-  if (heapPercentage > 85) color = red;
-  else if (heapPercentage > 70) color = yellow;
-  
-  console.clear();
-  console.log('==== MEMORY USAGE MONITOR ====');
-  console.log(`Time: ${new Date().toLocaleTimeString()}`);
-  console.log(`Heap Used: ${color}${formatBytes(heapUsed)}${reset} / ${formatBytes(heapTotal)} (${heapPercentage}%)`);
-  console.log(`RSS: ${formatBytes(rss)}`);
-  console.log(`External: ${formatBytes(external)}`);
-  console.log(`Available Heap: ${formatBytes(heapTotal - heapUsed)}`);
+  console.log('======= MEMORY USAGE ========');
+  console.log(memoryUsage);
   console.log('=============================');
-  console.log('Press Ctrl+C to exit');
-}
+};
 
-// Start monitoring
-console.log('Starting memory monitoring...');
-// Initial output
-printMemoryUsage();
+// Log memory usage immediately
+logMemoryUsage();
 
-// Setup interval for continuous monitoring
-setInterval(printMemoryUsage, 1000);
+// Set interval to log memory usage every 30 seconds
+const interval = setInterval(logMemoryUsage, 30000);
 
-// Handle graceful exit
+// Keep the script running for monitoring
+console.log('Memory monitoring started. Press Ctrl+C to exit.');
+
+// Handle process termination
 process.on('SIGINT', () => {
-  console.log('\nMemory monitoring stopped');
+  clearInterval(interval);
+  console.log('Memory monitoring stopped.');
   process.exit(0);
-}); 
+});
+
+module.exports = { logMemoryUsage }; 
