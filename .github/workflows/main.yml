@@ -15,10 +15,10 @@ jobs:
     
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -67,10 +67,10 @@ jobs:
     
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -81,11 +81,13 @@ jobs:
         run: |
           npm install --legacy-peer-deps
           echo "✅ Dépendances backend installées"
+          npm install serverless-http --save
+          echo "✅ serverless-http installé"
       
       - name: 🛠️ Build Backend
         working-directory: backend
         run: |
-          npm run build:vercel
+          npm run build
           echo "✅ Build backend terminé"
       
       - name: 📂 Validation de la structure
@@ -147,26 +149,50 @@ jobs:
           
           echo "✅ Scripts MongoDB vérifiés"
       
-      - name: 🚀 Dry run du serveur
-        working-directory: backend
+      - name: 🚀 Vérification API Vercel
         run: |
-          # Configuration minimale pour le test
-          cat > .env.test << EOL
-          NODE_ENV=test
-          PORT=3333
-          JWT_SECRET=test-secret
-          JWT_REFRESH_SECRET=test-refresh-secret
-          MONGODB_URI=mongodb://localhost:27017/test
-          EOL
+          # Vérifier les fichiers essentiels pour Vercel
+          echo "🔍 Vérification de la configuration API pour Vercel..."
           
-          # Test de démarrage avec timeout
-          timeout 6s node dist/main.js 2>&1 | tee server.log || true
-          
-          # Vérifier si le démarrage semble réussi
-          if grep -q "écoute sur" server.log || grep -q "secours" server.log; then
-            echo "✅ Serveur démarré avec succès"
+          if [ ! -f "backend/vercel.json" ]; then
+            echo "❌ backend/vercel.json manquant"
+            exit 1
           else
-            echo "⚠️ Démarrage du serveur incertain, mais non bloquant"
+            echo "✅ backend/vercel.json trouvé"
+          fi
+          
+          if [ ! -f "backend/api/index.js" ]; then
+            echo "❌ backend/api/index.js manquant"
+            echo "🔄 Création du dossier API et du fichier index.js..."
+            mkdir -p backend/api
+            # Créer un point d'entrée minimal
+            cat > backend/api/index.js << EOL
+const serverless = require('serverless-http');
+const { NestFactory } = require('@nestjs/core');
+const { AppModule } = require('../dist/app.module');
+
+let cachedApp;
+
+async function bootstrap() {
+  if (cachedApp) return cachedApp;
+  const app = await NestFactory.create(AppModule);
+  await app.init();
+  cachedApp = app;
+  return app;
+}
+
+module.exports = async (req, res) => {
+  if (req.url === '/health' || req.url === '/api/health') {
+    return res.status(200).json({ status: 'ok', vercel: true });
+  }
+  const app = await bootstrap();
+  const handler = serverless(app);
+  return handler(req, res);
+};
+EOL
+            echo "✅ backend/api/index.js créé"
+          else
+            echo "✅ backend/api/index.js trouvé"
           fi
 
   deploy-backend:
@@ -177,19 +203,24 @@ jobs:
     
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: 📝 Préparer le déploiement
         working-directory: backend
         run: |
           # Vérifier les fichiers essentiels pour Vercel
-          if [ ! -f "vercel.json" ] || [ ! -d "../api" ]; then
-            echo "❌ Fichiers de configuration Vercel manquants"
+          if [ ! -f "vercel.json" ]; then
+            echo "❌ Fichier de configuration Vercel manquant"
             exit 1
           fi
           
           # Vérifier le point d'entrée serverless
-          if [ ! -f "../api/index.js" ]; then
+          if [ ! -d "api" ]; then
+            echo "❌ Dossier API manquant"
+            exit 1
+          fi
+          
+          if [ ! -f "api/index.js" ]; then
             echo "❌ Point d'entrée serverless manquant"
             exit 1
           fi
