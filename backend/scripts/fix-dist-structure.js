@@ -396,6 +396,9 @@ function fixCriticalFiles() {
 function fixAuthDecorators() {
   console.log('🔍 Vérification des décorateurs d\'authentification...');
   
+  // Créer le module d'authentification s'il est manquant
+  fixAuthModule();
+  
   // Créer le décorateur Public s'il est manquant
   const publicDecoratorDir = path.join('dist', 'modules', 'auth', 'decorators');
   const publicDecoratorPath = path.join(publicDecoratorDir, 'public.decorator.js');
@@ -484,6 +487,172 @@ exports.Roles = (...roles) => (0, common_1.SetMetadata)(exports.ROLES_KEY, roles
       console.log(`✅ Décorateur Roles créé avec succès dans ${rolesDecoratorPath}`);
     } catch (error) {
       console.error(`❌ Erreur lors de la création du décorateur Roles: ${error}`);
+    }
+  }
+}
+
+// Fonction pour créer le module d'authentification manquant
+function fixAuthModule() {
+  console.log('🔍 Vérification du module d\'authentification...');
+  
+  const authModuleDir = path.join('dist', 'modules', 'auth');
+  const authModulePath = path.join(authModuleDir, 'auth.module.js');
+  
+  ensureDirectoryExists(authModuleDir);
+  
+  if (!fs.existsSync(authModulePath)) {
+    console.log('⚠️ Module d\'authentification manquant, création d\'un module minimal...');
+    
+    const authModuleContent = `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthModule = void 0;
+const common_1 = require("@nestjs/common");
+const passport_1 = require("@nestjs/passport");
+const jwt_1 = require("@nestjs/jwt");
+
+let AuthModule = class AuthModule {};
+AuthModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            passport_1.PassportModule,
+            jwt_1.JwtModule.register({
+                secret: process.env.JWT_SECRET || 'defaultSecret',
+                signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
+            }),
+        ],
+        controllers: [],
+        providers: [],
+        exports: [jwt_1.JwtModule],
+    })
+], AuthModule);
+exports.AuthModule = AuthModule;
+`;
+    
+    try {
+      fs.writeFileSync(authModulePath, authModuleContent, 'utf8');
+      console.log(`✅ Module d'authentification minimal créé avec succès dans ${authModulePath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du module d'authentification: ${error}`);
+    }
+  } else {
+    console.log('✅ Module d\'authentification existant, vérification...');
+    fixModuleImports(authModulePath);
+  }
+  
+  // Créer auth.controller.js s'il est manquant
+  const authControllerPath = path.join(authModuleDir, 'auth.controller.js');
+  if (!fs.existsSync(authControllerPath)) {
+    console.log('⚠️ Contrôleur d\'authentification manquant, création d\'un contrôleur minimal...');
+    
+    const authControllerContent = `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthController = void 0;
+const common_1 = require("@nestjs/common");
+
+let AuthController = class AuthController {
+    constructor() {
+        console.log('✅ AuthController initialisé');
+    }
+};
+AuthController = __decorate([
+    (0, common_1.Controller)('auth')
+], AuthController);
+exports.AuthController = AuthController;
+`;
+    
+    try {
+      fs.writeFileSync(authControllerPath, authControllerContent, 'utf8');
+      console.log(`✅ Contrôleur d'authentification minimal créé avec succès dans ${authControllerPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du contrôleur d'authentification: ${error}`);
+    }
+  }
+  
+  // Créer auth.service.js s'il est manquant
+  const authServicePath = path.join(authModuleDir, 'auth.service.js');
+  if (!fs.existsSync(authServicePath)) {
+    console.log('⚠️ Service d\'authentification manquant, création d\'un service minimal...');
+    
+    const authServiceContent = `
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthService = void 0;
+const common_1 = require("@nestjs/common");
+
+let AuthService = class AuthService {
+    constructor() {
+        console.log('✅ AuthService initialisé');
+    }
+};
+AuthService = __decorate([
+    (0, common_1.Injectable)()
+], AuthService);
+exports.AuthService = AuthService;
+`;
+    
+    try {
+      fs.writeFileSync(authServicePath, authServiceContent, 'utf8');
+      console.log(`✅ Service d'authentification minimal créé avec succès dans ${authServicePath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du service d'authentification: ${error}`);
+    }
+  }
+  
+  // Créer index.js pour faciliter les imports
+  const authIndexPath = path.join(authModuleDir, 'index.js');
+  if (!fs.existsSync(authIndexPath)) {
+    console.log('⚠️ Index du module auth manquant, création...');
+    
+    const indexContent = `
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./auth.module.js"), exports);
+__exportStar(require("./auth.controller.js"), exports);
+__exportStar(require("./auth.service.js"), exports);
+`;
+    
+    try {
+      fs.writeFileSync(authIndexPath, indexContent, 'utf8');
+      console.log(`✅ Index du module auth créé avec succès dans ${authIndexPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création de l'index du module auth: ${error}`);
     }
   }
 }

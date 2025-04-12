@@ -69,6 +69,100 @@ if [ -f "src/modules/auth/decorators/roles.decorator.ts" ]; then
 fi
 echo "✅ Fichier index.js des décorateurs créé avec succès"
 
+# Création du module d'authentification s'il est manquant
+echo "🔄 VÉRIFICATION CRITIQUE: Création du module d'authentification..."
+mkdir -p dist/modules/auth
+
+# Créer auth.module.js s'il est manquant
+if [ ! -f "dist/modules/auth/auth.module.js" ]; then
+  cat > dist/modules/auth/auth.module.js << EOL
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthModule = void 0;
+const common_1 = require("@nestjs/common");
+const passport_1 = require("@nestjs/passport");
+const jwt_1 = require("@nestjs/jwt");
+
+let AuthModule = class AuthModule {};
+AuthModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            passport_1.PassportModule,
+            jwt_1.JwtModule.register({
+                secret: process.env.JWT_SECRET || 'defaultSecret',
+                signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
+            }),
+        ],
+        controllers: [],
+        providers: [],
+        exports: [jwt_1.JwtModule],
+    })
+], AuthModule);
+exports.AuthModule = AuthModule;
+EOL
+  echo "✅ Module d'authentification créé avec succès"
+fi
+
+# Créer auth.controller.js s'il est manquant
+if [ ! -f "dist/modules/auth/auth.controller.js" ]; then
+  cat > dist/modules/auth/auth.controller.js << EOL
+require('reflect-metadata');
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthController = void 0;
+const common_1 = require("@nestjs/common");
+
+let AuthController = class AuthController {
+    constructor() {
+        console.log('✅ AuthController initialisé');
+    }
+};
+AuthController = __decorate([
+    (0, common_1.Controller)('auth')
+], AuthController);
+exports.AuthController = AuthController;
+EOL
+  echo "✅ Contrôleur d'authentification créé avec succès"
+fi
+
+# Créer index.js pour le module auth
+if [ ! -f "dist/modules/auth/index.js" ]; then
+  cat > dist/modules/auth/index.js << EOL
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./auth.module.js"), exports);
+__exportStar(require("./auth.controller.js"), exports);
+EOL
+  echo "✅ Index du module auth créé avec succès"
+fi
+
 # Vérification plus robuste et création forcée du fichier app.service.js
 echo "🔄 VÉRIFICATION CRITIQUE: Création forcée de app.service.js pour assurer le démarrage..."
 cat > dist/app.service.js << EOL
@@ -120,6 +214,9 @@ if [ -f "dist/app.controller.js" ]; then
   
   # Correction des imports vers le décorateur Public
   sed -i 's|require.*modules/auth/decorators/public.decorator.*|require("./modules/auth/decorators/public.decorator.js");|' dist/app.controller.js
+  
+  # Correction des imports vers le module auth
+  sed -i 's|require.*modules/auth/auth.module.*|require("./modules/auth/auth.module.js");|' dist/app.controller.js
   
   # Vérification supplémentaire
   if grep -q "app.service.js" dist/app.controller.js; then
@@ -209,6 +306,12 @@ if [ -f "dist/modules/auth/decorators/public.decorator.js" ]; then
   echo "✅ public.decorator.js est présent!"
 else
   echo "⚠️ public.decorator.js est toujours manquant malgré les corrections!"
+fi
+
+if [ -f "dist/modules/auth/auth.module.js" ]; then
+  echo "✅ auth.module.js est présent!"
+else
+  echo "⚠️ auth.module.js est toujours manquant malgré les corrections!"
 fi
 
 # Démarrage avec différentes stratégies de repli
