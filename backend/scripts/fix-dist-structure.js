@@ -1098,6 +1098,213 @@ __exportStar(require("./env.validation.js"), exports);
 }
 
 /**
+ * Fonction pour assurer que le module logger est correctement présent
+ */
+function fixLoggerModule() {
+  console.log('🔍 Vérification du module logger...');
+  
+  const loggerDir = path.join('dist', 'common', 'logger');
+  ensureDirectoryExists(loggerDir);
+  
+  // Vérifier le module logger
+  const loggerModulePath = path.join(loggerDir, 'logger.module.js');
+  
+  if (!fs.existsSync(loggerModulePath)) {
+    console.log('⚠️ logger.module.js manquant, tentative de copie...');
+    
+    // Chercher le fichier dans différents emplacements possibles
+    const possiblePaths = [
+      path.join('src', 'common', 'logger', 'logger.module.js'),
+      path.join('dist', 'src', 'common', 'logger', 'logger.module.js')
+    ];
+    
+    if (!findAndCopyFile('logger.module.js', loggerModulePath, possiblePaths)) {
+      console.error('❌ ERREUR CRITIQUE: logger.module.js est introuvable, création d\'un stub...');
+      
+      // Créer un stub minimal pour éviter les erreurs
+      const stubContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LoggerModule = void 0;
+const common_1 = require("@nestjs/common");
+const structured_logger_service_1 = require("./structured-logger.service.js");
+
+let LoggerModule = class LoggerModule {
+};
+LoggerModule = __decorate([
+    (0, common_1.Global)(),
+    (0, common_1.Module)({
+        providers: [structured_logger_service_1.StructuredLoggerService],
+        exports: [structured_logger_service_1.StructuredLoggerService],
+    })
+], LoggerModule);
+exports.LoggerModule = LoggerModule;
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}`;
+      
+      fs.writeFileSync(loggerModulePath, stubContent, 'utf8');
+      console.log(`✅ Stub créé pour ${loggerModulePath}`);
+    }
+  } else {
+    console.log('✅ logger.module.js existant, vérification des imports...');
+    fixModuleImports(loggerModulePath);
+  }
+  
+  // Vérifier le service logger
+  const loggerServicePath = path.join(loggerDir, 'structured-logger.service.js');
+  
+  if (!fs.existsSync(loggerServicePath)) {
+    console.log('⚠️ structured-logger.service.js manquant, tentative de copie...');
+    
+    // Chercher le fichier dans différents emplacements possibles
+    const possiblePaths = [
+      path.join('src', 'common', 'logger', 'structured-logger.service.js'),
+      path.join('dist', 'src', 'common', 'logger', 'structured-logger.service.js')
+    ];
+    
+    if (!findAndCopyFile('structured-logger.service.js', loggerServicePath, possiblePaths)) {
+      console.error('❌ ERREUR CRITIQUE: structured-logger.service.js est introuvable, création d\'un stub...');
+      
+      // Créer un stub minimal pour éviter les erreurs
+      const stubContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StructuredLoggerService = void 0;
+const common_1 = require("@nestjs/common");
+
+let StructuredLoggerService = class StructuredLoggerService {
+    constructor() {
+        this.context = 'Application';
+        this.requestId = null;
+        this.userId = null;
+        
+        // Créer un logger stub
+        this.logger = {
+            info: console.log,
+            error: console.error,
+            warn: console.warn,
+            debug: console.debug,
+            verbose: console.log
+        };
+    }
+    
+    setContext(context) {
+        this.context = context;
+        return this;
+    }
+    
+    setRequestId(requestId) {
+        this.requestId = requestId;
+        return this;
+    }
+    
+    setUserId(userId) {
+        this.userId = userId;
+        return this;
+    }
+    
+    buildLogEntry(message, context) {
+        const logEntry = typeof message === 'object' ? { ...message } : { message };
+        logEntry.context = this.context;
+        
+        if (this.requestId) {
+            logEntry.requestId = this.requestId;
+        }
+        
+        if (this.userId) {
+            logEntry.userId = this.userId;
+        }
+        
+        if (context) {
+            Object.assign(logEntry, context);
+        }
+        
+        return logEntry;
+    }
+    
+    log(message, context) {
+        this.logger.info(this.buildLogEntry(message, context));
+    }
+    
+    error(message, trace, context) {
+        const logEntry = this.buildLogEntry(message, context);
+        
+        if (trace) {
+            logEntry.trace = trace;
+        }
+        
+        this.logger.error(logEntry);
+    }
+    
+    warn(message, context) {
+        this.logger.warn(this.buildLogEntry(message, context));
+    }
+    
+    debug(message, context) {
+        this.logger.debug(this.buildLogEntry(message, context));
+    }
+    
+    verbose(message, context) {
+        this.logger.verbose(this.buildLogEntry(message, context));
+    }
+};
+
+StructuredLoggerService = __decorate([
+    (0, common_1.Injectable)()
+], StructuredLoggerService);
+
+exports.StructuredLoggerService = StructuredLoggerService;
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}`;
+      
+      fs.writeFileSync(loggerServicePath, stubContent, 'utf8');
+      console.log(`✅ Stub créé pour ${loggerServicePath}`);
+    }
+  } else {
+    console.log('✅ structured-logger.service.js existant, vérification des imports...');
+    fixModuleImports(loggerServicePath);
+  }
+  
+  // Vérifier que app.module.js importe correctement le module logger
+  const appModulePath = path.join('dist', 'app.module.js');
+  
+  if (fs.existsSync(appModulePath)) {
+    console.log('🔍 Vérification de l\'import du logger dans app.module.js...');
+    
+    let content = fs.readFileSync(appModulePath, 'utf8');
+    let modified = false;
+    
+    // Vérifier si l'import existe déjà
+    if (!content.includes('./common/logger/logger.module.js')) {
+      // Ajouter l'import manquant
+      content = content.replace(
+        /const environment_1 = require\(['"]\.\/config\/environment\.js['"]\);/,
+        'const environment_1 = require(\'./config/environment.js\');\nconst logger_module_1 = require(\'./common/logger/logger.module.js\');'
+      );
+      modified = true;
+      console.log('✅ Import de logger.module.js ajouté à app.module.js');
+    }
+    
+    if (modified) {
+      fs.writeFileSync(appModulePath, content, 'utf8');
+      console.log('✅ app.module.js mis à jour avec succès');
+    }
+  }
+}
+
+/**
  * Fonction pour assurer que l'intercepteur HTTP exception est correctement présent
  */
 function fixHttpExceptionInterceptor() {
@@ -1222,10 +1429,9 @@ function __decorate(decorators, target, key, desc) {
   }
 }
 
-// Fonction principale
 function main() {
   console.log('🛠️ Correction de la structure du dossier dist/...');
-  
+
   // 1. Vérifier et corriger les fichiers critiques
   console.log('🔍 Vérification des fichiers critiques...');
   fixCriticalFiles();
@@ -1250,14 +1456,18 @@ function main() {
   console.log('🔍 Vérification de l\'intercepteur HTTP exception...');
   fixHttpExceptionInterceptor();
   
-  // 7. S'assurer que app.module.js fonctionne correctement
+  // 7. Vérifier et corriger le module logger
+  console.log('🔍 Vérification du module logger...');
+  fixLoggerModule();
+  
+  // 8. S'assurer que app.module.js fonctionne correctement
   console.log('🔍 Vérification du fichier app.module.js...');
   
-  // 8. Copier le dossier config/ par sécurité
+  // 9. Copier le dossier config/ par sécurité
   console.log('🔍 Copie du dossier config...');
   copyDirectoryRecursive(path.join('src', 'config'), path.join('dist', 'config'));
   
-  // 9. Pour nous assurer que reflect-metadata est disponible, copier directement le fichier
+  // 10. Pour nous assurer que reflect-metadata est disponible, copier directement le fichier
   const reflectMetadataDir = path.join('dist', 'node_modules', 'reflect-metadata');
   ensureDirectoryExists(reflectMetadataDir);
   copyFile(
@@ -1265,13 +1475,13 @@ function main() {
     path.join(reflectMetadataDir, 'Reflect.js')
   );
   
-  // 10. Corriger le point d'entrée main.js
+  // 11. Corriger le point d'entrée main.js
   fixEntryPoint();
   
-  // 11. Vérifier les modèles (qui pourraient être importés)
+  // 12. Vérifier les modèles (qui pourraient être importés)
   console.log('🔍 Vérification des modèles...');
   
-  // 12. Double vérification des fichiers de configuration
+  // 13. Double vérification des fichiers de configuration
   console.log('🔍 Vérification des fichiers de configuration MongoDB...');
   fixMongoDbConfigFiles();
   
