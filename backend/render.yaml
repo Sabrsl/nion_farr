@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: nionfar-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # Configure this in Render dashboard
+      - key: APP_URL
+        value: https://nionfar-backend.onrender.com
+      - key: FRONTEND_URL
+        value: https://nion-farr.vercel.app
+      - key: PORT
+        value: 3001
+      - key: IS_RENDER
+        value: true
+    autoDeploy: true
+    plan: free
