@@ -30,7 +30,7 @@ jobs:
       
       - name: 📦 Install dependencies
         working-directory: backend
-        run: npm ci
+        run: npm install --no-audit --prefer-offline
       
       - name: 🧪 Run linting and tests
         working-directory: backend
@@ -45,7 +45,7 @@ jobs:
         working-directory: backend
         run: |
           echo "🔨 Construction pour Vercel..."
-          npm run build
+          npm run vercel-build
           echo "✅ Build terminé"
       
       - name: 📊 Analyser le build

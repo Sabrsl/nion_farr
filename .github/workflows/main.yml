@@ -26,9 +26,7 @@ jobs:
       
       - name: 📦 Install dependencies
         working-directory: frontend
-        run: |
-          npm ci
-          echo "✅ Dépendances frontend installées"
+        run: npm install --no-audit --prefer-offline
       
       - name: 🧹 Lint & Test
         working-directory: frontend
@@ -97,10 +95,7 @@ jobs:
       
       - name: 📦 Install dependencies
         working-directory: backend
-        run: |
-          npm install --legacy-peer-deps
-          npm install serverless-http --save
-          echo "✅ Dépendances backend installées"
+        run: npm install --no-audit --prefer-offline
       
       - name: 🛠️ Build Backend
         working-directory: backend
