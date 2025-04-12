@@ -1,4 +1,4 @@
-name: Vercel Deployments
+name: Vercel Build Checks
 
 on:
   push:
@@ -31,55 +31,12 @@ jobs:
           check-name: '🔧 Backend Build'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
-
-  deploy-frontend:
-    name: 🚀 Déploiement Frontend Vercel
-    needs: wait-for-checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⬇️ Checkout code
-        uses: actions/checkout@v4
-        
-      - name: ⌛ Attente supplémentaire de sécurité
-        run: sleep 10
-        
-      - name: 🚀 Déploiement vers Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_FRONTEND }}
-          working-directory: ./frontend
-          vercel-args: '--prod'
-      
-      - name: ✅ Notification de déploiement
+          
+      - name: ✅ Notification finale
         if: success()
         run: |
-          echo "✅ Frontend déployé sur Vercel"
-          echo "🔗 URL: https://nion-farr.vercel.app"
-
-  deploy-backend:
-    name: 🚀 Déploiement Backend Vercel
-    needs: wait-for-checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⬇️ Checkout code
-        uses: actions/checkout@v4
-        
-      - name: ⌛ Attente supplémentaire de sécurité
-        run: sleep 15
-        
-      - name: 🚀 Déploiement vers Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_BACKEND }}
-          working-directory: ./backend
-          vercel-args: '--prod'
-      
-      - name: ✅ Notification de déploiement
-        if: success()
-        run: |
-          echo "✅ Backend déployé sur Vercel"
-          echo "🔗 URL: https://nion-farr-backend.vercel.app" 
+          echo "✅ Toutes les vérifications ont été complétées avec succès"
+          echo "🚀 Les projets sont prêts pour un déploiement automatique via Vercel"
+          echo "🔗 URLs de déploiement:"
+          echo "   - Frontend: https://nion-farr.vercel.app"
+          echo "   - Backend: https://nion-farr-backend.vercel.app" 
