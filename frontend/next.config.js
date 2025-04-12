@@ -123,87 +123,89 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // En production, utiliser toujours l'URL de production, sinon utiliser la variable d'environnement
+    // En production, utiliser toujours l'URL de production Vercel
     const isProduction = process.env.NODE_ENV === 'production';
     const productionApiUrl = 'https://nion-farr-backend.vercel.app/api';
+    // Forcer l'URL de production en production
     const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
     
-    console.log(`[Next.js Config] Configuration des redirections API vers: ${apiUrl}`);
+    // Forçage de l'URL de production pour assurer la migration Railway -> Vercel
+    console.log(`[Next.js Config] Configuration des redirections API vers: ${productionApiUrl}`);
     console.log(`[Next.js Config] Environnement: ${process.env.NODE_ENV}`);
     
     return [
       // Requêtes générales vers l'API
       {
         source: '/api/:path*',
-        destination: `${apiUrl}/:path*`,
+        destination: `${productionApiUrl}/:path*`,
       },
       // Routes d'authentification
       {
         source: '/api/auth/login',
-        destination: `${apiUrl}/auth/login`,
+        destination: `${productionApiUrl}/auth/login`,
       },
       {
         source: '/api/auth/register',
-        destination: `${apiUrl}/auth/register`,
+        destination: `${productionApiUrl}/auth/register`,
       },
       {
         source: '/api/auth/logout',
-        destination: `${apiUrl}/auth/logout`,
+        destination: `${productionApiUrl}/auth/logout`,
       },
       {
         source: '/api/auth/me',
-        destination: `${apiUrl}/auth/me`,
+        destination: `${productionApiUrl}/auth/me`,
       },
       {
         source: '/api/v1/auth/login',
-        destination: `${apiUrl}/auth/login`,
+        destination: `${productionApiUrl}/auth/login`,
       },
       // Routes utilisateur
       {
         source: '/api/user/profile',
-        destination: `${apiUrl}/user/profile`,
+        destination: `${productionApiUrl}/user/profile`,
       },
       // Routes des services freelance
       {
         source: '/api/services',
-        destination: `${apiUrl}/services`,
+        destination: `${productionApiUrl}/services`,
       },
       {
         source: '/api/services/:id',
-        destination: `${apiUrl}/services/:id`,
+        destination: `${productionApiUrl}/services/:id`,
       },
       // Routes des commandes
       {
         source: '/api/orders',
-        destination: `${apiUrl}/orders`,
+        destination: `${productionApiUrl}/orders`,
       },
       {
         source: '/api/orders/:id',
-        destination: `${apiUrl}/orders/:id`,
+        destination: `${productionApiUrl}/orders/:id`,
       },
       // Routes des litiges
       {
         source: '/api/disputes',
-        destination: `${apiUrl}/disputes`,
+        destination: `${productionApiUrl}/disputes`,
       },
       {
         source: '/api/disputes/:id',
-        destination: `${apiUrl}/disputes/:id`,
+        destination: `${productionApiUrl}/disputes/:id`,
       },
       // Route pour les tokens CSRF
       {
         source: '/api/security/csrf-tokens',
-        destination: `${apiUrl}/security/csrf-tokens`,
+        destination: `${productionApiUrl}/security/csrf-tokens`,
       },
       // Route pour le statut
       {
         source: '/api/status',
-        destination: `${apiUrl}/status`,
+        destination: `${productionApiUrl}/status`,
       },
       // Route pour le healthcheck
       {
         source: '/api/health',
-        destination: `${apiUrl}/health`,
+        destination: `${productionApiUrl}/health`,
       },
     ];
   },

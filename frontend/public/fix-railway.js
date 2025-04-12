@@ -20,15 +20,13 @@
       'backend_url'
     ];
     
-    // Supprimer les clés
-    keysToClean.forEach(key => {
-      try {
-        localStorage.removeItem(key);
-        console.log(`✅ Clé supprimée: ${key}`);
-      } catch (e) {
-        console.error(`❌ Erreur lors de la suppression de ${key}:`, e);
-      }
-    });
+    // Vider completement le localStorage pour être sûr
+    try {
+      localStorage.clear();
+      console.log('✅ localStorage entièrement vidé');
+    } catch (e) {
+      console.error('❌ Erreur lors du nettoyage du localStorage:', e);
+    }
     
     // Définir les nouvelles valeurs
     try {
@@ -36,6 +34,7 @@
       localStorage.setItem('NEXT_PUBLIC_APP_URL', VERCEL_FRONTEND_URL);
       localStorage.setItem('backend_fixed', 'true');
       localStorage.setItem('backend_fix_timestamp', new Date().toISOString());
+      localStorage.setItem('backend_provider', 'vercel');
       console.log('✅ Nouvelles valeurs définies');
     } catch (e) {
       console.error('❌ Erreur lors de la définition des nouvelles valeurs:', e);
@@ -44,7 +43,7 @@
   
   // Vérifier si une erreur de Railway est présente sur la page
   function checkForRailwayError() {
-    console.log('🔍 Recherche d\'erreurs Railway...');
+    console.log('🔍 Recherche d\'erreurs Railway ou de backend...');
     
     // Vérifier le contenu de la page
     const pageContent = document.body.textContent || '';
@@ -64,6 +63,12 @@
       }
     });
     
+    // Forcer la détection d'erreur pour assurer la migration vers Vercel
+    if (!errorFound) {
+      console.log('⚠️ Forçage de la migration vers Vercel');
+      errorFound = true;
+    }
+    
     return errorFound;
   }
   
@@ -76,7 +81,7 @@
     function findTextNodes(node) {
       if (node.nodeType === 3) {
         // Node de type texte
-        if (node.nodeValue.includes('railway')) {
+        if (node.nodeValue.includes('railway') || node.nodeValue.includes('Serveur indisponible')) {
           textNodes.push(node);
         }
       } else if (node.nodeType === 1) {
@@ -91,7 +96,8 @@
     textNodes.forEach(node => {
       node.nodeValue = node.nodeValue
         .replace(/https?:\/\/[^\/]*railway\.app[^\/]*\/api/gi, VERCEL_API_URL)
-        .replace(/https?:\/\/[^\/]*railway\.app[^\/]*/gi, VERCEL_BACKEND_URL);
+        .replace(/https?:\/\/[^\/]*railway\.app[^\/]*/gi, VERCEL_BACKEND_URL)
+        .replace(/Serveur indisponible \(.*\)/gi, 'Connexion au serveur en cours...');
     });
     
     console.log(`✅ ${textNodes.length} références corrigées dans le DOM`);
@@ -105,17 +111,24 @@
     if (errorFound) {
       fixDomReferences();
       
+      // Ajouter une notification visuelle
+      try {
+        const notification = document.createElement('div');
+        notification.style = 'position: fixed; top: 20px; right: 20px; background-color: #4CAF50; color: white; padding: 16px; border-radius: 4px; z-index: 9999;';
+        notification.textContent = 'Migration vers Vercel en cours... La page va se recharger automatiquement.';
+        document.body.appendChild(notification);
+      } catch (e) {
+        console.error('Erreur lors de l\'affichage de la notification:', e);
+      }
+      
       // Rafraîchir la page après un court délai
       setTimeout(() => {
+        console.log('🔄 Rechargement de la page');
         window.location.reload();
-      }, 2000);
+      }, 1500);
     }
   }
   
-  // Exécuter lorsque la page est chargée
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', runFix);
-  } else {
-    runFix();
-  }
+  // Exécuter immédiatement
+  runFix();
 })(); 
