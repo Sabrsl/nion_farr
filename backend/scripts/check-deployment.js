@@ -48,6 +48,38 @@ for (const file of criticalFiles) {
   }
 }
 
+// Vérification des entités pour éviter les dépendances circulaires
+console.log('\n🔍 Vérification des entités pour éviter les dépendances circulaires...');
+const entityFiles = [
+  'modules/users/entities/user.entity.js',
+  'modules/services/entities/service.entity.js',
+  'modules/orders/entities/order.entity.js',
+  'modules/reviews/entities/review.entity.js',
+  'modules/messages/entities/message.entity.js'
+];
+
+for (const file of entityFiles) {
+  const filePath = path.join(DIST_DIR, file);
+  if (fs.existsSync(filePath)) {
+    console.log(`✅ ${file} est présent`);
+    
+    // Vérification du contenu pour s'assurer que les entités sont simplifiées
+    const content = fs.readFileSync(filePath, 'utf8');
+    if (file !== 'modules/users/entities/user.entity.js') {
+      if (content.includes('user.entity') && 
+         (content.includes('ManyToOne') || 
+          content.includes('OneToMany') || 
+          content.includes('ManyToMany'))) {
+        console.warn(`⚠️ ATTENTION: ${file} contient des références directes à l'entité User, cela pourrait causer des problèmes de dépendances circulaires!`);
+      } else {
+        console.log(`✅ ${file} utilise une structure simplifiée pour éviter les dépendances circulaires`);
+      }
+    }
+  } else {
+    console.error(`❌ ${file} est manquant!`);
+  }
+}
+
 // Statistiques
 console.log(`\n📊 Statistiques des fichiers critiques:`);
 console.log(`- Total vérifiés: ${criticalFiles.length}`);
