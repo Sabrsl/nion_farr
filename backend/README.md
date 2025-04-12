@@ -188,4 +188,10 @@ The database uses MongoDB schema validators to ensure data integrity. The valida
 - Indexes are properly created for performance
 - Documents comply with expected schema structure
 
-The validation process creates detailed reports in the `audit-reports` directory. 
+The validation process creates detailed reports in the `audit-reports` directory.
+
+## Déploiement sur Render
+
+Le backend est déployé sur Render à l'URL suivante : https://nionfar-backend.onrender.com
+
+Pour plus d'informations sur la configuration du déploiement, consultez le fichier `render.yaml` à la racine du projet et le script `render-build.sh` dans le dossier backend. 
