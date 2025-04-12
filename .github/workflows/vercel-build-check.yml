@@ -66,36 +66,36 @@ jobs:
             echo "⚠️ vercel.json manquant"
             echo "Création d'un fichier vercel.json de base..."
             
-            cat > vercel.json << 'EOFMARKER'
-{
-  "version": 2,
-  "buildCommand": "npm run vercel-build",
-  "framework": "nextjs",
-  "installCommand": "npm install",
-  "outputDirectory": ".next",
-  "routes": [
-    { 
-      "src": "/api/(.*)", 
-      "dest": "https://nion-farr-backend.vercel.app/api/$1" 
-    },
-    { 
-      "src": "/(.*)", 
-      "dest": "/$1" 
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "dest": "https://nion-farr-backend.vercel.app/api/$1"
-    }
-  ],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://nion-farr-backend.vercel.app/api",
-    "NEXT_PUBLIC_APP_URL": "https://nion-farr.vercel.app",
-    "NEXT_PUBLIC_ENVIRONMENT": "production"
-  }
-}
-EOFMARKER
+            # Créer le fichier vercel.json ligne par ligne
+            echo '{' > vercel.json
+            echo '  "version": 2,' >> vercel.json
+            echo '  "buildCommand": "npm run vercel-build",' >> vercel.json
+            echo '  "framework": "nextjs",' >> vercel.json
+            echo '  "installCommand": "npm install",' >> vercel.json
+            echo '  "outputDirectory": ".next",' >> vercel.json
+            echo '  "routes": [' >> vercel.json
+            echo '    {' >> vercel.json 
+            echo '      "src": "/api/(.*)",' >> vercel.json 
+            echo '      "dest": "https://nion-farr-backend.vercel.app/api/$1"' >> vercel.json 
+            echo '    },' >> vercel.json
+            echo '    {' >> vercel.json 
+            echo '      "src": "/(.*)",' >> vercel.json 
+            echo '      "dest": "/$1"' >> vercel.json 
+            echo '    }' >> vercel.json
+            echo '  ],' >> vercel.json
+            echo '  "rewrites": [' >> vercel.json
+            echo '    {' >> vercel.json
+            echo '      "source": "/api/:path*",' >> vercel.json
+            echo '      "dest": "https://nion-farr-backend.vercel.app/api/$1"' >> vercel.json
+            echo '    }' >> vercel.json
+            echo '  ],' >> vercel.json
+            echo '  "env": {' >> vercel.json
+            echo '    "NEXT_PUBLIC_API_URL": "https://nion-farr-backend.vercel.app/api",' >> vercel.json
+            echo '    "NEXT_PUBLIC_APP_URL": "https://nion-farr.vercel.app",' >> vercel.json
+            echo '    "NEXT_PUBLIC_ENVIRONMENT": "production"' >> vercel.json
+            echo '  }' >> vercel.json
+            echo '}' >> vercel.json
+            
             echo "✅ vercel.json créé"
           else
             # Vérifier les configurations clés
@@ -110,25 +110,23 @@ EOFMARKER
           echo "✅ Le build Vercel est valide"
           
           # Générer un résumé pour l'artefact
-          cat > vercel-build-report.md << 'EOFMARKER'
-# Rapport de build Vercel Frontend
-
-**Date:** $(date)
-
-## Structure
-- .next: ✅
-- .next/static: ✅
-- vercel.json: $(if [ -f "vercel.json" ]; then echo "✅"; else echo "⚠️"; fi)
-
-## Statistiques
-- Taille totale: $TOTAL_SIZE
-- Taille statique: $STATIC_SIZE
-- Fichiers JS: $JS_COUNT
-- Fichiers CSS: $CSS_COUNT
-
-## Statut
-**✅ PRÊT POUR DÉPLOIEMENT**
-EOFMARKER
+          echo '# Rapport de build Vercel Frontend' > vercel-build-report.md
+          echo '' >> vercel-build-report.md
+          echo "**Date:** $(date)" >> vercel-build-report.md
+          echo '' >> vercel-build-report.md
+          echo '## Structure' >> vercel-build-report.md
+          echo '- .next: ✅' >> vercel-build-report.md
+          echo '- .next/static: ✅' >> vercel-build-report.md
+          echo "- vercel.json: $(if [ -f "vercel.json" ]; then echo "✅"; else echo "⚠️"; fi)" >> vercel-build-report.md
+          echo '' >> vercel-build-report.md
+          echo '## Statistiques' >> vercel-build-report.md
+          echo "- Taille totale: $TOTAL_SIZE" >> vercel-build-report.md
+          echo "- Taille statique: $STATIC_SIZE" >> vercel-build-report.md
+          echo "- Fichiers JS: $JS_COUNT" >> vercel-build-report.md
+          echo "- Fichiers CSS: $CSS_COUNT" >> vercel-build-report.md
+          echo '' >> vercel-build-report.md
+          echo '## Statut' >> vercel-build-report.md
+          echo '**✅ PRÊT POUR DÉPLOIEMENT**' >> vercel-build-report.md
       
       - name: 📤 Uploader le rapport
         uses: actions/upload-artifact@v4
@@ -164,11 +162,11 @@ EOFMARKER
             echo "⚠️ Aucun fichier .env.production trouvé"
             echo "🔄 Création d'un fichier .env.production de base..."
             
-            cat > .env.production << 'EOFMARKER'
-NEXT_PUBLIC_API_URL=https://nion-farr-backend.vercel.app/api
-NEXT_PUBLIC_APP_URL=https://nion-farr.vercel.app
-NEXT_PUBLIC_ENVIRONMENT=production
-EOFMARKER
+            # Créer le fichier .env.production
+            echo 'NEXT_PUBLIC_API_URL=https://nion-farr-backend.vercel.app/api' > .env.production
+            echo 'NEXT_PUBLIC_APP_URL=https://nion-farr.vercel.app' >> .env.production
+            echo 'NEXT_PUBLIC_ENVIRONMENT=production' >> .env.production
+            
             echo "✅ .env.production créé"
           fi
           

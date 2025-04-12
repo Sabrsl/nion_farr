@@ -133,31 +133,30 @@ jobs:
           if [ ! -f "backend/api/index.js" ]; then
             echo "❌ Point d'entrée API manquant"
             
-            # Créer un point d'entrée minimal
-            cat > backend/api/index.js << 'EOFMARKER'
-const serverless = require('serverless-http');
-const { NestFactory } = require('@nestjs/core');
-const { AppModule } = require('../dist/app.module');
-
-let cachedApp;
-
-async function bootstrap() {
-  if (cachedApp) return cachedApp;
-  const app = await NestFactory.create(AppModule);
-  await app.init();
-  cachedApp = app;
-  return app;
-}
-
-module.exports = async (req, res) => {
-  if (req.url === '/health' || req.url === '/api/health') {
-    return res.status(200).json({ status: 'ok', vercel: true });
-  }
-  const app = await bootstrap();
-  const handler = serverless(app);
-  return handler(req, res);
-};
-EOFMARKER
+            # Créer un fichier index.js minimal ligne par ligne
+            echo 'const serverless = require("serverless-http");' > backend/api/index.js
+            echo 'const { NestFactory } = require("@nestjs/core");' >> backend/api/index.js
+            echo 'const { AppModule } = require("../dist/app.module");' >> backend/api/index.js
+            echo '' >> backend/api/index.js
+            echo 'let cachedApp;' >> backend/api/index.js
+            echo '' >> backend/api/index.js
+            echo 'async function bootstrap() {' >> backend/api/index.js
+            echo '  if (cachedApp) return cachedApp;' >> backend/api/index.js
+            echo '  const app = await NestFactory.create(AppModule);' >> backend/api/index.js
+            echo '  await app.init();' >> backend/api/index.js
+            echo '  cachedApp = app;' >> backend/api/index.js
+            echo '  return app;' >> backend/api/index.js
+            echo '}' >> backend/api/index.js
+            echo '' >> backend/api/index.js
+            echo 'module.exports = async (req, res) => {' >> backend/api/index.js
+            echo '  if (req.url === "/health" || req.url === "/api/health") {' >> backend/api/index.js
+            echo '    return res.status(200).json({ status: "ok", vercel: true });' >> backend/api/index.js
+            echo '  }' >> backend/api/index.js
+            echo '  const app = await bootstrap();' >> backend/api/index.js
+            echo '  const handler = serverless(app);' >> backend/api/index.js
+            echo '  return handler(req, res);' >> backend/api/index.js
+            echo '};' >> backend/api/index.js
+            
             echo "✅ backend/api/index.js créé"
           else
             echo "✅ backend/api/index.js existe"
