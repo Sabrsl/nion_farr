@@ -2,6 +2,15 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { NextRouter } from 'next/router';
 
+// Déclarer le type global pour la fenêtre
+declare global {
+  interface Window {
+    __CORRECT_API_URL?: string;
+    __CORRECT_BACKEND_URL?: string;
+    __CORRECT_FRONTEND_URL?: string;
+  }
+}
+
 // Constantes pour le stockage des données d'authentification
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_STORAGE_KEY = 'nionfarUser';
@@ -10,6 +19,17 @@ const USER_STORAGE_KEY = 'nionfarUser';
 const VERCEL_BACKEND_URL = 'https://nion-farr-backend.vercel.app';
 const VERCEL_API_URL = 'https://nion-farr-backend.vercel.app/api';
 const VERCEL_FRONTEND_URL = 'https://nion-farr.vercel.app';
+
+// Fonction pour s'assurer qu'on utilise toujours la bonne URL
+function getCorrectApiUrl(): string {
+  // Utiliser les variables globales si définies (par initial-fix.js)
+  if (typeof window !== 'undefined' && window.__CORRECT_API_URL) {
+    return window.__CORRECT_API_URL;
+  }
+  
+  // Valeur par défaut
+  return VERCEL_API_URL;
+}
 
 interface LoginCredentials {
   emailOrPhone: string;
@@ -72,7 +92,22 @@ class AuthService {
   constructor() {
     // Forcer l'utilisation des URLs Vercel en production
     const isProduction = process.env.NODE_ENV === 'production';
-    this.apiUrl = VERCEL_API_URL;
+    
+    // Valeur correcte pour l'API
+    this.apiUrl = getCorrectApiUrl();
+    
+    // Vérifier et corriger l'URL si nécessaire
+    if (this.apiUrl.includes('railway') || this.apiUrl.includes('render')) {
+      console.error('❌ URL API incorrecte détectée:', this.apiUrl);
+      this.apiUrl = VERCEL_API_URL;
+      
+      // Mettre à jour localStorage si disponible
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('NEXT_PUBLIC_API_URL', VERCEL_API_URL);
+        localStorage.setItem('backend_fixed', 'true');
+      }
+    }
+    
     const appUrl = VERCEL_FRONTEND_URL;
     
     console.log("🔧 Configuration AuthService:", { 
@@ -91,6 +126,9 @@ class AuthService {
     // Récupérer les informations d'authentification depuis le localStorage au démarrage
     if (this.localStorageAvailable) {
       this.loadFromStorage();
+      
+      // Forcer la bonne URL dans localStorage
+      localStorage.setItem('NEXT_PUBLIC_API_URL', this.apiUrl);
     }
 
     // Vérifier la disponibilité du serveur backend si en environnement client
