@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SecurityModule } from '../../security/security.module';
+import { EmailModule } from '../email/email.module';
+import { SmsModule } from '../sms/sms.module';
 
 import { AuthService } from './services/auth.service';
 import { AuthController } from './controllers/auth.controller';
@@ -12,6 +14,7 @@ import { User } from '../users/entities/user.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
+import { TokenService } from './services/token.service';
 
 @Module({
   imports: [
@@ -26,6 +29,8 @@ import { LocalStrategy } from './strategies/local.strategy';
       inject: [ConfigService],
     }),
     SecurityModule,
+    EmailModule,
+    SmsModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -33,7 +38,8 @@ import { LocalStrategy } from './strategies/local.strategy';
     TwoFactorService,
     JwtStrategy, 
     JwtRefreshStrategy,
-    LocalStrategy
+    LocalStrategy,
+    TokenService
   ],
   exports: [AuthService, JwtModule],
 })
