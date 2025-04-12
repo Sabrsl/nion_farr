@@ -71,6 +71,18 @@ if [ $MISSING_FILES -gt 0 ]; then
   
   if [ $MISSING_FILES_AFTER -gt 0 ]; then
     echo "❌ ERREUR: Des fichiers critiques sont toujours manquants après correction!"
+    echo "⚠️ Démarrage du serveur de secours simplifié..."
+    if [ -f "server-simple.js" ]; then
+      echo "✅ Utilisation du serveur de secours server-simple.js"
+      exec node server-simple.js
+      exit 0
+    elif [ -f "server.js" ]; then
+      echo "✅ Utilisation du serveur de secours server.js"
+      exec node server.js
+      exit 0
+    else
+      echo "❌ ERREUR CRITIQUE: Aucun serveur de secours disponible!"
+    fi
   else
     echo "✅ Tous les fichiers critiques sont désormais présents"
   fi
@@ -92,5 +104,19 @@ echo "✅ Démarrage de l'application principale..."
 # Créer le dossier logs s'il n'existe pas
 mkdir -p logs
 
-# Démarrer l'application
-node dist/main.js 
+# Démarrer l'application avec un timeout et fallback
+timeout 30s node dist/main.js || {
+  echo "⚠️ L'application principale n'a pas démarré correctement dans les 30 secondes"
+  echo "⚠️ Démarrage du serveur de secours..."
+  
+  if [ -f "server-simple.js" ]; then
+    echo "✅ Utilisation du serveur de secours server-simple.js"
+    exec node server-simple.js
+  elif [ -f "server.js" ]; then
+    echo "✅ Utilisation du serveur de secours server.js"
+    exec node server.js
+  else
+    echo "❌ ERREUR CRITIQUE: Aucun serveur de secours disponible!"
+    exit 1
+  fi
+} 
