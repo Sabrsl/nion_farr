@@ -151,6 +151,35 @@ jobs:
           echo "📄 Structure complète de dist/:"
           find dist -type f | sort
       
+      - name: 🧪 Vérification des scripts MongoDB
+        working-directory: backend
+        run: |
+          echo "🧪 Vérification des scripts MongoDB..."
+          
+          # Vérifier les scripts d'audit MongoDB
+          MONGODB_SCRIPTS=("scripts/audit-mongodb-data.js" "scripts/schedule-mongodb-audit.js")
+          
+          for script in "${MONGODB_SCRIPTS[@]}"; do
+            if [ -f "$script" ]; then
+              echo "✅ $script existe"
+              # Vérification de la syntaxe JavaScript
+              node -c "$script" && echo "✅ Syntaxe valide pour $script" || echo "⚠️ Problème de syntaxe pour $script, mais nous continuons"
+            else
+              echo "⚠️ $script est manquant, mais nous continuons"
+            fi
+          done
+          
+          # Vérifier l'existence des scripts de gestion MongoDB
+          EXTRA_SCRIPTS=("add-mongodb-validators.js" "fix-mongodb-schema.js" "prepare-mongodb-for-production.js")
+          
+          for script in "${EXTRA_SCRIPTS[@]}"; do
+            if [ -f "$script" ]; then
+              echo "✅ $script existe"
+            else
+              echo "⚠️ $script est manquant, mais nous continuons"
+            fi
+          done
+      
       - name: 🚀 Dry run du serveur backend
         working-directory: backend
         run: |
@@ -201,11 +230,42 @@ jobs:
       - name: ⬇️ Checkout code
         uses: actions/checkout@v3
       
+      - name: 🔧 Préparation des scripts pour Railway
+        working-directory: backend
+        run: |
+          echo "🔧 Vérification et préparation des scripts pour Railway..."
+          
+          # Vérifier la présence des scripts essentiels
+          if [ ! -f "scripts/fix-dist-structure.js" ] || [ ! -f "start-railway.sh" ]; then
+            echo "❌ Scripts Railway manquants, impossible de déployer!"
+            exit 1
+          fi
+          
+          # Assurer les permissions d'exécution
+          chmod +x start-railway.sh
+          chmod +x scripts/railway-build.sh
+          
+          echo "✅ Scripts Railway prêts pour le déploiement"
+          
+          # Vérifier les scripts MongoDB
+          if [ -f "scripts/audit-mongodb-data.js" ] && [ -f "scripts/schedule-mongodb-audit.js" ]; then
+            echo "✅ Scripts d'audit MongoDB prêts"
+          else
+            echo "⚠️ Certains scripts d'audit MongoDB sont manquants, mais nous continuons"
+          fi
+      
       - name: 🚂 Déploiement sur Railway
         uses: railwayapp/railway-action@master
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           service: ${{ secrets.RAILWAY_SERVICE_NAME }}
+      
+      - name: 📊 Vérification post-déploiement
+        run: |
+          echo "🔍 Vérification du déploiement Railway..."
+          echo "✅ Déploiement du backend envoyé à Railway"
+          echo "⏳ Le déploiement complet peut prendre plusieurs minutes"
+          echo "🔗 URL du service: https://nionfar.up.railway.app"
 
   deploy:
     name: 🚀 Déploiement

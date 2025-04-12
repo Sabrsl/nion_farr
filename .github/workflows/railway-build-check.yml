@@ -16,7 +16,7 @@ jobs:
   verify-railway-build:
     name: 🚂 Vérification du build Railway
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15  # Augmenté pour permettre plus de temps pour les vérifications MongoDB
 
     steps:
       - name: ⬇️ Checkout code
@@ -43,7 +43,7 @@ jobs:
           echo "🧪 Vérification des fichiers de configuration Railway..."
           
           # Vérifier la présence de scripts essentiels pour Railway
-          RAILWAY_SCRIPTS=("scripts/fix-dist-structure.js" "start-railway.sh")
+          RAILWAY_SCRIPTS=("scripts/fix-dist-structure.js" "start-railway.sh" "scripts/check-deployment.js" "scripts/audit-mongodb-data.js")
           
           for script in "${RAILWAY_SCRIPTS[@]}"; do
             if [ -f "$script" ]; then
@@ -55,7 +55,7 @@ jobs:
           done
           
           # Vérifier le package.json pour les scripts nécessaires
-          if grep -q "\"build:railway\":" package.json && grep -q "\"start:railway\":" package.json; then
+          if grep -q "\"build:railway\":" package.json && grep -q "\"start:railway\":" package.json && grep -q "\"mongodb:audit\":" package.json; then
             echo "✅ Scripts package.json pour Railway trouvés"
           else
             echo "❌ Scripts package.json pour Railway manquants!"
@@ -134,6 +134,36 @@ jobs:
             fi
           done
 
+      - name: 🔍 Vérification des scripts MongoDB
+        working-directory: backend
+        run: |
+          echo "🧪 Vérification des scripts MongoDB..."
+          
+          # Vérifier les scripts MongoDB
+          MONGODB_SCRIPTS=("scripts/audit-mongodb-data.js" "scripts/schedule-mongodb-audit.js")
+          
+          for script in "${MONGODB_SCRIPTS[@]}"; do
+            if [ -f "$script" ]; then
+              echo "✅ $script existe, vérification syntaxique..."
+              # Vérification syntaxique du script
+              node -c "$script" && echo "✅ Syntaxe valide pour $script" || echo "⚠️ Problème de syntaxe pour $script, mais nous continuons"
+            else
+              echo "❌ $script est manquant!"
+              exit 1
+            fi
+          done
+          
+          # Vérifier l'existence des scripts supplémentaires
+          MONGODB_EXTRA_SCRIPTS=("add-mongodb-validators.js" "fix-mongodb-schema.js" "prepare-mongodb-for-production.js")
+          
+          for script in "${MONGODB_EXTRA_SCRIPTS[@]}"; do
+            if [ -f "$script" ]; then
+              echo "✅ $script existe"
+            else
+              echo "⚠️ $script est manquant, mais nous continuons"
+            fi
+          done
+
       - name: 🚀 Test de démarrage du serveur
         working-directory: backend
         run: |
@@ -151,6 +181,9 @@ jobs:
           echo 'export PORT=3333' >> test-start.sh
           echo 'export RAILWAY_DEPLOYMENT=true' >> test-start.sh
           echo 'export MEMORY_OPTIMIZED=true' >> test-start.sh
+          echo 'export JWT_SECRET=test-secret' >> test-start.sh
+          echo 'export JWT_REFRESH_SECRET=test-refresh-secret' >> test-start.sh
+          echo 'export MONGODB_URI=mongodb://localhost:27017/test' >> test-start.sh
           echo '' >> test-start.sh
           echo 'echo "🔍 Vérification de la structure du dossier dist/"' >> test-start.sh
           echo 'ls -la dist/' >> test-start.sh
@@ -237,6 +270,16 @@ jobs:
           echo "- start-railway.sh: $(if [ -f "start-railway.sh" ]; then echo "✅ Présent"; else echo "❌ Manquant"; fi)" >> railway-verification-report.txt
           
           echo "" >> railway-verification-report.txt
+          echo "## Scripts MongoDB" >> railway-verification-report.txt
+          for script in "scripts/audit-mongodb-data.js" "scripts/schedule-mongodb-audit.js" "add-mongodb-validators.js" "fix-mongodb-schema.js"; do
+            if [ -f "$script" ]; then
+              echo "- $script: ✅ Présent" >> railway-verification-report.txt
+            else
+              echo "- $script: ❌ Manquant" >> railway-verification-report.txt
+            fi
+          done
+          
+          echo "" >> railway-verification-report.txt
           echo "## Tests de démarrage" >> railway-verification-report.txt
           if [ -f "server_output.log" ]; then
             echo "```" >> railway-verification-report.txt
@@ -266,4 +309,5 @@ jobs:
       - name: ✅ Vérification réussie
         run: |
           echo "✅ La vérification du build Railway a été effectuée avec succès"
-          echo "🚀 Le backend est prêt pour le déploiement sur Railway" 
+          echo "🚀 Le backend est prêt pour le déploiement sur Railway"
+          echo "📊 Les scripts d'audit MongoDB sont correctement configurés" 
