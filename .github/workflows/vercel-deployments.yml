@@ -13,18 +13,18 @@ jobs:
     name: 🕒 Attente des vérifications
     runs-on: ubuntu-latest
     steps:
-      - name: ⌛ Attente des autres vérifications GitHub Actions
+      - name: ⌛ Attente des vérifications frontend
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
-          ref: ${{ github.ref }}
-          check-name: '🔧 Vérification Frontend Vercel'
+          ref: ${{ github.sha }}
+          check-name: '🌐 Vérification Frontend Vercel'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
       
       - name: ⌛ Attente des vérifications backend
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
           check-name: '🔧 Vérification Backend Vercel'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
