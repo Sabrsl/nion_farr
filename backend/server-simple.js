@@ -1,23 +1,23 @@
 /**
- * Simple fallback server for Railway deployment
- * This server ensures health checks will always succeed
- * It's a simplified version of server.js with minimal dependencies
+ * Serveur de secours simplifié pour le déploiement Railway
+ * Ce serveur garantit que les contrôles de santé réussiront toujours
+ * C'est une version simplifiée du server.js avec des dépendances minimales
  */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-// Server configuration
+// Configuration du serveur
 const PORT = process.env.PORT || 8080;
 const LOG_DIR = path.join(__dirname, 'logs');
-const LOG_FILE = path.join(LOG_DIR, 'simple-server.log');
+const LOG_FILE = path.join(LOG_DIR, 'serveur-simple.log');
 
-// Create logs directory if it doesn't exist
+// Créer le dossier de logs s'il n'existe pas
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
 }
 
-// Logging function
+// Fonction de journalisation
 function log(message) {
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${message}\n`;
@@ -27,42 +27,42 @@ function log(message) {
   fs.appendFileSync(LOG_FILE, logMessage, { flag: 'a' });
 }
 
-// Create HTTP server
+// Créer le serveur HTTP
 const server = http.createServer((req, res) => {
-  // Log each request
-  log(`Request received: ${req.method} ${req.url}`);
+  // Journaliser chaque requête
+  log(`Requête reçue: ${req.method} ${req.url}`);
   
-  // Handle routes
+  // Gérer les routes
   if (req.url === '/health' || req.url === '/health/ping' || req.url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
-      message: 'Service available (simplified mode)',
+      message: 'Service disponible (mode simplifié)',
       timestamp: new Date().toISOString(),
       fallback: true,
-      mode: 'simple_server'
+      mode: 'serveur_simple'
     }));
     return;
   }
   
-  // Main API route
+  // Route API principale
   if (req.url.startsWith('/api/')) {
     res.writeHead(503, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'service_unavailable',
-      message: 'API in maintenance, please try again later',
+      message: 'API en maintenance, veuillez réessayer plus tard',
       timestamp: new Date().toISOString()
     }));
     return;
   }
   
-  // Default route - maintenance page
+  // Route par défaut - page de maintenance
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(`
     <!DOCTYPE html>
     <html>
       <head>
-        <title>NionFar API - Maintenance Mode</title>
+        <title>NionFar API - Mode Maintenance</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 0; padding: 20px; text-align: center; }
           .container { max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
@@ -74,9 +74,9 @@ const server = http.createServer((req, res) => {
         <div class="container">
           <h1>NionFar API</h1>
           <div class="status">
-            <p><strong>Status:</strong> Maintenance Mode</p>
-            <p>The main server is temporarily unavailable.</p>
-            <p>The API will be restored soon.</p>
+            <p><strong>Statut:</strong> Mode Maintenance</p>
+            <p>Le serveur principal est temporairement indisponible.</p>
+            <p>L'API sera bientôt rétablie.</p>
             <p><small>Timestamp: ${new Date().toISOString()}</small></p>
           </div>
         </div>
@@ -85,45 +85,45 @@ const server = http.createServer((req, res) => {
   `);
 });
 
-// Start server and handle errors
+// Démarrer le serveur et gérer les erreurs
 try {
   server.listen(PORT, '0.0.0.0', () => {
-    log(`✅ Simple server started on port ${PORT}`);
-    log('⚠️ This is a FALLBACK server and does not provide the full API');
-    log('👉 It only responds to health checks to maintain the deployment');
+    log(`✅ Serveur simple démarré sur le port ${PORT}`);
+    log('⚠️ Ceci est un serveur de SECOURS et ne fournit pas l\'API complète');
+    log('👉 Il répond uniquement aux contrôles de santé pour maintenir le déploiement');
   });
   
-  // Handle server errors
+  // Gérer les erreurs serveur
   server.on('error', (error) => {
-    log(`❌ Server error: ${error.message}`);
+    log(`❌ Erreur serveur: ${error.message}`);
   });
 } catch (error) {
-  log(`❌ Fatal error: ${error.message}`);
+  log(`❌ Erreur fatale: ${error.message}`);
 }
 
-// Handle process termination signals
+// Gérer les signaux de fin de processus
 process.on('SIGTERM', () => {
-  log('SIGTERM signal received, shutting down server');
+  log('Signal SIGTERM reçu, arrêt du serveur');
   server.close(() => {
-    log('Server shut down gracefully');
+    log('Serveur arrêté proprement');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  log('SIGINT signal received, shutting down server');
+  log('Signal SIGINT reçu, arrêt du serveur');
   server.close(() => {
-    log('Server shut down gracefully');
+    log('Serveur arrêté proprement');
     process.exit(0);
   });
 });
 
-// Capture unhandled exceptions
+// Capturer les erreurs non gérées
 process.on('uncaughtException', (error) => {
-  log(`❌ Unhandled exception: ${error.message}`);
+  log(`❌ Exception non gérée: ${error.message}`);
   log(error.stack);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  log(`❌ Unhandled promise rejection: ${reason}`);
+  log(`❌ Promesse rejetée non gérée: ${reason}`);
 }); 
