@@ -15,7 +15,7 @@ export default async function handler(
   }
 
   // Détermination de l'URL de l'API backend
-  let apiEndpoint = `${process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api'}/auth/login`;
+  let apiEndpoint = `${process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api'}/auth/login`;
   
   // Log de l'URL utilisée
   console.log(`[API Proxy] Tentative de connexion au backend: ${apiEndpoint}`);

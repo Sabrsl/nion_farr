@@ -1,0 +1,12 @@
+{
+  "name": "nionfar-api-serverless",
+  "version": "1.0.0",
+  "description": "API serverless for Nionfar platform",
+  "main": "index.js",
+  "dependencies": {
+    "serverless-http": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+} 

@@ -24,7 +24,7 @@ const envFile = path.join(__dirname, '.env.production');
 if (!fs.existsSync(envFile)) {
   console.warn('⚠️ Fichier .env.production non trouvé, création avec des valeurs par défaut');
   const defaultEnv = 
-`NEXT_PUBLIC_API_URL=${process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api'}
+`NEXT_PUBLIC_API_URL=${process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api'}
 NEXT_PUBLIC_APP_URL=${process.env.NEXT_PUBLIC_APP_URL || 'https://nionfar.vercel.app'}
 NEXT_PUBLIC_ENVIRONMENT=production`;
 

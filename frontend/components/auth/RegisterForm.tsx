@@ -105,7 +105,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
         errorMessage.includes('network error') ||
         errorMessage.toLowerCase().includes('cors')) {
       
-      const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+      const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api';
       
       // Vérifier si le backend a été précédemment détecté comme hors ligne
       const backendStatus = localStorage.getItem('backendStatus');
@@ -196,7 +196,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
   React.useEffect(() => {
     const checkBackendStatus = async () => {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api';
         
         // Utiliser AbortController pour gérer le timeout
         const controller = new AbortController();

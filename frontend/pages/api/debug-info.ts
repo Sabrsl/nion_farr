@@ -45,7 +45,7 @@ export default async function handler(
   let apiStatus = 'unknown';
   try {
     // Tester la connectivité avec le backend
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api';
     const apiResponse = await fetch(`${apiUrl}/health`, { 
       method: 'GET',
       headers: {

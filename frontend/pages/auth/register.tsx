@@ -152,7 +152,7 @@ const Register: React.FC = () => {
   React.useEffect(() => {
     const checkBackendStatus = async () => {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api';
         
         // Utiliser AbortController pour gérer le timeout
         const controller = new AbortController();

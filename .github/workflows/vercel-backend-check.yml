@@ -1,0 +1,201 @@
+name: Vercel Backend Check
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'api/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'api/**'
+  workflow_dispatch:
+
+jobs:
+  verify-vercel-backend:
+    name: ⚡ Vérification Backend Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: 📦 Install dependencies
+        working-directory: backend
+        run: |
+          echo "📦 Installation des dépendances backend..."
+          npm install --legacy-peer-deps
+          echo "✅ Dépendances backend installées"
+
+      - name: 🔎 Vérification des fichiers essentiels
+        run: |
+          echo "🧪 Vérification des fichiers essentiels pour Vercel..."
+          
+          # Vérifier les fichiers essentiels pour Vercel
+          CRITICAL_FILES=(
+            "backend/vercel.json" 
+            "api/index.js" 
+            "api/package.json"
+          )
+          
+          MISSING_FILES=0
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ $file existe"
+            else
+              echo "❌ $file est manquant!"
+              MISSING_FILES=$((MISSING_FILES+1))
+            fi
+          done
+          
+          # Vérifier package.json pour les scripts requis
+          cd backend
+          REQUIRED_SCRIPTS=("build:vercel" "prepare:vercel")
+          
+          for script in "${REQUIRED_SCRIPTS[@]}"; do
+            if grep -q "\"$script\":" package.json; then
+              echo "✅ Script $script trouvé dans package.json"
+            else
+              echo "❌ Script $script manquant dans package.json!"
+              MISSING_FILES=$((MISSING_FILES+1))
+            fi
+          done
+          
+          if [ $MISSING_FILES -gt 0 ]; then
+            echo "❌ $MISSING_FILES fichiers/scripts essentiels manquants"
+            exit 1
+          fi
+          
+          echo "✅ Tous les fichiers et scripts essentiels sont présents"
+
+      - name: 🛠️ Build Vercel
+        working-directory: backend
+        run: |
+          echo "🧪 Exécution du build Vercel..."
+          npm run build:vercel
+          echo "✅ Build Vercel terminé avec succès"
+          
+      - name: 📂 Validation de la structure dist
+        working-directory: backend
+        run: |
+          echo "📂 Vérification des fichiers critiques..."
+          
+          # Vérifier les fichiers et dossiers essentiels
+          CRITICAL_FILES=("dist/main.js" "dist/app.module.js" "dist/app.controller.js")
+          CRITICAL_DIRS=("dist/modules" "dist/common" "dist/health")
+          
+          MISSING=0
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              SIZE=$(stat -c %s "$file")
+              echo "✅ $file existe (${SIZE} octets)"
+              
+              # Vérifier que le fichier n'est pas vide ou trop petit
+              if [ $SIZE -lt 100 ]; then
+                echo "⚠️ $file est trop petit (${SIZE} octets), possible problème de build"
+                MISSING=$((MISSING+1))
+              fi
+            else
+              echo "❌ $file est manquant!"
+              MISSING=$((MISSING+1))
+            fi
+          done
+          
+          for dir in "${CRITICAL_DIRS[@]}"; do
+            if [ -d "$dir" ]; then
+              FILES_COUNT=$(find "$dir" -type f | wc -l)
+              echo "✅ $dir existe ($FILES_COUNT fichiers)"
+              
+              # Vérifier que le dossier n'est pas vide
+              if [ $FILES_COUNT -eq 0 ]; then
+                echo "⚠️ $dir est vide, possible problème de build"
+                MISSING=$((MISSING+1))
+              fi
+            else
+              echo "❌ $dir est manquant!"
+              MISSING=$((MISSING+1))
+            fi
+          done
+          
+          if [ $MISSING -gt 0 ]; then
+            echo "❌ $MISSING fichiers/dossiers essentiels manquants ou invalides"
+            exit 1
+          fi
+          
+          echo "✅ Structure de build valide"
+
+      - name: 🔍 Vérification de l'API Serverless
+        run: |
+          echo "🧪 Vérification de la configuration API serverless..."
+          
+          # Vérifier le point d'entrée serverless
+          if [ ! -f "api/index.js" ]; then
+            echo "❌ Point d'entrée serverless manquant!"
+            exit 1
+          fi
+          
+          # Vérifier que le fichier vercel.json contient les routes API
+          if ! grep -q "/api/(.*)" backend/vercel.json; then
+            echo "❌ Routes API manquantes dans vercel.json!"
+            exit 1
+          fi
+          
+          # Vérifier la configuration CORS
+          if ! grep -q "allowedOrigins" api/index.js || ! grep -q "nion-farr.vercel.app" api/index.js; then
+            echo "⚠️ Configuration CORS potentiellement incomplète"
+          else
+            echo "✅ Configuration CORS trouvée"
+          fi
+          
+          echo "✅ Configuration API serverless valide"
+
+      - name: 📋 Résumé de vérification
+        run: |
+          echo "📝 Génération du rapport de vérification..."
+          
+          # Création d'un rapport de vérification concis
+          cat > vercel-backend-report.md << EOL
+          # Rapport de vérification Backend Vercel
+          
+          **Date:** $(date)
+          
+          ## Structure du build
+          - Fichier vercel.json: $(if [ -f "backend/vercel.json" ]; then echo "✅"; else echo "❌"; fi)
+          - Point d'entrée serverless: $(if [ -f "api/index.js" ]; then echo "✅"; else echo "❌"; fi)
+          - Configuration package.json: $(if [ -f "api/package.json" ]; then echo "✅"; else echo "❌"; fi)
+          - Build NestJS: $(if [ -f "backend/dist/main.js" ]; then echo "✅"; else echo "❌"; fi)
+          
+          ## Résultat final
+          **Statut:** $(if [ -f "backend/vercel.json" ] && [ -f "api/index.js" ] && [ -f "backend/dist/main.js" ]; then echo "✅ PRÊT POUR DÉPLOIEMENT"; else echo "❌ NON DÉPLOYABLE"; fi)
+          EOL
+          
+          cat vercel-backend-report.md
+
+      - name: 📤 Uploader le rapport
+        uses: actions/upload-artifact@v4
+        with:
+          name: vercel-backend-report
+          path: vercel-backend-report.md
+
+  deploy-if-main:
+    name: 🚀 Déploiement Vercel (info)
+    needs: [verify-vercel-backend]
+    if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ✅ Notification de succès
+        run: |
+          echo "✅ Build vérifié et prêt pour déploiement sur Vercel"
+          echo "🚀 URL du service: https://nion-farr-backend.vercel.app"
+          echo "ℹ️ Le déploiement sera effectué par l'intégration GitHub de Vercel" 

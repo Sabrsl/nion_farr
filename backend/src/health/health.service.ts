@@ -143,7 +143,7 @@ export class HealthService {
         deployment: {
           status: 'ok',
           details: {
-            railway: process.env.RAILWAY_DEPLOYMENT === 'true',
+            vercel: process.env.VERCEL === '1',
             memory_optimized: process.env.MEMORY_OPTIMIZED === 'true',
             port: process.env.PORT
           }

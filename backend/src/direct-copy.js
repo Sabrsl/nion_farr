@@ -147,9 +147,9 @@ try {
   fs.copyFileSync(sourceFile, destFile);
   console.log(`✅ Fichier copié avec succès: ${sourceFile} -> ${destFile}`);
   
-  // Copier également vers dist/main.js pour Railway
+  // Copier également vers dist/main.js pour Vercel
   fs.copyFileSync(sourceFile, rootDestFile);
-  console.log(`✅ Fichier copié avec succès pour Railway: ${sourceFile} -> ${rootDestFile}`);
+  console.log(`✅ Fichier copié avec succès pour Vercel: ${sourceFile} -> ${rootDestFile}`);
   
   // Afficher le contenu du dossier dist/src
   console.log('📂 Contenu du dossier dist/src/:');

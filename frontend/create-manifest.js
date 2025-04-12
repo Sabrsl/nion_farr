@@ -17,14 +17,20 @@ const basicManifest = {
   routes: [
     {
       src: "/api/(.*)",
-      dest: "https://nionfar.up.railway.app/api/$1"
+      dest: "https://nion-farr-backend.vercel.app/api/$1"
     },
     {
       src: "/(.*)",
       dest: "/$1"
     }
   ],
-  dynamicRoutes: []
+  dynamicRoutes: [],
+  rewrites: [
+    {
+      source: "/api/:path*",
+      dest: "https://nion-farr-backend.vercel.app/api/$1"
+    }
+  ]
 };
 
 const manifestJson = JSON.stringify(basicManifest, null, 2);

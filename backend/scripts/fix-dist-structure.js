@@ -1572,7 +1572,7 @@ function compileTypeScriptFile(tsFilePath, jsOutputPath) {
     
     // Utiliser tsc pour compiler le fichier
     const tscPath = path.join('node_modules', '.bin', 'tsc');
-    const nodePath = process.env.RAILWAY_DEPLOYMENT ? '/opt/hostedtoolcache/node/18.20.8/x64/bin/node' : 'node';
+    const nodePath = process.env.VERCEL === '1' ? '/opt/hostedtoolcache/node/18.20.8/x64/bin/node' : 'node';
     const command = `"${nodePath}" ${tscPath} "${tsFilePath}" --outDir "${outputDir}" --target ES2018 --module CommonJS --esModuleInterop --skipLibCheck --experimentalDecorators --emitDecoratorMetadata`;
     
     console.log(`📝 Exécution de la commande: ${command}`);

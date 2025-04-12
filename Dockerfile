@@ -26,7 +26,7 @@ RUN mkdir -p logs
 
 # Exécuter un build complet sans scripts additionnels
 RUN echo "🔨 Lancement du build NestJS..." && \
-    npm run build:railway
+    npm run build:vercel
 
 # Vérifier si main.js existe et le copier si nécessaire
 RUN echo "📂 Vérification du fichier main.js..." && \
@@ -55,7 +55,7 @@ RUN echo '#!/bin/bash\n\necho "🚀 Démarrage du serveur NionFar API..."\necho 
     chmod +x start.sh
 
 # Exposer le port (Railway réaffecte PORT via la variable d'environnement)
-EXPOSE 3000
+EXPOSE $PORT
 
 # Utiliser dumb-init pour gérer correctement les signaux
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

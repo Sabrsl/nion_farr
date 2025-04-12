@@ -67,7 +67,7 @@ class AuthService {
   constructor() {
     // Initialiser l'URL de l'API en fonction de l'environnement
     const isProduction = process.env.NODE_ENV === 'production';
-    const productionApiUrl = 'https://nionfar.up.railway.app/api';
+    const productionApiUrl = 'https://nion-farr-backend.vercel.app/api';
     const productionAppUrl = 'https://nion-farr.vercel.app';
     
     const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
@@ -998,14 +998,16 @@ class AuthService {
 
   // Méthode pour récupérer les tokens CSRF
   private async fetchCsrfTokens(): Promise<boolean> {
+    console.log("🔄 Récupération des tokens CSRF...");
     try {
-      // S'assurer que l'URL de l'API est correctement définie
-      const apiBaseUrl = this.apiUrl.startsWith('http') 
-        ? this.apiUrl 
-        : 'https://nionfar.up.railway.app/api';
+      // Utiliser l'URL de base du backend
+      const apiBaseUrl = this.apiUrl.startsWith('http')
+        ? this.apiUrl.replace(/\/api$/, '')
+        : 'https://nion-farr-backend.vercel.app';
       
-      const csrfUrl = `${apiBaseUrl}/security/csrf-tokens`;
-      console.log("🔗 URL de récupération CSRF:", csrfUrl);
+      const csrfUrl = `${apiBaseUrl}/sanctum/csrf-cookie`;
+      
+      console.log("🔄 URL CSRF:", csrfUrl);
       
       try {
         // Essayer d'abord via le proxy local
@@ -1064,15 +1066,14 @@ class AuthService {
   }
 
   private async tryDirectBackendLogin(requestBody: any, autoRedirect: boolean, redirectUrl?: string): Promise<LoginResponse> {
-    console.log("🔄 Tentative de connexion directe au backend");
+    console.log("📤 Tentative de connexion directe au backend...");
     
-    // Convertir les chemins relatifs en URLs absolues
-    const backendUrl = this.apiUrl.startsWith('http') 
-      ? this.apiUrl 
-      : `https://nionfar.up.railway.app/api`;
-    
+    // Déterminer l'URL complète pour l'authentification
+    const backendUrl = this.apiUrl.startsWith('http')
+      ? this.apiUrl
+      : `https://nion-farr-backend.vercel.app/api`;
+      
     const loginUrl = `${backendUrl}/auth/login`;
-    console.log("🔗 URL de connexion directe:", loginUrl);
     
     try {
       // S'assurer de toujours utiliser POST et non GET

@@ -85,7 +85,7 @@ jobs:
       - name: 🛠️ Build Backend
         working-directory: backend
         run: |
-          npm run build:railway
+          npm run build:vercel
           echo "✅ Build backend terminé"
       
       - name: 📂 Validation de la structure
@@ -170,7 +170,7 @@ jobs:
           fi
 
   deploy-backend:
-    name: 🚂 Deploy Railway
+    name: ⚡ Deploy Backend (Vercel)
     needs: [verify-backend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -182,31 +182,33 @@ jobs:
       - name: 📝 Préparer le déploiement
         working-directory: backend
         run: |
-          # Vérifier les scripts essentiels
-          if [ ! -f "scripts/fix-dist-structure.js" ] || [ ! -f "start-railway.sh" ]; then
-            echo "❌ Scripts manquants pour Railway"
+          # Vérifier les fichiers essentiels pour Vercel
+          if [ ! -f "vercel.json" ] || [ ! -d "../api" ]; then
+            echo "❌ Fichiers de configuration Vercel manquants"
             exit 1
           fi
           
-          # Permissions d'exécution
-          chmod +x start-railway.sh
-          [ -f scripts/railway-build.sh ] && chmod +x scripts/railway-build.sh
+          # Vérifier le point d'entrée serverless
+          if [ ! -f "../api/index.js" ]; then
+            echo "❌ Point d'entrée serverless manquant"
+            exit 1
+          fi
           
-          echo "✅ Scripts préparés pour Railway"
+          echo "✅ Fichiers préparés pour Vercel"
       
-      - name: 🚀 Déployer sur Railway
-        uses: railwayapp/railway-action@master
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          service: ${{ secrets.RAILWAY_SERVICE_NAME }}
-      
-      - name: ✅ Déploiement terminé
+      - name: ✅ Déploiement Vercel
         run: |
-          echo "✅ Backend déployé sur Railway"
-          echo "🌐 https://nionfar.up.railway.app"
+          echo "✅ Backend prêt pour déploiement sur Vercel"
+          echo "🔄 Le déploiement sera effectué par l'intégration Vercel GitHub"
+          echo "🌐 https://nion-farr-backend.vercel.app"
+          
+          # Si vous avez un token Vercel, vous pouvez également déclencher le déploiement manuellement
+          if [[ -n "${{ secrets.VERCEL_TOKEN }}" ]]; then
+            echo "ℹ️ Token Vercel disponible, le déploiement pourrait être déclenché manuellement si nécessaire"
+          fi
 
   deploy-frontend:
-    name: 🌐 Deploy Vercel
+    name: 🌐 Deploy Frontend (Vercel)
     needs: [verify-frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -214,11 +216,11 @@ jobs:
     steps:
       - name: ✅ Informations de déploiement
         run: |
-          echo "✅ Frontend ready for Vercel deployment"
-          echo "🔗 Vercel's GitHub integration will automatically deploy the changes"
+          echo "✅ Frontend prêt pour déploiement sur Vercel"
+          echo "🔗 L'intégration GitHub de Vercel déploiera automatiquement les changements"
           echo "🌐 https://nion-farr.vercel.app"
           
           # Si vous avez un token Vercel, vous pouvez également déclencher le déploiement manuellement
           if [[ -n "${{ secrets.VERCEL_TOKEN }}" ]]; then
-            echo "ℹ️ Vercel token available, deployment could be triggered manually if needed"
+            echo "ℹ️ Token Vercel disponible, le déploiement pourrait être déclenché manuellement si nécessaire"
           fi 

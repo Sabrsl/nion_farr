@@ -26,7 +26,7 @@ backend/
 ├── scripts/                    # Scripts de déploiement et maintenance
 ├── logs/                       # Journaux d'application
 ├── .env                        # Variables d'environnement locales
-└── railway.json                # Configuration de déploiement Railway
+└── vercel.json                # Configuration pour Vercel
 ```
 
 ## Environnements et Déploiement
@@ -43,34 +43,24 @@ La configuration de l'application se fait via les variables d'environnement:
 - `FRONTEND_URL`: URL du frontend pour la configuration CORS
 - `MEMORY_OPTIMIZED`: Active le mode d'optimisation mémoire (`true`/`false`)
 
-### Déploiement sur Railway
+### Déploiement sur Vercel
 
-Le déploiement sur Railway est géré par la configuration dans `railway.json`. Ce fichier définit:
+Le déploiement sur Vercel est géré par la configuration dans `vercel.json` et le point d'entrée serverless dans le dossier `api/`.
 
-1. **Build**: Utilisation d'un Dockerfile pour construire l'image
-2. **Démarrage**: Exécution via le script `start-railway.sh`
-3. **Healthcheck**: Vérification de l'état sur `/health` toutes les 15 secondes
-4. **Redémarrage**: Politique de redémarrage en cas d'échec (10 tentatives maximum)
+#### Étapes de déploiement:
 
-#### Processus de déploiement
+1. Vercel clone le dépôt
+2. Le build est lancé via la commande `npm run build:vercel`
+3. Les fonctions serverless sont initialisées à partir du point d'entrée
+4. Les requêtes vers `/api/*` sont routées vers l'application NestJS
 
-1. Railway clone le dépôt et construit l'image Docker
-2. Le script `start-railway.sh` est exécuté au démarrage
-3. Ce script:
-   - Vérifie la structure du dossier `dist/`
-   - Copie et corrige les fichiers nécessaires
-   - Lance l'application avec les bonnes options de mémoire
-   - Si le démarrage échoue, utilise un serveur de secours
+#### Variables d'environnement:
 
-#### Mécanismes de résilience
-
-Le système intègre plusieurs couches de résilience:
-
-1. **Structure du dossier dist/**: Correction automatique via `fix-dist-structure.js`
-2. **Healthchecks**: Points de terminaison `/health`, `/health/ping` et `/health/detailed`
-3. **Serveur de secours**: Un serveur minimaliste qui répond aux healthchecks
-4. **Gestion de la mémoire**: Optimisations pour les environnements contraints
-5. **Logging structuré**: Tous les logs sont au format JSON pour faciliter le débogage
+Configuration requise:
+- `MONGODB_URI`: URI de connexion à MongoDB
+- `JWT_SECRET`: Clé secrète pour les tokens JWT
+- `NODE_ENV`: Environnement (production)
+- `VERCEL`: Défini automatiquement à '1' par Vercel
 
 ### Migration de la base de données
 
@@ -153,10 +143,12 @@ npm run test:cov
 
 Pour faciliter le diagnostic des problèmes:
 
-1. Consultez les logs de déploiement sur Railway
-2. Vérifiez les journaux d'application dans `/logs`
-3. Utilisez l'endpoint `/health/detailed` pour un diagnostic complet
-4. Examinez les métriques Prometheus sur `/metrics`
+1. Consultez les logs de déploiement sur Vercel
+2. Vérifiez les variables d'environnement
+3. Assurez-vous que la structure du build est correcte
+4. Vérifiez les journaux d'application dans `/logs`
+5. Utilisez l'endpoint `/health/detailed` pour un diagnostic complet
+6. Examinez les métriques Prometheus sur `/metrics`
 
 ## MongoDB Validation Scripts
 

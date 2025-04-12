@@ -7,15 +7,21 @@
   "routes": [
     { 
       "src": "/api/(.*)", 
-      "dest": "https://nionfar.up.railway.app/api/$1" 
+      "dest": "https://nion-farr-backend.vercel.app/api/$1" 
     },
     { 
       "src": "/(.*)", 
       "dest": "/$1" 
     }
   ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "dest": "https://nion-farr-backend.vercel.app/api/$1"
+    }
+  ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://nionfar.up.railway.app/api",
+    "NEXT_PUBLIC_API_URL": "https://nion-farr-backend.vercel.app/api",
     "NEXT_PUBLIC_APP_URL": "https://nion-farr.vercel.app",
     "NEXT_PUBLIC_ENVIRONMENT": "production",
     "NEXT_DISABLE_ESLINT": "1",

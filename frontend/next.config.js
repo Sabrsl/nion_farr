@@ -7,7 +7,7 @@ const nextConfig = {
   
   // Configuration des images
   images: {
-    domains: ['nion-farr.vercel.app', 'nionfar.up.railway.app', 'localhost', 'res.cloudinary.com'],
+    domains: ['nion-farr.vercel.app', 'nion-farr-backend.vercel.app', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
   },
   
@@ -54,9 +54,9 @@ const nextConfig = {
   
   // Configuration du proxy API pour les requêtes backend
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api',
+    NEXT_PUBLIC_ENVIRONMENT: process.env.NODE_ENV || 'development',
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
-    NEXT_PUBLIC_ENVIRONMENT: process.env.NEXT_PUBLIC_ENVIRONMENT || 'production',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api',
   },
 
   // Forcer l'utilisation du runtime React
@@ -103,7 +103,7 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nionfar.up.railway.app',
+            value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nion-farr-backend.vercel.app',
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -125,7 +125,7 @@ const nextConfig = {
   async rewrites() {
     // En production, utiliser toujours l'URL de production, sinon utiliser la variable d'environnement
     const isProduction = process.env.NODE_ENV === 'production';
-    const productionApiUrl = 'https://nionfar.up.railway.app/api';
+    const productionApiUrl = 'https://nion-farr-backend.vercel.app/api';
     const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
     
     console.log(`[Next.js Config] Configuration des redirections API vers: ${apiUrl}`);
@@ -218,9 +218,24 @@ const nextConfig = {
       },
     ];
   },
+
+  // Variables publiques pour le CSP
+  publicRuntimeConfig: {
+    cors: {
+      value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nion-farr-backend.vercel.app',
+      key: 'CORS_ALLOWED_ORIGINS',
+    },
+  },
 }
 
+// Configuration des proxies pour le développement
+const setupDevProxies = () => {
+  // Si les urls locales ne sont pas définies, utiliser les URLs de production
+  const productionApiUrl = 'https://nion-farr-backend.vercel.app/api';
+  // ... existing code ...
+};
+
 // Afficher la configuration dans les logs
-console.log(`[Next.js Config] URL de l'API configurée: ${process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api'}`);
+console.log(`[Next.js Config] URL de l'API configurée: ${process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api'}`);
 
 module.exports = nextConfig 

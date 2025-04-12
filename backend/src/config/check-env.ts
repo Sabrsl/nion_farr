@@ -25,12 +25,12 @@ export function checkRequiredEnvVars() {
     if (process.env.NODE_ENV === 'production') {
       logger.error('⚠️ Ces variables sont requises en production!');
       
-      // Si nous sommes sur Railway, afficher un message spécifique
-      if (process.env.RAILWAY_DEPLOYMENT === 'true') {
-        logger.error('Pour configurer ces variables sur Railway:');
-        logger.error('1. Allez dans le tableau de bord Railway');
-        logger.error('2. Sélectionnez votre service');
-        logger.error('3. Allez dans l\'onglet "Variables"');
+      // Si nous sommes sur Vercel, afficher un message spécifique
+      if (process.env.VERCEL === '1') {
+        logger.error('Pour configurer ces variables sur Vercel:');
+        logger.error('1. Allez dans le tableau de bord Vercel');
+        logger.error('2. Sélectionnez votre projet');
+        logger.error('3. Allez dans l\'onglet "Settings > Environment Variables"');
         logger.error('4. Ajoutez les variables manquantes');
       }
     }
@@ -77,8 +77,8 @@ export function checkRequiredEnvVars() {
     logger.log('🚀 Application démarrée en mode PRODUCTION');
     
     // Afficher la plateforme
-    if (process.env.RAILWAY_DEPLOYMENT === 'true') {
-      logger.log('🛤️ Déployé sur Railway');
+    if (process.env.VERCEL === '1') {
+      logger.log('⚡ Déployé sur Vercel');
     } else if (process.env.IS_RENDER === 'true') {
       logger.log('🖼️ Déployé sur Render');
     } else {

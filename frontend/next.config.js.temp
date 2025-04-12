@@ -7,7 +7,7 @@ const nextConfig = {
 
   // Configuration des images
   images: {
-    domains: ['nionfar.vercel.app', 'nionfar.up.railway.app', 'localhost', 'res.cloudinary.com'],
+    domains: ['nion-farr.vercel.app', 'nion-farr-backend.vercel.app', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
     unoptimized: true,
   },

@@ -31,7 +31,7 @@ const basicManifest = {
   rewrites: [
     {
       source: "/api/:path*",
-      destination: "https://nionfar.up.railway.app/api/:path*"
+      destination: "https://nion-farr-backend.vercel.app/api/:path*"
     }
   ],
   dynamicRoutes: []

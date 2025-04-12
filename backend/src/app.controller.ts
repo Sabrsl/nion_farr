@@ -33,7 +33,7 @@ export class AppController {
 export class RootController {
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Route racine de l\'API (healthcheck Railway)' })
+  @ApiOperation({ summary: 'Route racine de l\'API (healthcheck)' })
   @ApiResponse({ status: 200, description: 'API en fonctionnement' })
   getRoot() {
     return {
@@ -41,18 +41,18 @@ export class RootController {
       message: 'NionFar API is running',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
-      railway: process.env.RAILWAY_DEPLOYMENT === 'true'
+      vercel: process.env.VERCEL === '1'
     };
   }
 
   @Public()
-  @Get('railway-health')
-  @ApiOperation({ summary: 'Route de healthcheck spécifique à Railway' })
+  @Get('vercel-health')
+  @ApiOperation({ summary: 'Route de healthcheck spécifique à Vercel' })
   @ApiResponse({ status: 200, description: 'API en fonctionnement' })
-  getRailwayHealth() {
+  getVercelHealth() {
     return {
       status: 'ok',
-      message: 'Railway healthcheck passed',
+      message: 'Vercel healthcheck passed',
       timestamp: new Date().toISOString()
     };
   }

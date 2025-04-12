@@ -18,9 +18,8 @@
     "vercel-build": "node vercel-build.js && next build && node vercel-post-build.js",
     "clean-build": "rimraf tsconfig.tsbuildinfo backend/dist frontend/.next && cd backend && npm run build && cd .. && cd frontend && npm run build",
     "prepare": "husky",
-    "test:railway-build": "cd backend && npm run build:railway && echo \"✅ Build Railway validé\" || echo \"❌ Build Railway échoué\"",
     "pre-push": "node scripts/pre-push-check.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "NionFar Team",
   "license": "UNLICENSED",

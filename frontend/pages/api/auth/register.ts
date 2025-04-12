@@ -17,7 +17,7 @@ export default async function handler(
   try {
     // En production, nous allons rediriger cette requête vers le backend réel
     if (process.env.NODE_ENV === 'production') {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar.up.railway.app/api';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api';
       const apiEndpoint = `${apiUrl}/auth/register`;
       
       console.log(`[API] Redirection de l'inscription vers le backend: ${apiEndpoint}`);

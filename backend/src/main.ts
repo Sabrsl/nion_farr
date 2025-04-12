@@ -63,6 +63,10 @@ async function bootstrap() {
       const port = parseInt(process.env.PORT || '3000', 10);
       console.log(`🚨 DIAGNOSTIC NESTJS: process.env.PORT=${process.env.PORT}, utilisant le port ${port}`);
       
+      // Détection du mode serverless (Vercel)
+      const isServerless = process.env.VERCEL === '1' || process.env.SERVERLESS === 'true';
+      console.log(`Mode serverless: ${isServerless ? 'OUI' : 'NON'}`);
+      
       // Configuration Sentry en production - disabled for memory optimization
       if (environment === 'production' && !memoryConfig.isConstrained) {
         const sentryDsn = configService.get<string>('SENTRY_DSN');
@@ -158,7 +162,7 @@ async function bootstrap() {
         SwaggerModule.setup('api/docs', app, document);
       }
 
-      // Ajouter une route de base pour le healthcheck de Railway
+      // Ajouter une route de base pour le healthcheck
       const httpAdapter = app.getHttpAdapter();
       httpAdapter.get('/', (req, res) => {
         console.log('ROOT / route called - healthcheck from outside');
@@ -171,15 +175,14 @@ async function bootstrap() {
         });
       });
 
-      // Ajouter une route GET spécifique pour le healthcheck Railway
-      // Cette route est critique pour que Railway sache que l'app est bien démarrée
+      // Ajouter une route GET spécifique pour le healthcheck
       httpAdapter.get('/health', (req, res) => {
         console.log(`Healthcheck appelé (${new Date().toISOString()})`);
         return res.json({
           status: 'ok',
           message: 'API running',
           timestamp: new Date().toISOString(),
-          deployment: 'railway',
+          deployment: 'vercel',
           uptime: process.uptime(),
           is_alive: true
         });
@@ -196,7 +199,7 @@ async function bootstrap() {
           environment,
           deployment: {
             platform: memoryConfig.deploymentPlatform,
-            railway: process.env.RAILWAY_DEPLOYMENT === 'true',
+            vercel: process.env.VERCEL === '1',
           },
           system: {
             uptime: process.uptime(),
@@ -220,70 +223,52 @@ async function bootstrap() {
         return res.send('pong');
       });
 
-      // Démarrage du serveur - point critique, doit toujours être exécuté
-      await app.listen(port, '0.0.0.0');
-      
-      // Marquer que le bootstrap est complété
-      isBootstrapComplete = true;
-      
-      console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
-      console.log(`✅ NionFar API est prêt et écoute sur http://0.0.0.0:${port}`);
-      console.log(`✅ Routes de Healthcheck disponibles:`);
-      console.log(`  - http://0.0.0.0:${port}/health`);
-      console.log(`  - http://0.0.0.0:${port}/health/ping`);
-      console.log(`  - http://0.0.0.0:${port}/api/health`);
-      
-      // Afficher l'information sur le déploiement
-      const isRailway = process.env.RAILWAY_DEPLOYMENT === 'true';
-      const appUrl = configService.get<string>('APP_URL') || `http://localhost:${port}`;
-      
-      console.log(`Serveur NionFar API démarré sur le port ${port}`);
-      console.log(`🚀 Environnement: ${environment} (${memoryConfig.deploymentPlatform})`);
-      console.log(`🔗 URL: ${appUrl}`);
-      
-      if (memoryConfig.isConstrained) {
-        console.log(`🧠 Mode d'optimisation mémoire activé - certaines fonctionnalités sont désactivées`);
+      // En mode serverless, on n'appelle pas app.listen()
+      if (!isServerless) {
+        // Démarrage du serveur - point critique, doit toujours être exécuté
+        await app.listen(port, '0.0.0.0');
+        
+        // Marquer que le bootstrap est complété
+        isBootstrapComplete = true;
+        
+        console.log(`🚨 DIAGNOSTIC NESTJS FINAL: Écoutant sur PORT=${port}, variable d'env PORT=${process.env.PORT}`);
+        console.log(`✅ NionFar API est prêt et écoute sur http://0.0.0.0:${port}`);
+        console.log(`✅ Routes de Healthcheck disponibles:`);
+        console.log(`  - http://0.0.0.0:${port}/health`);
+        console.log(`  - http://0.0.0.0:${port}/health/ping`);
+        console.log(`  - http://0.0.0.0:${port}/api/health`);
+        
+        // Afficher l'information sur le déploiement
+        const isVercel = process.env.VERCEL === '1';
+        const appUrl = configService.get<string>('APP_URL') || `http://localhost:${port}`;
+        
+        console.log(`Serveur NionFar API démarré sur le port ${port}`);
+        console.log(`🚀 Environnement: ${environment} (${memoryConfig.deploymentPlatform})`);
+        console.log(`🚀 URL: ${appUrl}`);
+        
+        if (memoryConfig.isConstrained) {
+          console.log(`🧠 Mode d'optimisation mémoire activé - certaines fonctionnalités sont désactivées`);
+        }
+
+        // Start memory monitoring 
+        startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
+
+        // Log CORS configuration
+        console.log(`🔒 CORS configuré pour: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
+      } else {
+        console.log('🚀 Mode serverless détecté, pas de démarrage du serveur HTTP');
+        console.log('✅ NionFar API est configuré pour fonctionner en tant que fonction serverless sur Vercel');
       }
-
-      // Start memory monitoring 
-      startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
-
-      // Log CORS configuration
-      console.log(`🔒 CORS configuré pour: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
 
     } catch (error) {
       console.error('❌ Erreur catastrophique lors de la création de l\'application NestJS:', error);
       
-      if (process.env.RAILWAY_DEPLOYMENT === 'true' || process.env.CI === 'true') {
-        // En environnement CI/CD ou Railway, on crée un serveur HTTP minimal pour passer les health checks
-        console.error('⚠️ Démarrage du serveur de secours pour CI/CD...');
-        const http = require('http');
-        
-        const emergencyServer = http.createServer((req, res) => {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            status: 'degraded',
-            message: 'NionFar API en mode dégradé - erreur de démarrage',
-            timestamp: new Date().toISOString()
-          }));
-        });
-        
-        const port = parseInt(process.env.PORT || '3000', 10);
-        emergencyServer.listen(port, '0.0.0.0', () => {
-          console.log(`🚨 NionFar API en mode dégradé sur le port ${port}`);
-          console.log('🔥 Le serveur de secours a été démarré pour passer les vérifications de déploiement');
-        });
-        
-        // Ne pas quitter le processus pour que le déploiement puisse continuer
-        isBootstrapComplete = true;
-      } else {
-        // En environnement local, on termine le processus avec une erreur
-        process.exit(1);
-      }
+      // En environnement local, on termine le processus avec une erreur
+      process.exit(1);
     }
   } catch (outerError) {
     console.error('❌ ERREUR FATALE lors du démarrage:', outerError);
-    // Ne pas terminer le processus pour éviter que Railway ne redémarre en boucle
+    // Ne pas terminer le processus pour éviter que Vercel ne redémarre en boucle
     
     // Démarrer un serveur HTTP minimal de secours
     const http = require('http');
@@ -306,7 +291,7 @@ async function bootstrap() {
 }
 
 // Garde supplémentaire pour maintenir le processus en vie même après le bootstrap
-// Important: cette fonction est cruciale pour Railway
+// Important: cette fonction est cruciale pour Vercel
 process.nextTick(() => {
   setTimeout(() => {
     if (!isBootstrapComplete) {
@@ -318,7 +303,7 @@ process.nextTick(() => {
 // Ajouter ces handlers pour détecter les crashs invisibles
 process.on('unhandledRejection', (reason, promise) => {
   console.error('🛑 Unhandled Promise Rejection:', reason);
-  // Ne pas quitter le processus pour laisser Railway redémarrer si nécessaire
+  // Ne pas quitter le processus pour la stabilité du serveur
 });
 
 process.on('uncaughtException', (err) => {
