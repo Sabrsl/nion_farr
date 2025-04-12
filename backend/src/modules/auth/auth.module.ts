@@ -15,6 +15,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { TokenService } from '../../auth/token.service';
+import { AuditService } from './services/audit.service';
 
 @Module({
   imports: [
@@ -39,7 +40,8 @@ import { TokenService } from '../../auth/token.service';
     JwtStrategy, 
     JwtRefreshStrategy,
     LocalStrategy,
-    TokenService
+    TokenService,
+    AuditService
   ],
   exports: [AuthService, JwtModule],
 })
