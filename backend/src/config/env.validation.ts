@@ -34,11 +34,6 @@ export const validate = (config: Record<string, unknown>) => {
     MAIL_PASSWORD: Joi.string().required(),
     MAIL_FROM: Joi.string().required(),
     
-    // SMS (Twilio)
-    TWILIO_ACCOUNT_SID: Joi.string().required(),
-    TWILIO_AUTH_TOKEN: Joi.string().required(),
-    TWILIO_PHONE_NUMBER: Joi.string().required(),
-    
     // Payment (Wave)
     WAVE_API_KEY: Joi.string().required(),
     WAVE_API_SECRET: Joi.string().required(),

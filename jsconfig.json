@@ -9,5 +9,6 @@
       "@/hooks/*": ["./hooks/*"]
     },
     "jsx": "react-jsx"
-  }
+  },
+  "exclude": ["node_modules", "backend/**/*", "**/.next/**"]
 } 

@@ -72,58 +72,13 @@ async function handler(event, context) {
 
 // Endpoint de santé pour les vérifications Vercel
 module.exports = async (req, res) => {
-  console.log(`📥 Requête reçue: ${req.method} ${req.url}`);
-  
-  // Gestion de la route racine
-  if (req.url === '/' || req.url === '/api') {
-    return res.status(200).json({
-      status: 'ok',
-      message: 'NionFar API is running',
-      environment: process.env.NODE_ENV,
-      timestamp: new Date().toISOString(),
-      vercel: true
-    });
-  }
-  
-  // Vérification de santé
+  // Vérification de santé simple
   if (req.url === '/health' || req.url === '/api/health') {
-    return res.status(200).json({
-      status: 'ok',
-      environment: process.env.NODE_ENV,
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      vercel: true
-    });
+    return res.status(200).json({ status: 'ok', environment: process.env.NODE_ENV, vercel: true });
   }
   
-  // Vérification de santé détaillée
-  if (req.url === '/health/detailed' || req.url === '/api/health/detailed') {
-    const memUsage = process.memoryUsage();
-    return res.status(200).json({
-      status: 'ok',
-      environment: process.env.NODE_ENV,
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: {
-        rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
-        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
-        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB'
-      },
-      vercel: true
-    });
-  }
-  
-  try {
-    // Gérer toutes les autres requêtes via l'application NestJS
-    const server = await bootstrap();
-    const serverlessHandler = serverless(server);
-    return serverlessHandler(req, res);
-  } catch (error) {
-    console.error('❌ Erreur lors du traitement de la requête:', error);
-    return res.status(500).json({
-      status: 'error',
-      message: 'Une erreur est survenue lors du traitement de la requête',
-      timestamp: new Date().toISOString()
-    });
-  }
+  // Gérer toutes les autres requêtes via l'application NestJS
+  const server = await bootstrap();
+  const serverlessHandler = serverless(server);
+  return serverlessHandler(req, res);
 }; 

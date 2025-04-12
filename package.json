@@ -16,7 +16,6 @@
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "lint": "eslint \"frontend/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"mocks/**/*.{ts,tsx}\"",
     "vercel-build": "node vercel-build.js && next build && node vercel-post-build.js",
-    "clean-build": "rimraf tsconfig.tsbuildinfo backend/dist frontend/.next && cd backend && npm run build && cd .. && cd frontend && npm run build",
     "prepare": "husky",
     "pre-push": "node scripts/pre-push-check.js",
     "test": "echo \"Error: no test specified\" && exit 1"
