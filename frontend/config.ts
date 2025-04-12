@@ -1,6 +1,6 @@
 // Configuration de l'application
-export const API_BASE_URL = 'https://nion-farr-backend.vercel.app/api';
-export const BACKEND_URL = 'https://nion-farr-backend.vercel.app';
+export const API_BASE_URL = 'https://nionfar-backend.onrender.com/api';
+export const BACKEND_URL = 'https://nionfar-backend.onrender.com';
 export const APP_BASE_URL = 'https://nion-farr.vercel.app';
 
 // Log pour le débogage en développement

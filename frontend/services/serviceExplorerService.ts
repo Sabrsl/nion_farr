@@ -8,6 +8,31 @@ type CategoryId = string;
 type ServiceId = string;
 type ServiceQuery = any;
 
+// API URLs
+const LOCAL_API_URL = 'http://localhost:3001/api';
+const RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
+
+// Get the base API URL based on environment
+const getBaseApiUrl = () => {
+  // Priorité 1: Variable d'environnement
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Priorité 2: URL stockée dans localStorage
+  if (typeof window !== 'undefined' && localStorage.getItem('API_URL')) {
+    return localStorage.getItem('API_URL');
+  }
+
+  // Priorité 3: Localhost en développement
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return LOCAL_API_URL;
+  }
+  
+  // Par défaut: URL de production Render
+  return RENDER_API_URL;
+};
+
 // Types
 interface SearchParams {
   search?: string;
@@ -134,7 +159,8 @@ const serviceExplorer = {
         if (params.rating) queryParams.append('rating', params.rating.toString());
         if (params.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
         
-        const url = `/api/services?${queryParams.toString()}`;
+        const baseUrl = getBaseApiUrl();
+        const url = `${baseUrl}/services?${queryParams.toString()}`;
         const response = await axios.get(url);
         
         return {
@@ -165,7 +191,8 @@ const serviceExplorer = {
         queryParams.append('sort', sort);
         queryParams.append('isActive', isActive.toString());
         
-        const url = `/api/services?${queryParams.toString()}`;
+        const baseUrl = getBaseApiUrl();
+        const url = `${baseUrl}/services?${queryParams.toString()}`;
         const response = await axios.get(url);
         
         return {
@@ -192,7 +219,8 @@ const serviceExplorer = {
         queryParams.append('page', page.toString());
         queryParams.append('limit', limit.toString());
         
-        const url = `/api/services/search?${queryParams.toString()}`;
+        const baseUrl = getBaseApiUrl();
+        const url = `${baseUrl}/services/search?${queryParams.toString()}`;
         const response = await axios.get(url);
         
         return {
@@ -210,8 +238,9 @@ const serviceExplorer = {
   getServiceById: async (id: string): Promise<Service | null> => {
     return withRetry(async () => {
       try {
-        const response = await axios.get(`/api/services/${id}`);
-        return response.data;
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/services/${id}`);
+        return response.data.service || null;
       } catch (error) {
         handleApiError(error);
         return null; // Cette ligne ne sera jamais atteinte
@@ -223,8 +252,9 @@ const serviceExplorer = {
   getServiceBySlug: async (slug: string): Promise<Service | null> => {
     return withRetry(async () => {
       try {
-        const response = await axios.get(`/api/services/slug/${slug}`);
-        return response.data;
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/services/slug/${slug}`);
+        return response.data.service || null;
       } catch (error) {
         handleApiError(error);
         return null; // Cette ligne ne sera jamais atteinte
@@ -239,7 +269,8 @@ const serviceExplorer = {
   }> => {
     return withRetry(async () => {
       try {
-        const response = await axios.get(`/api/services/${serviceId}/can-order?userId=${userId}`);
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/services/${serviceId}/can-order?userId=${userId}`);
         return response.data;
       } catch (error) {
         console.error('Erreur lors de la vérification de la commande:', error);
@@ -248,15 +279,16 @@ const serviceExplorer = {
           message: 'Une erreur est survenue lors de la vérification'
         };
       }
-    }, 1); // Une seule retentative pour cette opération
+    });
   },
 
   // Get related services
-  getRelatedServices: async (serviceId: string, limit = 4): Promise<Service[]> => {
+  getRelatedServices: async (serviceId: string, limit = 3): Promise<Service[]> => {
     return withRetry(async () => {
       try {
-        const response = await axios.get(`/api/services/${serviceId}/related?limit=${limit}`);
-        return response.data || [];
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/services/${serviceId}/related?limit=${limit}`);
+        return response.data.services || [];
       } catch (error) {
         handleApiError(error);
         return []; // Cette ligne ne sera jamais atteinte
@@ -265,11 +297,12 @@ const serviceExplorer = {
   },
 
   // Get featured services
-  getFeaturedServices: async (limit = 6): Promise<Service[]> => {
+  getFeaturedServices: async (limit = 3): Promise<Service[]> => {
     return withRetry(async () => {
       try {
-        const response = await axios.get(`/api/services/featured?limit=${limit}`);
-        return response.data || [];
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/services/featured?limit=${limit}`);
+        return response.data.services || [];
       } catch (error) {
         handleApiError(error);
         return []; // Cette ligne ne sera jamais atteinte
@@ -292,41 +325,45 @@ const serviceExplorer = {
 
   // Create service
   createService: async (serviceData: Partial<Service>): Promise<Service> => {
-    return withRetry(async () => {
-      try {
-        const response = await axios.post('/api/services', serviceData);
-        return response.data;
-      } catch (error) {
-        handleApiError(error);
-        throw error;
-      }
-    });
+    try {
+      const baseUrl = getBaseApiUrl();
+      const response = await axios.post(`${baseUrl}/services`, serviceData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+      throw error; // Propagation de l'erreur après logging
+    }
   },
 
   // Update service
   updateService: async (id: string, serviceData: Partial<Service>): Promise<Service> => {
-    return withRetry(async () => {
-      try {
-        const response = await axios.put(`/api/services/${id}`, serviceData);
-        return response.data;
-      } catch (error) {
-        handleApiError(error);
-        throw error;
-      }
-    });
+    try {
+      const baseUrl = getBaseApiUrl();
+      const response = await axios.put(`${baseUrl}/services/${id}`, serviceData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+      throw error; // Propagation de l'erreur après logging
+    }
   },
 
   // Delete service
-  deleteService: async (id: string): Promise<boolean> => {
-    return withRetry(async () => {
-      try {
-        await axios.delete(`/api/services/${id}`);
-        return true;
-      } catch (error) {
-        handleApiError(error);
-        return false; // Cette ligne ne sera jamais atteinte
-      }
-    });
+  deleteService: async (id: string): Promise<void> => {
+    try {
+      const baseUrl = getBaseApiUrl();
+      await axios.delete(`${baseUrl}/services/${id}`);
+    } catch (error) {
+      handleApiError(error);
+      throw error; // Propagation de l'erreur après logging
+    }
   },
 
   // Filter services
@@ -351,7 +388,8 @@ const serviceExplorer = {
         queryParams.append('page', page.toString());
         queryParams.append('limit', limit.toString());
         
-        const url = `/api/services/filter?${queryParams.toString()}`;
+        const baseUrl = getBaseApiUrl();
+        const url = `${baseUrl}/services/filter?${queryParams.toString()}`;
         const response = await axios.get(url);
         
         return {
@@ -363,7 +401,245 @@ const serviceExplorer = {
         return { services: [], total: 0 }; // Cette ligne ne sera jamais atteinte
       }
     });
-  }
+  },
+
+  // Get services by user
+  getUserServices: async (userId: string): Promise<Service[]> => {
+    return withRetry(async () => {
+      try {
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/users/${userId}/services`);
+        return response.data.services || [];
+      } catch (error) {
+        handleApiError(error);
+        return []; // Cette ligne ne sera jamais atteinte
+      }
+    });
+  },
+
+  // Méthode pour noter un service
+  rateService: async (
+    serviceId: string,
+    rating: number,
+    comment?: string
+  ): Promise<{ success: boolean; message: string }> => {
+    try {
+      const baseUrl = getBaseApiUrl();
+      const response = await axios.post(
+        `${baseUrl}/services/${serviceId}/reviews`,
+        { rating, comment },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors de la notation du service',
+      };
+    }
+  },
+
+  // Récupérer les avis pour un service
+  getServiceReviews: async (
+    serviceId: string,
+    page = 1,
+    limit = 10
+  ): Promise<{
+    reviews: any[];
+    total: number;
+  }> => {
+    return withRetry(async () => {
+      try {
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(
+          `${baseUrl}/services/${serviceId}/reviews?page=${page}&limit=${limit}`
+        );
+        return {
+          reviews: response.data.reviews || [],
+          total: response.data.total || 0,
+        };
+      } catch (error) {
+        handleApiError(error);
+        return { reviews: [], total: 0 }; // Cette ligne ne sera jamais atteinte
+      }
+    });
+  },
+
+  // Récupérer toutes les catégories
+  getAllCategories: async (): Promise<Category[]> => {
+    return withRetry(async () => {
+      try {
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/categories`);
+        return response.data.categories || [];
+      } catch (error) {
+        handleApiError(error);
+        return []; // Cette ligne ne sera jamais atteinte
+      }
+    });
+  },
+
+  // Récupérer une catégorie par ID
+  getCategoryById: async (id: CategoryId): Promise<Category | null> => {
+    return withRetry(async () => {
+      try {
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/categories/${id}`);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+        return null; // Cette ligne ne sera jamais atteinte
+      }
+    });
+  },
+
+  // Récupérer une catégorie par slug
+  getCategoryBySlug: async (slug: string): Promise<Category | null> => {
+    return withRetry(async () => {
+      try {
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/categories/slug/${slug}`);
+        return response.data;
+      } catch (error) {
+        handleApiError(error);
+        return null; // Cette ligne ne sera jamais atteinte
+      }
+    });
+  },
+
+  // Commander un service
+  orderService: async (
+    serviceId: string,
+    orderDetails: any
+  ): Promise<{
+    success: boolean;
+    orderId?: string;
+    message?: string;
+  }> => {
+    try {
+      const baseUrl = getBaseApiUrl();
+      const response = await axios.post(
+        `${baseUrl}/services/${serviceId}/orders`,
+        orderDetails,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return {
+        success: true,
+        orderId: response.data.orderId,
+        message: 'Commande créée avec succès',
+      };
+    } catch (error) {
+      handleApiError(error);
+      return {
+        success: false,
+        message: 'Une erreur est survenue lors de la création de la commande',
+      };
+    }
+  },
+
+  // Récupérer les commandes d'un service
+  getServiceOrders: async (
+    serviceId: string,
+    status?: OrderStatus,
+    page = 1,
+    limit = 10
+  ): Promise<{
+    orders: any[];
+    total: number;
+  }> => {
+    return withRetry(async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        queryParams.append('page', page.toString());
+        queryParams.append('limit', limit.toString());
+        if (status) queryParams.append('status', status);
+        
+        const baseUrl = getBaseApiUrl();
+        const url = `${baseUrl}/services/${serviceId}/orders?${queryParams.toString()}`;
+        const response = await axios.get(url);
+        
+        return {
+          orders: response.data.orders || [],
+          total: response.data.total || 0,
+        };
+      } catch (error) {
+        handleApiError(error);
+        return { orders: [], total: 0 }; // Cette ligne ne sera jamais atteinte
+      }
+    });
+  },
+
+  // Chercher des services par géolocalisation
+  searchServicesByLocation: async (
+    lat: number,
+    lng: number,
+    radius = 10, // en km
+    page = 1,
+    limit = 10,
+    categoryId?: string
+  ): Promise<{
+    services: Service[];
+    total: number;
+  }> => {
+    return withRetry(async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        queryParams.append('lat', lat.toString());
+        queryParams.append('lng', lng.toString());
+        queryParams.append('radius', radius.toString());
+        queryParams.append('page', page.toString());
+        queryParams.append('limit', limit.toString());
+        if (categoryId) queryParams.append('category', categoryId);
+        
+        const baseUrl = getBaseApiUrl();
+        const url = `${baseUrl}/services/nearby?${queryParams.toString()}`;
+        const response = await axios.get(url);
+        
+        return {
+          services: response.data.services || [],
+          total: response.data.total || 0,
+        };
+      } catch (error) {
+        handleApiError(error);
+        return { services: [], total: 0 }; // Cette ligne ne sera jamais atteinte
+      }
+    });
+  },
+
+  // Récupérer les statistiques d'un service
+  getServiceStats: async (): Promise<{
+    totalServices: number;
+    totalCategories: number;
+    topCategories: { name: string; count: number }[];
+  }> => {
+    return withRetry(async () => {
+      try {
+        const baseUrl = getBaseApiUrl();
+        const response = await axios.get(`${baseUrl}/services/stats`);
+        return response.data || {
+          totalServices: 0,
+          totalCategories: 0,
+          topCategories: [],
+        };
+      } catch (error) {
+        handleApiError(error);
+        return {
+          totalServices: 0,
+          totalCategories: 0,
+          topCategories: [],
+        }; // Cette ligne ne sera jamais atteinte
+      }
+    });
+  },
 };
 
 // Export pour la compatibilité avec le code existant

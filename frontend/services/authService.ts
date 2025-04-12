@@ -15,21 +15,32 @@ declare global {
 const AUTH_TOKEN_KEY = 'auth_token';
 const USER_STORAGE_KEY = 'nionfarUser';
 
-// Constantes pour les URLs de l'API (centralisées et sécurisées)
-const VERCEL_BACKEND_URL = 'https://nion-farr-backend.vercel.app';
-const VERCEL_API_URL = 'https://nion-farr-backend.vercel.app/api';
-const VERCEL_FRONTEND_URL = 'https://nion-farr.vercel.app';
+// URLs de base pour l'API - Vercel, Railway ou localhost
+const LOCAL_API_URL = 'http://localhost:3001/api';
+const LOCAL_BACKEND_URL = 'http://localhost:3001';
+const RENDER_BACKEND_URL = 'https://nionfar-backend.onrender.com';
+const RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
 
-// Fonction pour s'assurer qu'on utilise toujours la bonne URL
-function getCorrectApiUrl(): string {
-  // Utiliser les variables globales si définies (par initial-fix.js)
-  if (typeof window !== 'undefined' && window.__CORRECT_API_URL) {
-    return window.__CORRECT_API_URL;
+// Déterminer quelle URL utiliser
+const getBaseApiUrl = () => {
+  // Priorité 1: Variable d'environnement
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
   
-  // Valeur par défaut
-  return VERCEL_API_URL;
-}
+  // Priorité 2: URL stockée dans localStorage (paramètre API_URL)
+  if (typeof window !== 'undefined' && localStorage.getItem('API_URL')) {
+    return localStorage.getItem('API_URL');
+  }
+
+  // Priorité 3: URL correcte en fonction de l'environnement
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return LOCAL_API_URL;
+  }
+  
+  // Par défaut: URL de production Render
+  return RENDER_API_URL;
+};
 
 interface LoginCredentials {
   emailOrPhone: string;
@@ -94,21 +105,21 @@ class AuthService {
     const isProduction = process.env.NODE_ENV === 'production';
     
     // Valeur correcte pour l'API
-    this.apiUrl = getCorrectApiUrl();
+    this.apiUrl = getBaseApiUrl();
     
     // Vérifier et corriger l'URL si nécessaire
     if (this.apiUrl.includes('railway') || this.apiUrl.includes('render')) {
       console.error('❌ URL API incorrecte détectée:', this.apiUrl);
-      this.apiUrl = VERCEL_API_URL;
+      this.apiUrl = RENDER_API_URL;
       
       // Mettre à jour localStorage si disponible
       if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('NEXT_PUBLIC_API_URL', VERCEL_API_URL);
+        localStorage.setItem('NEXT_PUBLIC_API_URL', RENDER_API_URL);
         localStorage.setItem('backend_fixed', 'true');
       }
     }
     
-    const appUrl = VERCEL_FRONTEND_URL;
+    const appUrl = RENDER_BACKEND_URL;
     
     console.log("🔧 Configuration AuthService:", { 
       apiUrl: this.apiUrl, 
@@ -1006,7 +1017,7 @@ class AuthService {
     
     // Afficher un message utilisateur
     if (typeof window !== 'undefined') {
-      toast.error(`Serveur indisponible (${VERCEL_BACKEND_URL}). Veuillez réessayer plus tard.`, {
+      toast.error(`Serveur indisponible (${RENDER_BACKEND_URL}). Veuillez réessayer plus tard.`, {
         position: 'top-center',
         autoClose: 5000,
         hideProgressBar: false,
@@ -1060,7 +1071,7 @@ class AuthService {
       // Utiliser l'URL de base du backend
       const apiBaseUrl = this.apiUrl.startsWith('http')
         ? this.apiUrl.replace(/\/api$/, '')
-        : VERCEL_BACKEND_URL;
+        : RENDER_BACKEND_URL;
       
       const csrfUrl = `${apiBaseUrl}/sanctum/csrf-cookie`;
       
@@ -1128,7 +1139,7 @@ class AuthService {
     // Déterminer l'URL complète pour l'authentification
     const backendUrl = this.apiUrl.startsWith('http')
       ? this.apiUrl
-      : VERCEL_API_URL;
+      : RENDER_API_URL;
       
     const loginUrl = `${backendUrl}/auth/login`;
     
