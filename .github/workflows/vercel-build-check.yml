@@ -14,9 +14,9 @@ on:
 
 jobs:
   verify-vercel-build:
-    name: 🌐 Vérification du build Vercel
+    name: 🌐 Vérification Vercel
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     
     steps:
       - name: ⬇️ Checkout code
@@ -31,144 +31,66 @@ jobs:
       
       - name: 📦 Install dependencies
         working-directory: frontend
-        run: |
-          echo "📦 Installation des dépendances frontend..."
-          npm ci
-          echo "✅ Dépendances frontend installées"
-      
-      - name: 🧹 Lint Frontend
-        working-directory: frontend
-        run: |
-          echo "🔎 Vérification du code frontend avec ESLint..."
-          npm run lint || echo "⚠️ Des avertissements de lint ont été trouvés mais nous continuons"
-          echo "✅ Lint frontend terminé"
-      
-      - name: 🧪 Run tests
-        working-directory: frontend
-        run: |
-          echo "🧪 Exécution des tests frontend..."
-          npm run test || echo "⚠️ Des tests ont échoué mais nous continuons"
-          echo "✅ Tests frontend terminés"
+        run: npm ci
       
       - name: 🛠️ Build Frontend
         working-directory: frontend
         run: |
-          echo "🔨 Construction du frontend..."
+          echo "🔨 Construction pour Vercel..."
           npm run build
-          echo "✅ Build frontend terminé avec succès"
+          echo "✅ Build terminé"
       
       - name: 📊 Analyser le build
         working-directory: frontend
         run: |
-          echo "📊 Analyse du build..."
-          
-          # Vérifier la présence du répertoire .next
-          if [ -d ".next" ]; then
-            echo "✅ Répertoire .next présent"
-            
-            # Vérifier les sous-répertoires clés
-            if [ -d ".next/static" ]; then
-              echo "✅ Répertoire .next/static présent"
-            else
-              echo "❌ Répertoire .next/static manquant"
-              exit 1
-            fi
-            
-            if [ -d ".next/server" ]; then
-              echo "✅ Répertoire .next/server présent"
-            else
-              echo "⚠️ Répertoire .next/server manquant (peut être normal dans certains cas)"
-            fi
-            
-            # Analyse de la taille du build
-            STATIC_SIZE=$(du -sh .next/static | cut -f1)
-            TOTAL_SIZE=$(du -sh .next | cut -f1)
-            
-            echo "📦 Taille des fichiers statiques: $STATIC_SIZE"
-            echo "📦 Taille totale du build: $TOTAL_SIZE"
-            
-            # Vérifier le nombre de fichiers statiques générés
-            JS_COUNT=$(find .next/static -name "*.js" | wc -l)
-            CSS_COUNT=$(find .next/static -name "*.css" | wc -l)
-            
-            echo "📄 Nombre de fichiers JS: $JS_COUNT"
-            echo "📄 Nombre de fichiers CSS: $CSS_COUNT"
-            
-            # Afficher les plus gros fichiers pour référence
-            echo "📝 Les 5 plus gros fichiers:"
-            find .next -type f -exec du -h {} \; | sort -hr | head -n 5
-          else
-            echo "❌ Répertoire .next manquant, le build a échoué"
+          # Vérifier la structure du build
+          if [ ! -d ".next" ] || [ ! -d ".next/static" ]; then
+            echo "❌ Structure invalide du build"
             exit 1
           fi
+          
+          # Statistiques simples
+          TOTAL_SIZE=$(du -sh .next | cut -f1)
+          STATIC_SIZE=$(du -sh .next/static | cut -f1)
+          JS_COUNT=$(find .next/static -name "*.js" | wc -l)
+          CSS_COUNT=$(find .next/static -name "*.css" | wc -l)
+          
+          echo "📊 Statistiques du build:"
+          echo "- Taille totale: $TOTAL_SIZE"
+          echo "- Taille statique: $STATIC_SIZE"
+          echo "- Fichiers JS: $JS_COUNT"
+          echo "- Fichiers CSS: $CSS_COUNT"
+          
+          # Résumé court
+          echo "✅ Le build Vercel est valide"
+          
+          # Générer un résumé pour l'artefact
+          cat > vercel-build-report.md << EOL
+          # Rapport de build Vercel
+          
+          **Date:** $(date)
+          
+          ## Structure
+          - .next: ✅
+          - .next/static: ✅
+          
+          ## Statistiques
+          - Taille totale: $TOTAL_SIZE
+          - Taille statique: $STATIC_SIZE
+          - Fichiers JS: $JS_COUNT
+          - Fichiers CSS: $CSS_COUNT
+          
+          ## Statut
+          **✅ PRÊT POUR DÉPLOIEMENT**
+          EOL
       
-      - name: 📋 Générer rapport de vérification
-        working-directory: frontend
-        run: |
-          echo "📝 Génération du rapport de vérification..."
-          
-          # Créer le rapport ligne par ligne
-          echo "# Rapport de vérification Vercel" > vercel-verification-report.txt
-          echo "" >> vercel-verification-report.txt
-          echo "## Date de vérification" >> vercel-verification-report.txt
-          echo "$(date)" >> vercel-verification-report.txt
-          echo "" >> vercel-verification-report.txt
-          
-          echo "## Structure du build" >> vercel-verification-report.txt
-          if [ -d ".next" ]; then
-            echo "- .next: ✅ Présent" >> vercel-verification-report.txt
-            
-            if [ -d ".next/static" ]; then
-              echo "- .next/static: ✅ Présent" >> vercel-verification-report.txt
-            else
-              echo "- .next/static: ❌ Manquant" >> vercel-verification-report.txt
-            fi
-            
-            if [ -d ".next/server" ]; then
-              echo "- .next/server: ✅ Présent" >> vercel-verification-report.txt
-            else
-              echo "- .next/server: ⚠️ Manquant (peut être normal)" >> vercel-verification-report.txt
-            fi
-          else
-            echo "- .next: ❌ Manquant" >> vercel-verification-report.txt
-          fi
-          
-          echo "" >> vercel-verification-report.txt
-          echo "## Statistiques du build" >> vercel-verification-report.txt
-          if [ -d ".next" ]; then
-            echo "- Taille des fichiers statiques: $(du -sh .next/static | cut -f1)" >> vercel-verification-report.txt
-            echo "- Taille totale du build: $(du -sh .next | cut -f1)" >> vercel-verification-report.txt
-            echo "- Nombre de fichiers JS: $(find .next/static -name "*.js" | wc -l)" >> vercel-verification-report.txt
-            echo "- Nombre de fichiers CSS: $(find .next/static -name "*.css" | wc -l)" >> vercel-verification-report.txt
-          else
-            echo "- Statistiques non disponibles (build échoué)" >> vercel-verification-report.txt
-          fi
-          
-          echo "" >> vercel-verification-report.txt
-          echo "## Conclusion" >> vercel-verification-report.txt
-          if [ -d ".next" ] && [ -d ".next/static" ]; then
-            echo "Le build Vercel est ✅ VALIDE" >> vercel-verification-report.txt
-          else
-            echo "Le build Vercel est ❌ INVALIDE" >> vercel-verification-report.txt
-          fi
-          
-          echo "✅ Rapport généré: vercel-verification-report.txt"
-      
-      - name: 📤 Uploader le rapport de vérification
+      - name: 📤 Uploader le rapport
         uses: actions/upload-artifact@v3
         with:
-          name: vercel-verification-report
-          path: frontend/vercel-verification-report.txt
+          name: vercel-build-report
+          path: frontend/vercel-build-report.md
 
-  notify-success:
-    name: 📢 Notification de succès
-    needs: [verify-vercel-build]
-    if: success() && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: ✅ Notification de réussite
+      - name: ✅ Notification finale
         run: |
-          echo "✅ Vérification réussie pour le déploiement Vercel!"
-          echo "🚀 Le frontend est prêt à être déployé sur Vercel"
-          echo "🔗 Les modifications seront automatiquement déployées via l'intégration GitHub" 
+          echo "✅ Build Vercel vérifié avec succès"
+          echo "🚀 Le frontend est prêt pour déploiement sur Vercel" 

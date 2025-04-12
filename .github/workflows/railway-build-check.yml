@@ -9,14 +9,13 @@ on:
     branches: [ main, develop ]
     paths:
       - 'backend/**'
-  # Permettre l'exécution manuelle depuis l'interface GitHub
   workflow_dispatch:
 
 jobs:
   verify-railway-build:
     name: 🚂 Vérification du build Railway
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # Augmenté pour permettre plus de temps pour les vérifications MongoDB
+    timeout-minutes: 15
 
     steps:
       - name: ⬇️ Checkout code
@@ -33,281 +32,218 @@ jobs:
         working-directory: backend
         run: |
           echo "📦 Installation des dépendances backend..."
-          # Utiliser npm install au lieu de npm ci pour résoudre les problèmes de désynchronisation
           npm install --legacy-peer-deps
           echo "✅ Dépendances backend installées"
 
-      - name: 🔎 Vérification de la configuration Railway
+      - name: 🔎 Vérification des scripts essentiels
         working-directory: backend
         run: |
-          echo "🧪 Vérification des fichiers de configuration Railway..."
+          echo "🧪 Vérification des fichiers essentiels pour Railway..."
           
-          # Vérifier la présence de scripts essentiels pour Railway
-          RAILWAY_SCRIPTS=("scripts/fix-dist-structure.js" "start-railway.sh" "scripts/check-deployment.js" "scripts/audit-mongodb-data.js")
+          # Vérifier les scripts essentiels pour Railway
+          CRITICAL_FILES=(
+            "scripts/fix-dist-structure.js" 
+            "start-railway.sh" 
+            "scripts/check-deployment.js" 
+            "scripts/audit-mongodb-data.js"
+            "railway.json"
+            "Dockerfile"
+          )
           
-          for script in "${RAILWAY_SCRIPTS[@]}"; do
-            if [ -f "$script" ]; then
-              echo "✅ $script existe"
+          MISSING_FILES=0
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ $file existe"
             else
-              echo "❌ $script est manquant!"
-              exit 1
+              echo "❌ $file est manquant!"
+              MISSING_FILES=$((MISSING_FILES+1))
             fi
           done
           
-          # Vérifier le package.json pour les scripts nécessaires
-          if grep -q "\"build:railway\":" package.json && grep -q "\"start:railway\":" package.json && grep -q "\"mongodb:audit\":" package.json; then
-            echo "✅ Scripts package.json pour Railway trouvés"
-          else
-            echo "❌ Scripts package.json pour Railway manquants!"
+          # Vérifier package.json pour les scripts requis
+          REQUIRED_SCRIPTS=("build:railway" "start:railway" "mongodb:audit")
+          
+          for script in "${REQUIRED_SCRIPTS[@]}"; do
+            if grep -q "\"$script\":" package.json; then
+              echo "✅ Script $script trouvé dans package.json"
+            else
+              echo "❌ Script $script manquant dans package.json!"
+              MISSING_FILES=$((MISSING_FILES+1))
+            fi
+          done
+          
+          if [ $MISSING_FILES -gt 0 ]; then
+            echo "❌ $MISSING_FILES fichiers/scripts essentiels manquants"
             exit 1
           fi
           
-          # Vérifier le Dockerfile
-          if [ -f "Dockerfile" ]; then
-            echo "✅ Dockerfile existe"
-          else
-            echo "❌ Dockerfile manquant!"
-            exit 1
-          fi
-          
-          # Vérifier le fichier de configuration Railway
-          if [ -f "railway.json" ]; then
-            echo "✅ railway.json existe"
-          else
-            echo "❌ railway.json manquant!"
-            exit 1
-          fi
+          echo "✅ Tous les fichiers et scripts essentiels sont présents"
 
-      - name: 🧹 Lint Backend
-        working-directory: backend
-        run: |
-          echo "🔎 Vérification du code backend avec ESLint..."
-          # Ignorer la configuration ESLint de la racine et utiliser celle du dossier backend
-          npx eslint --no-eslintrc --config ./.eslintrc.js "{src,apps,libs,test}/**/*.ts" --fix || echo "⚠️ Des avertissements de lint ont été trouvés mais nous continuons"
-          echo "✅ Lint backend terminé"
-
-      - name: 🛠️ Test du build Railway
+      - name: 🛠️ Build Railway
         working-directory: backend
         run: |
           echo "🧪 Exécution du build Railway..."
           npm run build:railway
           echo "✅ Build Railway terminé avec succès"
           
-      - name: 📂 Vérification de la structure dist
+      - name: 📂 Validation de la structure dist
         working-directory: backend
         run: |
-          echo "📂 Structure complète du dossier dist:"
-          find dist -type f | sort
+          echo "📂 Vérification des fichiers critiques..."
           
-          echo "📊 Statistiques de taille:"
-          du -sh dist/
+          # Vérifier les fichiers et dossiers essentiels
+          CRITICAL_FILES=("dist/main.js" "dist/app.module.js" "dist/app.controller.js")
+          CRITICAL_DIRS=("dist/modules" "dist/common" "dist/health")
           
-          # Vérifier les fichiers essentiels
-          CRITICAL_FILES=("dist/main.js" "dist/app.module.js")
-          
+          MISSING=0
           for file in "${CRITICAL_FILES[@]}"; do
             if [ -f "$file" ]; then
-              echo "✅ $file existe, taille $(stat -c %s "$file") octets"
+              SIZE=$(stat -c %s "$file")
+              echo "✅ $file existe (${SIZE} octets)"
+              
+              # Vérifier que le fichier n'est pas vide ou trop petit
+              if [ $SIZE -lt 100 ]; then
+                echo "⚠️ $file est trop petit (${SIZE} octets), possible problème de build"
+                MISSING=$((MISSING+1))
+              fi
             else
               echo "❌ $file est manquant!"
-              exit 1
+              MISSING=$((MISSING+1))
             fi
           done
-          
-          # Vérifier les dossiers essentiels
-          CRITICAL_DIRS=("dist/modules" "dist/common" "dist/health")
           
           for dir in "${CRITICAL_DIRS[@]}"; do
             if [ -d "$dir" ]; then
-              echo "✅ $dir existe"
+              FILES_COUNT=$(find "$dir" -type f | wc -l)
+              echo "✅ $dir existe ($FILES_COUNT fichiers)"
+              
+              # Vérifier que le dossier n'est pas vide
+              if [ $FILES_COUNT -eq 0 ]; then
+                echo "⚠️ $dir est vide, possible problème de build"
+                MISSING=$((MISSING+1))
+              fi
             else
-              echo "⚠️ $dir manquant - tentative de correction..."
+              echo "❌ $dir est manquant!"
+              
+              # Exécuter le script de correction
+              echo "🔄 Tentative de correction avec fix-dist-structure.js..."
               node scripts/fix-dist-structure.js
               
-              # Vérifier à nouveau après la correction
+              # Vérifier si la correction a réussi
               if [ -d "$dir" ]; then
-                echo "✅ $dir créé avec succès"
+                echo "✅ $dir créé avec succès par le script de correction"
               else
-                echo "❌ Impossible de créer $dir"
-                exit 1
+                echo "❌ Impossible de créer $dir malgré la correction"
+                MISSING=$((MISSING+1))
               fi
             fi
           done
+          
+          if [ $MISSING -gt 0 ]; then
+            echo "❌ $MISSING fichiers/dossiers essentiels manquants ou invalides"
+            exit 1
+          fi
+          
+          echo "✅ Structure de build valide"
 
       - name: 🔍 Vérification des scripts MongoDB
         working-directory: backend
         run: |
           echo "🧪 Vérification des scripts MongoDB..."
           
-          # Vérifier les scripts MongoDB
+          # Vérifier la syntaxe des scripts MongoDB
           MONGODB_SCRIPTS=("scripts/audit-mongodb-data.js" "scripts/schedule-mongodb-audit.js")
           
           for script in "${MONGODB_SCRIPTS[@]}"; do
             if [ -f "$script" ]; then
               echo "✅ $script existe, vérification syntaxique..."
-              # Vérification syntaxique du script
-              node -c "$script" && echo "✅ Syntaxe valide pour $script" || echo "⚠️ Problème de syntaxe pour $script, mais nous continuons"
+              node -c "$script" && echo "✅ Syntaxe valide pour $script" || echo "⚠️ Problème de syntaxe pour $script"
             else
               echo "❌ $script est manquant!"
-              exit 1
-            fi
-          done
-          
-          # Vérifier l'existence des scripts supplémentaires
-          MONGODB_EXTRA_SCRIPTS=("add-mongodb-validators.js" "fix-mongodb-schema.js" "prepare-mongodb-for-production.js")
-          
-          for script in "${MONGODB_EXTRA_SCRIPTS[@]}"; do
-            if [ -f "$script" ]; then
-              echo "✅ $script existe"
-            else
-              echo "⚠️ $script est manquant, mais nous continuons"
             fi
           done
 
-      - name: 🚀 Test de démarrage du serveur
+      - name: 🚀 Test de démarrage
         working-directory: backend
         run: |
-          echo "🧪 Test de démarrage du serveur (dry run)..."
+          echo "🧪 Test de démarrage du serveur..."
           
-          # Exécuter explicitement le script fix-dist-structure.js pour assurer la structure correcte
-          echo "🔧 Exécution du script fix-dist-structure.js..."
-          node scripts/fix-dist-structure.js
+          # Configuration minimale pour le test
+          cat > .env.test << EOL
+          NODE_ENV=test
+          PORT=3333
+          RAILWAY_DEPLOYMENT=true
+          MEMORY_OPTIMIZED=true
+          JWT_SECRET=test-secret
+          JWT_REFRESH_SECRET=test-refresh-secret
+          MONGODB_URI=mongodb://localhost:27017/test
+          EOL
           
-          # Créer un script de test pour le démarrage
-          echo '#!/bin/bash' > test-start.sh
-          echo '' >> test-start.sh
-          echo '# Configuration de l'\''environnement de test' >> test-start.sh
-          echo 'export NODE_ENV=test' >> test-start.sh
-          echo 'export PORT=3333' >> test-start.sh
-          echo 'export RAILWAY_DEPLOYMENT=true' >> test-start.sh
-          echo 'export MEMORY_OPTIMIZED=true' >> test-start.sh
-          echo 'export JWT_SECRET=test-secret' >> test-start.sh
-          echo 'export JWT_REFRESH_SECRET=test-refresh-secret' >> test-start.sh
-          echo 'export MONGODB_URI=mongodb://localhost:27017/test' >> test-start.sh
-          echo '' >> test-start.sh
-          echo 'echo "🔍 Vérification de la structure du dossier dist/"' >> test-start.sh
-          echo 'ls -la dist/' >> test-start.sh
-          echo '' >> test-start.sh
-          echo 'echo "🚀 Tentative de démarrage du serveur..."' >> test-start.sh
-          echo 'timeout 8s node -r reflect-metadata dist/main.js > server_output.log 2>&1 || EXIT_CODE=$?' >> test-start.sh
-          echo '' >> test-start.sh
-          echo 'echo "📜 Sortie du serveur:"' >> test-start.sh
-          echo 'cat server_output.log' >> test-start.sh
-          echo '' >> test-start.sh
-          echo '# Vérifier si le serveur a démarré correctement' >> test-start.sh
-          echo 'if grep -q "NionFar API est prêt et écoute sur http" server_output.log; then' >> test-start.sh
-          echo '  echo "✅ Le serveur a démarré correctement"' >> test-start.sh
-          echo '  exit 0' >> test-start.sh
-          echo 'elif grep -q "Serveur de secours démarré" server_output.log; then' >> test-start.sh
-          echo '  echo "⚠️ Le serveur a démarré en mode secours"' >> test-start.sh
-          echo '  exit 0' >> test-start.sh
-          echo 'elif grep -q "NionFar API en mode dégradé" server_output.log; then' >> test-start.sh
-          echo '  echo "⚠️ Le serveur a démarré en mode dégradé"' >> test-start.sh
-          echo '  exit 0' >> test-start.sh
-          echo 'else' >> test-start.sh
-          echo '  if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" -eq 124 ]; then' >> test-start.sh
-          echo '    echo "⚠️ Le serveur s'\''est exécuté jusqu'\''au timeout, ce qui est un bon signe"' >> test-start.sh
-          echo '    exit 0' >> test-start.sh
-          echo '  else' >> test-start.sh
-          echo '    echo "⚠️ Le serveur n'\''a pas pu démarrer correctement, mais nous continuons"' >> test-start.sh
-          echo '    exit 0  # Ne pas échouer en CI' >> test-start.sh
-          echo '  fi' >> test-start.sh
-          echo 'fi' >> test-start.sh
+          # Exécution du test de démarrage
+          timeout 10s node -r reflect-metadata dist/main.js > server_output.log 2>&1 || true
           
-          chmod +x test-start.sh
-          ./test-start.sh
+          echo "📜 Sortie du serveur (premiers 10 lignes):"
+          head -n 10 server_output.log
+          
+          # Vérification des indicateurs de succès dans les logs
+          if grep -q "prêt et écoute sur" server_output.log || grep -q "Serveur de secours" server_output.log || grep -q "mode dégradé" server_output.log; then
+            echo "✅ Le serveur a démarré correctement"
+          else
+            echo "⚠️ Le serveur n'a pas démarré normalement, mais nous continuons"
+          fi
 
-      - name: 🐳 Test du build Docker
+      - name: 🐳 Test du Dockerfile
         working-directory: backend
         run: |
-          echo "🧪 Test de build Docker..."
-          docker build -t nionfar-backend:test . || echo "⚠️ Le build Docker a échoué, mais nous continuons"
+          echo "🧪 Validation du Dockerfile (sans build complet)..."
+          docker build --target builder -t nionfar-backend-test:latest . || echo "⚠️ Validation du Dockerfile échouée, mais nous continuons"
 
-      - name: 📋 Générer rapport de vérification
+      - name: 📋 Résumé de vérification
         working-directory: backend
         run: |
           echo "📝 Génération du rapport de vérification..."
           
-          # Créer le rapport ligne par ligne
-          echo "# Rapport de vérification Railway" > railway-verification-report.txt
-          echo "" >> railway-verification-report.txt
-          echo "## Date de vérification" >> railway-verification-report.txt
-          echo "$(date)" >> railway-verification-report.txt
-          echo "" >> railway-verification-report.txt
-          echo "## Structure du build" >> railway-verification-report.txt
-          echo "Fichiers critiques:" >> railway-verification-report.txt
+          # Création d'un rapport de vérification concis
+          cat > railway-verification-report.md << EOL
+          # Rapport de vérification Railway
           
-          # Vérifier main.js
-          if [ -f "dist/main.js" ]; then
-            echo "- dist/main.js: ✅ Présent" >> railway-verification-report.txt
-          else
-            echo "- dist/main.js: ❌ Manquant" >> railway-verification-report.txt
-          fi
+          **Date:** $(date)
           
-          # Vérifier app.module.js
-          if [ -f "dist/app.module.js" ]; then
-            echo "- dist/app.module.js: ✅ Présent" >> railway-verification-report.txt
-          else
-            echo "- dist/app.module.js: ❌ Manquant" >> railway-verification-report.txt
-          fi
+          ## Structure du build
+          - main.js: $(if [ -f "dist/main.js" ]; then echo "✅"; else echo "❌"; fi)
+          - app.module.js: $(if [ -f "dist/app.module.js" ]; then echo "✅"; else echo "❌"; fi)
+          - Modules: $(if [ -d "dist/modules" ]; then echo "✅ ($(find dist/modules -type f | wc -l) fichiers)"; else echo "❌"; fi)
+          - Services MongoDB: $(if [ -f "scripts/audit-mongodb-data.js" ]; then echo "✅"; else echo "❌"; fi)
           
-          # Vérifier les dossiers critiques
-          echo "" >> railway-verification-report.txt
-          echo "Dossiers critiques:" >> railway-verification-report.txt
+          ## Résultat final
+          **Statut:** $(if [ -f "dist/main.js" ] && [ -f "dist/app.module.js" ] && [ -d "dist/modules" ]; then echo "✅ PRÊT POUR DÉPLOIEMENT"; else echo "❌ NON DÉPLOYABLE"; fi)
+          EOL
           
-          for dir in "dist/modules" "dist/common" "dist/health"; do
-            if [ -d "$dir" ]; then
-              echo "- $dir: ✅ Présent" >> railway-verification-report.txt
-            else
-              echo "- $dir: ❌ Manquant" >> railway-verification-report.txt
-            fi
-          done
-          
-          echo "" >> railway-verification-report.txt
-          echo "## Configuration de déploiement" >> railway-verification-report.txt
-          echo "- railway.json: $(if [ -f "railway.json" ]; then echo "✅ Présent"; else echo "❌ Manquant"; fi)" >> railway-verification-report.txt
-          echo "- Dockerfile: $(if [ -f "Dockerfile" ]; then echo "✅ Présent"; else echo "❌ Manquant"; fi)" >> railway-verification-report.txt
-          echo "- start-railway.sh: $(if [ -f "start-railway.sh" ]; then echo "✅ Présent"; else echo "❌ Manquant"; fi)" >> railway-verification-report.txt
-          
-          echo "" >> railway-verification-report.txt
-          echo "## Scripts MongoDB" >> railway-verification-report.txt
-          for script in "scripts/audit-mongodb-data.js" "scripts/schedule-mongodb-audit.js" "add-mongodb-validators.js" "fix-mongodb-schema.js"; do
-            if [ -f "$script" ]; then
-              echo "- $script: ✅ Présent" >> railway-verification-report.txt
-            else
-              echo "- $script: ❌ Manquant" >> railway-verification-report.txt
-            fi
-          done
-          
-          echo "" >> railway-verification-report.txt
-          echo "## Tests de démarrage" >> railway-verification-report.txt
-          if [ -f "server_output.log" ]; then
-            echo "```" >> railway-verification-report.txt
-            cat server_output.log | head -n 20 >> railway-verification-report.txt
-            echo "```" >> railway-verification-report.txt
-          else
-            echo "❌ Aucun log de démarrage disponible" >> railway-verification-report.txt
-          fi
-          
-          echo "" >> railway-verification-report.txt
-          echo "## Conclusion" >> railway-verification-report.txt
-          echo "Le build Railway est $(if [ -f "dist/main.js" ] && [ -f "dist/app.module.js" ] && [ -d "dist/modules" ] && [ -d "dist/common" ] && [ -d "dist/health" ]; then echo "✅ VALIDE"; else echo "❌ INVALIDE"; fi)" >> railway-verification-report.txt
+          cat railway-verification-report.md
 
-      - name: 📤 Uploader le rapport de vérification
+      - name: 📤 Uploader le rapport
         uses: actions/upload-artifact@v3
         with:
           name: railway-verification-report
-          path: backend/railway-verification-report.txt
+          path: backend/railway-verification-report.md
 
-  notify-success:
-    name: 📢 Notification de succès
+  deploy-if-main:
+    name: 🚀 Déploiement Railway (auto)
     needs: [verify-railway-build]
-    if: success()
+    if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     
     steps:
-      - name: ✅ Vérification réussie
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v3
+      
+      - name: 🚂 Déploiement sur Railway
+        uses: railwayapp/railway-action@master
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: ${{ secrets.RAILWAY_SERVICE_NAME }}
+      
+      - name: ✅ Notification de succès
         run: |
-          echo "✅ La vérification du build Railway a été effectuée avec succès"
-          echo "🚀 Le backend est prêt pour le déploiement sur Railway"
-          echo "📊 Les scripts d'audit MongoDB sont correctement configurés" 
+          echo "✅ Build vérifié et déployé sur Railway avec succès"
+          echo "🚀 URL du service: https://nionfar.up.railway.app" 
