@@ -354,6 +354,9 @@ function fixCriticalFiles() {
   // Créer les fichiers de healthcheck
   fixHealthcheckFiles();
   
+  // Créer les fichiers de configuration MongoDB manquants
+  fixMongoDbConfigFiles();
+  
   // Copier les fichiers clés depuis src/dist
   const mainJsPath = path.join('dist', 'main.js');
   if (!fs.existsSync(mainJsPath)) {
@@ -897,6 +900,203 @@ __exportStar(require("./health.service.js"), exports);
   }
 }
 
+// Fonction pour créer les fichiers de configuration MongoDB manquants
+function fixMongoDbConfigFiles() {
+  console.log('🔍 Vérification des fichiers de configuration MongoDB...');
+  
+  const configDir = path.join('dist', 'config');
+  ensureDirectoryExists(configDir);
+  
+  // Liste de tous les fichiers de configuration à gérer
+  const configFiles = [
+    'mongodb-memory-options.js',
+    'environment.js',
+    'env.validation.js',
+    'check-env.js',
+    'configuration.js'
+  ];
+  
+  // Pour chaque fichier de configuration
+  configFiles.forEach(configFile => {
+    const destPath = path.join(configDir, configFile);
+    
+    // Vérifier si le fichier existe déjà dans dist/config
+    if (!fs.existsSync(destPath)) {
+      console.log(`⚠️ Fichier ${configFile} manquant dans dist/config, recherche...`);
+      
+      // Chemins possibles pour trouver le fichier source
+      const possiblePaths = [
+        // Fichier déjà compilé dans un autre emplacement
+        path.join('dist', 'src', 'config', configFile),
+        // Fichier source TypeScript (à transformer en .js)
+        path.join('src', 'config', configFile.replace('.js', '.ts'))
+      ];
+      
+      // Chercher le fichier dans les emplacements possibles
+      let sourceFound = false;
+      
+      for (const sourcePath of possiblePaths) {
+        if (fs.existsSync(sourcePath)) {
+          console.log(`✅ Fichier source trouvé: ${sourcePath}`);
+          
+          // Si c'est un fichier .ts, nous devons créer manuellement le .js
+          if (sourcePath.endsWith('.ts')) {
+            console.log(`🔄 Création du fichier .js à partir du .ts pour ${configFile}...`);
+            
+            try {
+              // Lire le contenu TypeScript
+              const tsContent = fs.readFileSync(sourcePath, 'utf8');
+              
+              // Créer un contenu JavaScript simplifié (comme s'il avait été compilé)
+              const jsContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+${sourcePath.includes('mongodb-memory-options') ? 'exports.getTypeOrmMemoryOptions = exports.getMongooseMemoryOptions = void 0;' : ''}
+${sourcePath.includes('environment') ? 'exports.getMemoryConfig = exports.isMemoryConstrainedEnvironment = void 0;' : ''}
+${sourcePath.includes('env.validation') ? 'exports.validate = void 0;' : ''}
+${sourcePath.includes('check-env') ? 'exports.checkRequiredEnvVars = void 0;' : ''}
+${sourcePath.includes('configuration') ? 'exports.default = void 0;' : ''}
+
+// Contenu converti de TypeScript à JavaScript
+${tsContent.replace(/export /g, '').replace(/import [^;]+;/g, '')}
+
+// Exporter les fonctions/objets
+${sourcePath.includes('mongodb-memory-options') ? 'exports.getMongooseMemoryOptions = getMongooseMemoryOptions;\nexports.getTypeOrmMemoryOptions = getTypeOrmMemoryOptions;' : ''}
+${sourcePath.includes('environment') ? 'exports.isMemoryConstrainedEnvironment = isMemoryConstrainedEnvironment;\nexports.getMemoryConfig = getMemoryConfig;' : ''}
+${sourcePath.includes('env.validation') ? 'exports.validate = validate;' : ''}
+${sourcePath.includes('check-env') ? 'exports.checkRequiredEnvVars = checkRequiredEnvVars;' : ''}
+${sourcePath.includes('configuration') ? 'const default_1 = () => ({/* configuration */});\nexports.default = default_1;' : ''}
+`;
+              
+              // Écrire le contenu JavaScript transformé
+              fs.writeFileSync(destPath, jsContent, 'utf8');
+              console.log(`✅ Fichier ${configFile} créé avec succès dans ${destPath}`);
+              sourceFound = true;
+              break;
+            } catch (error) {
+              console.error(`❌ Erreur lors de la création du fichier ${configFile}: ${error}`);
+            }
+          } else {
+            // C'est un fichier .js, on peut simplement le copier
+            if (copyFile(sourcePath, destPath)) {
+              sourceFound = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Si aucune source n'a été trouvée, créer un contenu par défaut pour les fichiers essentiels
+      if (!sourceFound) {
+        console.log(`⚠️ Aucun fichier source trouvé pour ${configFile}, création d'un contenu par défaut si nécessaire...`);
+        
+        // Créer un contenu par défaut pour mongodb-memory-options.js si c'est ce fichier
+        if (configFile === 'mongodb-memory-options.js') {
+          try {
+            const defaultContent = `
+require('reflect-metadata');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getTypeOrmMemoryOptions = exports.getMongooseMemoryOptions = void 0;
+
+// Memory-optimized options for MongoDB connections
+const getMongooseMemoryOptions = () => ({
+    batchSize: 100,
+    autoIndex: false,
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    bufferCommands: false,
+    minPoolSize: 1,
+    maxPoolSize: 5,
+    compressors: 'zlib',
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    writeConcern: {
+        w: 1,
+        j: false
+    },
+    retryAttempts: 3,
+    retryDelay: 5000,
+});
+exports.getMongooseMemoryOptions = getMongooseMemoryOptions;
+
+// Memory-optimized options for TypeORM MongoDB
+const getTypeOrmMemoryOptions = () => ({
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    synchronize: false,
+    logging: false,
+    extra: {
+        maxPoolSize: 5,
+        minPoolSize: 1,
+        connectTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        compressors: 'zlib',
+        writeConcern: {
+            w: 1,
+            j: false
+        }
+    },
+    retryAttempts: 3,
+    retryDelay: 5000,
+});
+exports.getTypeOrmMemoryOptions = getTypeOrmMemoryOptions;
+`;
+            fs.writeFileSync(destPath, defaultContent, 'utf8');
+            console.log(`✅ Fichier ${configFile} créé avec contenu par défaut dans ${destPath}`);
+          } catch (error) {
+            console.error(`❌ Erreur lors de la création du fichier par défaut ${configFile}: ${error}`);
+          }
+        }
+        
+        // Similaire pour d'autres fichiers de configuration importants au besoin
+      }
+    } else {
+      console.log(`✅ Fichier ${configFile} existant dans dist/config, vérification des imports...`);
+      fixModuleImports(destPath);
+    }
+  });
+  
+  // Créer index.js pour le dossier config s'il n'existe pas
+  const configIndexPath = path.join(configDir, 'index.js');
+  if (!fs.existsSync(configIndexPath)) {
+    console.log('⚠️ Fichier index.js du dossier config manquant, création...');
+    
+    const indexContent = `
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./mongodb-memory-options.js"), exports);
+__exportStar(require("./environment.js"), exports);
+__exportStar(require("./env.validation.js"), exports);
+`;
+    
+    try {
+      fs.writeFileSync(configIndexPath, indexContent, 'utf8');
+      console.log(`✅ Fichier index.js du dossier config créé avec succès dans ${configIndexPath}`);
+    } catch (error) {
+      console.error(`❌ Erreur lors de la création du fichier index.js du dossier config: ${error}`);
+    }
+  }
+  
+  console.log('✅ Vérification et correction des fichiers de configuration terminées');
+}
+
 // Fonction principale
 function main() {
   console.log('🛠️ Correction de la structure du dossier dist/...');
@@ -905,6 +1105,12 @@ function main() {
   
   // Vérifier et corriger les points d'entrée principaux
   fixEntryPoint();
+  
+  // Vérifier et corriger les fichiers de configuration
+  fixMongoDbConfigFiles();
+  
+  // Autres fonctions de correction au besoin
+  // ...
   
   console.log('✅ Structure du dossier dist/ corrigée');
 }
