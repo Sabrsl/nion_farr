@@ -26,7 +26,7 @@ import DisputeList from '../../../components/dashboard/DisputeList';
 
 const DisputesPage: NextPage = () => {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +36,9 @@ const DisputesPage: NextPage = () => {
   useEffect(() => {
     if (authLoading) return;
     
-    // Vérifier si l'utilisateur est authentifié
-    if (!user) {
-      router.push('/auth/login?redirect=/dashboard/disputes');
+    // Si l'utilisateur n'est pas authentifié, rediriger vers la page de connexion
+    if (!isAuthenticated) {
+      router.push('/login?redirect=/dashboard/disputes');
       return;
     }
 
@@ -125,7 +125,7 @@ const DisputesPage: NextPage = () => {
     };
 
     fetchDisputes();
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, isAuthenticated]);
 
   const formatDate = (dateString: string) => {
     try {

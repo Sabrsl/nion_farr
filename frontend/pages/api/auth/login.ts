@@ -21,6 +21,15 @@ export default async function handler(
   console.log(`[API Proxy] Tentative de connexion au backend: ${apiEndpoint}`);
   
   try {
+    // Transformer les données pour correspondre aux attentes du backend
+    let backendData = { ...req.body };
+    
+    // S'assurer que les données sont au format attendu par le backend
+    console.log("📦 Données formatées pour le backend:", { 
+      ...backendData, 
+      password: backendData.password ? "********" : undefined 
+    });
+    
     // TOUJOURS utiliser POST peu importe la méthode originale
     const response = await fetch(apiEndpoint, {
       method: 'POST', // Force POST
@@ -30,7 +39,7 @@ export default async function handler(
         'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
         'X-Requested-With': 'XMLHttpRequest' // Ajouter cet en-tête pour indiquer une requête AJAX
       },
-      body: JSON.stringify(req.body || {}), // Protéger contre body null
+      body: JSON.stringify(backendData), // Protéger contre body null
       credentials: 'include' // Ajouter cette option pour inclure les cookies
     });
     
@@ -48,6 +57,15 @@ export default async function handler(
         });
       }
     } else {
+      // Gérer les erreurs communes
+      if (response.status === 401) {
+        return res.status(401).json({
+          success: false,
+          error: 'Email ou mot de passe incorrect',
+          details: { general: 'Les informations de connexion fournies sont incorrectes.' }
+        });
+      }
+      
       // Gérer les erreurs HTTP
       try {
         const errorData = await response.json();

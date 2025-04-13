@@ -165,10 +165,10 @@ const ServiceContactPage: NextPage<ContactPageProps> = ({ service }) => {
   // Handle form submission
   const onSubmit = async (data: ContactFormData) => {
     if (!isAuthenticated) {
-      // Save form data to session storage and redirect to login
+      // Sauvegarder les données du formulaire dans sessionStorage
       sessionStorage.setItem('contactFormData', JSON.stringify(data));
-      sessionStorage.setItem('contactRedirectUrl', window.location.pathname);
-      router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      // Rediriger vers la page de connexion avec retour à cette page après connexion
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     
@@ -184,27 +184,12 @@ const ServiceContactPage: NextPage<ContactPageProps> = ({ service }) => {
       });
       
       // Send message to the freelancer via API
-      const formData = new FormData();
-      formData.append('recipientId', freelancer.id);
-      formData.append('subject', data.subject);
-      formData.append('message', data.message);
-      
-      if (data.serviceRelated) {
-        formData.append('serviceId', service.id);
-      }
-      
-      if (data.phoneNumber) {
-        formData.append('phoneNumber', data.phoneNumber);
-      }
-      
-      if (data.attachFile && data.attachFile.length > 0) {
-        formData.append('attachment', data.attachFile[0]);
-      }
-      
-      // Appel API pour envoyer le message
       const response = await fetch('/api/messages/send', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data),
       });
       
       if (!response.ok) {

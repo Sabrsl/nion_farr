@@ -96,8 +96,11 @@ export default function ForgotPassword() {
 
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Link href="/auth/login" className="flex items-center text-sm text-indigo-600 hover:text-indigo-900 mb-6 ml-4">
-            <FiArrowLeft className="mr-2" /> Retour à la connexion
+          <Link href="/login" className="flex items-center text-sm text-indigo-600 hover:text-indigo-900 mb-6 ml-4">
+            <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd"></path>
+            </svg>
+            Retour à la connexion
           </Link>
           
           <img 
@@ -159,24 +162,13 @@ export default function ForgotPassword() {
               </div>
             </form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">
-                    Pas encore de compte ?
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3">
-                <Link href="/auth/register" 
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                  S'inscrire
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Vous n'avez pas de compte?{' '}
+                <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500 transition-all">
+                  Inscrivez-vous
                 </Link>
-              </div>
+              </p>
             </div>
           </div>
         </div>

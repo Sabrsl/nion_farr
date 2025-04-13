@@ -193,7 +193,7 @@ const FreelancerPublicProfile: NextPage<FreelancerPublicProfileProps> = ({
   // Handle follow/unfollow action
   const handleFollow = useCallback(async () => {
     if (!isAuthenticated) {
-      router.push(`/auth/login?redirect=/freelancers/${username}`);
+      router.push(`/login?redirect=/freelancers/${username}`);
       return;
     }
     
@@ -230,7 +230,7 @@ const FreelancerPublicProfile: NextPage<FreelancerPublicProfileProps> = ({
   // Handle contact action
   const handleContact = useCallback(() => {
     if (!isAuthenticated) {
-      router.push(`/auth/login?redirect=/freelancers/${username}`);
+      router.push(`/login?redirect=/freelancers/${username}`);
       return;
     }
     

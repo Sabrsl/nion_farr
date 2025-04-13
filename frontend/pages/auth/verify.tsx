@@ -44,7 +44,7 @@ export default function VerifyPage() {
         
         // Redirection automatique vers la connexion après 3 secondes
         setTimeout(() => {
-          router.push('/auth/login');
+          router.push('/login');
         }, 3000);
       } else {
         setStatus('error');
@@ -89,13 +89,17 @@ export default function VerifyPage() {
               Vous allez être redirigé vers la page de connexion automatiquement...
             </Text>
             
-            <Button
-              colorScheme="blue"
-              as={Link}
-              href="/auth/login"
-            >
-              Connexion
-            </Button>
+            <div className="text-center mt-8">
+              <p className="mb-4 text-gray-600">
+                Vous pouvez maintenant vous connecter avec votre compte vérifié.
+              </p>
+              <Link
+                href="/login"
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Se connecter
+              </Link>
+            </div>
           </>
         )}
         
@@ -110,22 +114,17 @@ export default function VerifyPage() {
               {message}
             </Alert>
             
-            <Button
-              colorScheme="blue"
-              as={Link}
-              href="/auth/login"
-              mr={3}
-            >
-              Connexion
-            </Button>
-            
-            <Button
-              variant="outline"
-              as={Link}
-              href="/"
-            >
-              Accueil
-            </Button>
+            <div className="text-center mt-8">
+              <p className="mb-4 text-gray-600">
+                Vous pouvez réessayer de vérifier votre compte ultérieurement.
+              </p>
+              <Link
+                href="/login"
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Se connecter
+              </Link>
+            </div>
           </>
         )}
       </Box>

@@ -183,7 +183,7 @@ export const emailSender = {
           userName: 'Utilisateur de test',
           verificationCode: '123456',
           expirationHours: 24,
-          loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://nionfar.sn'}/auth/login`
+          loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://nionfar.sn'}/login`
         },
         customSubject: 'Email de test Nionfar'
       });

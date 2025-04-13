@@ -17,9 +17,9 @@ const AdminDisputesPage: NextPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
 
   useEffect(() => {
-    // Si l'utilisateur n'est pas authentifié après le chargement, rediriger vers la connexion
-    if (!isLoading && !user) {
-      router.push('/auth/login?redirect=/dashboard/admin/disputes');
+    // Vérifier si l'utilisateur est authentifié
+    if (!user) {
+      router.push('/login?redirect=/dashboard/admin/disputes');
       return;
     }
 

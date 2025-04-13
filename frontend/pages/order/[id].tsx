@@ -142,24 +142,19 @@ const OrderPage: NextPage<OrderPageProps> = ({ orderId, status }) => {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Commande #{orderId}</h2>
             <p className="text-gray-600 mb-6">Statut: {status === 'success' ? 'Confirmée' : 'En attente'}</p>
             
-            <div className="space-y-4">
-              <Link href={`/auth/login?redirect=${encodeURIComponent(router.asPath)}`}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Se connecter pour voir les détails
-              </Link>
-              
-              <Link href="/auth/register"
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Créer un compte
-              </Link>
-              
-              <div className="text-center mt-4">
-                <Link href="/"
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            <div className="flex flex-col space-y-5">
+              <h3 className="text-xl font-semibold">Veuillez vous connecter ou créer un compte</h3>
+              <p className="text-gray-500">Pour commander ce service, vous devez être connecté à votre compte.</p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/login?redirect=/order/${encodeURIComponent(orderId)}" 
+                  className="btn-primary text-center py-2 px-4"
                 >
-                  Retour à l'accueil
+                  Se connecter
+                </Link>
+                <Link href="/register"
+                  className="btn-secondary text-center py-2 px-4"
+                >
+                  Créer un compte
                 </Link>
               </div>
             </div>
@@ -523,7 +518,7 @@ const OrderPage: NextPage<OrderPageProps> = ({ orderId, status }) => {
             </>
           ) : (
             <>
-              <Link href={`/auth/login?redirect=/dashboard/orders`}
+              <Link href={`/login?redirect=/dashboard/orders`}
                 className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 Se connecter pour suivre mes commandes

@@ -43,7 +43,7 @@ export default function ApiInfo() {
         
         if (count <= 0) {
           clearInterval(intervalId);
-          router.push('/auth/login');
+          router.push('/login');
         }
       }, 1000);
     }
@@ -133,10 +133,10 @@ export default function ApiInfo() {
                     <p className="text-sm text-green-700 mb-4">✅ L'URL de l'API est correctement configurée.</p>
                     <button
                       type="button"
-                      onClick={() => router.push('/auth/login')}
+                      onClick={() => router.push('/login')}
                       className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      Retour à la page de connexion
+                      Se connecter
                     </button>
                   </div>
                 )}

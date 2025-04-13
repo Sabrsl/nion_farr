@@ -91,7 +91,7 @@ const CheckoutPage: NextPage<CheckoutPageProps> = ({ service }) => {
           if (process.env.NODE_ENV === 'development') {
             console.log('Redirection vers login, utilisateur non authentifié');
           }
-          const loginUrl = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+          const loginUrl = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
           router.push(loginUrl);
         }
         

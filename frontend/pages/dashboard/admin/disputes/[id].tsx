@@ -14,7 +14,7 @@ import { disputeService } from '../../../../services/disputeService';
 const DisputeDetailPage: NextPage = () => {
   const router = useRouter();
   const { id } = router.query;
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [dispute, setDispute] = useState<Dispute | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [componentLoading, setComponentLoading] = useState(true);
@@ -26,9 +26,9 @@ const DisputeDetailPage: NextPage = () => {
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
 
   useEffect(() => {
-    // Si l'utilisateur n'est pas authentifié après le chargement, rediriger vers la connexion
-    if (!isLoading && !user) {
-      router.push('/auth/login?redirect=/dashboard/admin/disputes');
+    // Vérifier si l'utilisateur est authentifié
+    if (!isAuthenticated) {
+      router.push('/login?redirect=/dashboard/admin/disputes');
       return;
     }
 
@@ -37,7 +37,7 @@ const DisputeDetailPage: NextPage = () => {
       router.push('/dashboard');
       return;
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, isAuthenticated]);
 
   useEffect(() => {
     const fetchDisputeDetails = async () => {

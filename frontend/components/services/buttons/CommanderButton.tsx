@@ -57,7 +57,7 @@ const CommanderButton: React.FC<CommanderButtonProps> = ({
     // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
     if (!isAuthenticated || !user) {
       const checkoutUrl = `/checkout/${serviceId}`;
-      const redirectUrl = `/auth/login?redirect=${encodeURIComponent(checkoutUrl)}`;
+      const redirectUrl = `/login?redirect=${encodeURIComponent(checkoutUrl)}`;
       
       setIsRedirecting(true);
       window.location.href = redirectUrl;
