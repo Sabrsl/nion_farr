@@ -17,7 +17,9 @@ export class SecurityMiddleware implements NestMiddleware {
     '/auth/forgot-password',
     '/auth/reset-password',
     '/auth/verify-phone',
-    '/auth/test-register' // Inclure les endpoints de test également
+    '/auth/test-register',
+    '/auth/test-server',
+    '/auth/test-csrf'  // Ajouter l'endpoint de test CSRF
   ];
 
   constructor(
@@ -27,14 +29,18 @@ export class SecurityMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     try {
+      // Log plus détaillé pour le debugging
+      this.logger.debug(`🔍 Requête reçue: ${req.method} ${req.path} - Headers: ${JSON.stringify(req.headers['x-csrf-token'] ? {'x-csrf-token': 'présent'} : {'x-csrf-token': 'absent'})}`);
+      
       // Skip security checks for excluded paths
       if (this.excludedPaths.some(path => req.path.startsWith(path))) {
-        this.logger.debug(`Skipping security checks for excluded path: ${req.path}`);
+        this.logger.debug(`✅ Vérifications de sécurité ignorées pour le chemin exclu: ${req.path}`);
         return next();
       }
 
       // Skip security checks in development
       if (this.configService.get('NODE_ENV') === 'development') {
+        this.logger.debug(`✅ Vérifications de sécurité ignorées en environnement de développement pour: ${req.path}`);
         return next();
       }
 
@@ -71,7 +77,7 @@ export class SecurityMiddleware implements NestMiddleware {
 
       next();
     } catch (error) {
-      this.logger.error(`Security middleware error: ${error.message}`, error.stack);
+      this.logger.error(`❌ Erreur middleware sécurité: ${error.message}`, error.stack);
       return res.status(500).json({ 
         message: 'Internal server error',
         code: 'SECURITY_ERROR'

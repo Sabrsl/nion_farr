@@ -80,12 +80,34 @@ export class AuthController {
         password: registerDto.password ? '[MASKED]' : undefined
       })}`);
       
+      // Vérifier la structure des données reçues
+      if (!registerDto.email || !registerDto.password || !registerDto.firstName || !registerDto.lastName) {
+        this.logger.warn('❌ Données d\'inscription incomplètes');
+        throw new BadRequestException('Données d\'inscription incomplètes. Veuillez fournir email, password, firstName et lastName');
+      }
+      
       // Vérifier manuellement le schéma pour un log plus précis des erreurs
       const validationResult = registerSchema.safeParse(registerDto);
       if (!validationResult.success) {
         this.logger.error(`❌ Validation échouée pour l'inscription: ${JSON.stringify(validationResult.error.format())}`);
-        throw new BadRequestException(validationResult.error.format());
+        
+        // Transformer les erreurs Zod en format plus lisible pour le client
+        const formattedErrors = {};
+        for (const [field, error] of Object.entries(validationResult.error.formErrors.fieldErrors)) {
+          formattedErrors[field] = error && error.length > 0 ? error[0] : 'Champ invalide';
+        }
+        
+        throw new BadRequestException({
+          message: 'Erreur de validation des données d\'inscription',
+          errors: formattedErrors
+        });
       }
+      
+      // Log de débogage avant de passer les données au service
+      this.logger.debug(`✅ Données d'inscription validées: ${JSON.stringify({
+        ...registerDto,
+        password: '[MASKED]'
+      })}`);
       
       return await this.authService.register(registerDto);
     } catch (error) {
@@ -372,5 +394,87 @@ export class AuthController {
         role: 'CLIENT'
       } 
     };
+  }
+
+  @Public()
+  @Get('test-server')
+  @ApiOperation({ summary: 'Vérifier l\'état du serveur et les configurations de sécurité' })
+  @ApiResponse({ status: 200, description: 'État du serveur et configurations' })
+  async testServerEndpoint() {
+    this.logger.log('🔍 Test des configurations du serveur appelé');
+    
+    // Collecter des informations sur l'environnement pour aider au debugging
+    const serverInfo = {
+      success: true,
+      message: 'Serveur fonctionnel',
+      environment: process.env.NODE_ENV || 'development',
+      csrfProtection: process.env.NODE_ENV === 'production' ? 'désactivée (JWT)' : 'désactivée (développement)',
+      timestamp: new Date().toISOString(),
+      apiVersion: '1.0.0',
+      endpoints: {
+        register: '/api/auth/register',
+        login: '/api/auth/login',
+        refreshToken: '/api/auth/refresh-token'
+      },
+      securityMiddleware: {
+        csrfExclusions: [
+          '/health', '/health/detailed', '/security/csrf-tokens',
+          '/auth/login', '/auth/register', '/auth/refresh-token',
+          '/auth/verify-email', '/auth/forgot-password', '/auth/reset-password',
+          '/auth/verify-phone', '/auth/test-register', '/auth/test-server'
+        ]
+      }
+    };
+    
+    return serverInfo;
+  }
+
+  @Public()
+  @Post('test-csrf')
+  @ApiOperation({ summary: 'Tester la protection CSRF' })
+  @ApiResponse({ status: 200, description: 'Test CSRF réussi' })
+  async testCsrfEndpoint(@Req() req: any, @Res() res: Response) {
+    this.logger.log('🧪 Test de la protection CSRF appelé');
+    
+    // Récupérer et journaliser les en-têtes pertinents 
+    const headers = {
+      origin: req.headers.origin || 'non défini',
+      referer: req.headers.referer || 'non défini',
+      'x-csrf-token': req.headers['x-csrf-token'] ? 'présent' : 'absent',
+      'content-type': req.headers['content-type'] || 'non défini',
+      'user-agent': req.headers['user-agent'] || 'non défini'
+    };
+    
+    this.logger.debug(`En-têtes de requête reçus: ${JSON.stringify(headers)}`);
+    
+    // Information sur les paramètres CORS
+    const corsInfo = {
+      allowedOrigins: [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:4200',
+        'https://nion-farr.vercel.app',
+        'https://nionfar.sn',
+        'https://www.nionfar.sn'
+      ],
+      allowCredentials: true,
+      allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      csrfProtectionStatus: process.env.NODE_ENV === 'production' ? 'désactivée (JWT)' : 'désactivée (développement)'
+    };
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Test CSRF réussi',
+      requestInfo: {
+        method: req.method,
+        path: req.url || req.originalUrl || '/api/auth/test-csrf',
+        headers: headers
+      },
+      serverConfig: {
+        cors: corsInfo,
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString()
+      }
+    });
   }
 } 

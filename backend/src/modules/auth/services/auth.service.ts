@@ -149,6 +149,10 @@ export class AuthService {
   async register(registerDto: any) {
     try {
       this.logger.log(`Inscription d'un nouvel utilisateur: ${registerDto.email}`);
+      this.logger.debug(`Données d'inscription reçues: ${JSON.stringify({
+        ...registerDto,
+        password: registerDto.password ? '[MASKED]' : undefined
+      })}`);
       
       // Vérifier si l'utilisateur existe déjà
       const existingUser = await this.usersRepository.findOne({ 
@@ -163,52 +167,73 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
       const verificationToken = uuidv4();
       
-      // Créer une nouvelle entité utilisateur avec les données fournies
-      const newUser = new User({
+      // Pour éviter les erreurs liées aux propriétés undefined
+      const userData = {
         email: registerDto.email,
-        username: registerDto.username,
+        username: registerDto.username || registerDto.email.split('@')[0],
         firstName: registerDto.firstName,
         lastName: registerDto.lastName,
         password: hashedPassword,
         emailVerificationToken: verificationToken,
         isEmailVerified: false,
         role: registerDto.role?.toLowerCase() || 'client',
-        isFreelancer: registerDto.isFreelancer || registerDto.role?.toLowerCase() === 'freelancer'
-      });
+        isFreelancer: registerDto.isFreelancer || registerDto.role?.toLowerCase() === 'freelancer',
+        status: UserStatus.PENDING_VERIFICATION
+      };
       
-      // Sauvegarder l'utilisateur dans la base de données
-      const savedUser = await this.usersRepository.save(newUser);
-      this.logger.log(`Utilisateur créé avec succès: ${savedUser.id}`);
+      this.logger.debug(`Création d'utilisateur avec les données: ${JSON.stringify({
+        ...userData,
+        password: '[MASKED]',
+      })}`);
       
-      // Essayer d'envoyer un email de vérification
       try {
-        await this.emailService.sendVerificationEmail(savedUser.email, verificationToken);
-        this.logger.log(`Email de vérification envoyé à: ${savedUser.email}`);
-      } catch (emailError) {
-        this.logger.error(`Erreur lors de l'envoi de l'email: ${emailError.message}`);
-        // On continue malgré l'erreur d'email
+        // Créer une nouvelle entité utilisateur avec les données fournies
+        const newUser = this.usersRepository.create(userData);
+        
+        // Sauvegarder l'utilisateur dans la base de données
+        const savedUser = await this.usersRepository.save(newUser);
+        this.logger.log(`Utilisateur créé avec succès: ${savedUser.id}`);
+        
+        // Essayer d'envoyer un email de vérification
+        try {
+          await this.emailService.sendVerificationEmail(savedUser.email, verificationToken);
+          this.logger.log(`Email de vérification envoyé à: ${savedUser.email}`);
+        } catch (emailError) {
+          this.logger.error(`Erreur lors de l'envoi de l'email: ${emailError.message}`);
+          // On continue malgré l'erreur d'email
+        }
+        
+        // Générer un token pour l'utilisateur
+        const payload = { 
+          sub: savedUser.id, 
+          email: savedUser.email,
+          role: savedUser.role
+        };
+        
+        const token = this.jwtService.sign(payload);
+        
+        // Préparer la réponse sans données sensibles
+        const { password, emailVerificationToken, ...userResponse } = savedUser;
+        
+        return { 
+          message: 'Inscription réussie',
+          user: userResponse,
+          token
+        };
+      } catch (dbError) {
+        this.logger.error(`Erreur lors de la création de l'utilisateur: ${dbError.message}`);
+        if (dbError.code === '23505') { // Code pour violation d'unicité dans PostgreSQL
+          throw new ConflictException('Un utilisateur avec cet email ou ce nom d\'utilisateur existe déjà');
+        }
+        if (dbError.message.includes('createValueMap')) {
+          this.logger.error('Erreur TypeORM createValueMap - Données invalides:', userData);
+          throw new BadRequestException('Données d\'utilisateur invalides ou incomplètes');
+        }
+        throw new BadRequestException(`Erreur lors de la création de l'utilisateur: ${dbError.message}`);
       }
-      
-      // Générer un token pour l'utilisateur
-      const payload = { 
-        sub: savedUser.id, 
-        email: savedUser.email,
-        role: savedUser.role
-      };
-      
-      const token = this.jwtService.sign(payload);
-      
-      // Préparer la réponse sans données sensibles
-      const { password, emailVerificationToken, ...userResponse } = savedUser;
-      
-      return { 
-        message: 'Inscription réussie',
-        user: userResponse,
-        token
-      };
     } catch (error) {
       this.logger.error(`Erreur lors de l'inscription: ${error.message}`);
-      if (error instanceof ConflictException) {
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
         throw error;
       }
       throw new BadRequestException(error.message || "Une erreur est survenue lors de l'inscription");

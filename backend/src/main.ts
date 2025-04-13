@@ -117,23 +117,53 @@ async function bootstrap() {
       app.enableCors({
         origin: [
           'http://localhost:3000', 
-          'http://localhost:3001', 
+          'http://localhost:3001',
+          'http://localhost:4200', 
           'https://nion-farr.vercel.app',
           'https://nionfar.sn',
-          'https://www.nionfar.sn'
+          'https://www.nionfar.sn',
+          // Accepter d'autres origines en développement
+          ...(environment === 'development' ? ['*'] : [])
         ],
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         credentials: true, // Autorise l'envoi de cookies et en-têtes d'auth
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token', 'Accept'],
-        exposedHeaders: ['X-Registration-Success']
+        allowedHeaders: [
+          'Content-Type', 
+          'Authorization', 
+          'X-Requested-With', 
+          'X-CSRF-Token', 
+          'Accept', 
+          'Origin',
+          'X-HTTP-Method',
+          'X-HTTP-Method-Override'
+        ],
+        exposedHeaders: ['X-Registration-Success', 'X-CSRF-Token']
       });
 
-      // Désactiver la protection CSRF qui est gérée par la validation JWT
+      // Middleware personnalisé pour gérer les préflight et CORS
       app.use((req, res, next) => {
-        res.header('Access-Control-Allow-Origin', req.headers.origin); // Autoriser dynamiquement l'origine
+        // Autoriser dynamiquement l'origine en développement
+        const origin = req.headers.origin;
+        if (environment === 'development' || 
+            origin && (
+              origin.includes('localhost') || 
+              origin.includes('nionfar.sn') || 
+              origin.includes('vercel.app')
+            )) {
+          res.header('Access-Control-Allow-Origin', origin);
+        }
+        
         res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'X-CSRF-Token, Authorization, Content-Type, Accept');
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 
+          'X-CSRF-Token, Authorization, Content-Type, Accept, Origin, X-Requested-With, X-HTTP-Method, X-HTTP-Method-Override');
+        res.header('Access-Control-Expose-Headers', 'X-Registration-Success, X-CSRF-Token');
+        
+        // Gérer les requêtes OPTIONS (préflight)
+        if (req.method === 'OPTIONS') {
+          return res.status(200).end();
+        }
+        
         next();
       });
 
