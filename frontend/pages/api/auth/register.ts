@@ -60,23 +60,32 @@ export default async function handler(
         
         // Vérifier si la réponse est correcte
         if (response.ok) {
-          const data = await response.json();
-          console.log(`[API Proxy] Inscription réussie:`, data);
-          
-          // Ajouter des en-têtes personnalisés pour éviter la mise en cache et forcer la redirection côté client
-          res.setHeader('X-Registration-Success', 'true');
-          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          
-          // Inclure une suggestion de redirection au client
-          const responseWithRedirect = {
-            ...data,
-            redirectTo: '/',
-            _redirectAfterAuth: true
-          };
-          
-          return res.status(response.status).json(responseWithRedirect);
+          try {
+            const data = await response.json();
+            console.log(`[API Proxy] Inscription réussie:`, data);
+            
+            // Ajouter des en-têtes personnalisés pour éviter la mise en cache et forcer la redirection côté client
+            res.setHeader('X-Registration-Success', 'true');
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            
+            // Inclure une suggestion de redirection au client
+            const responseWithRedirect = {
+              ...data,
+              redirectTo: '/',
+              _redirectAfterAuth: true
+            };
+            
+            return res.status(response.status).json(responseWithRedirect);
+          } catch (jsonError) {
+            console.error(`[API Proxy] Erreur lors du parsing de la réponse JSON:`, jsonError);
+            return res.status(502).json({
+              success: false,
+              error: "Erreur de traitement de la réponse",
+              details: { general: "La réponse du serveur n'est pas un JSON valide" }
+            });
+          }
         } else {
           // Gérer les erreurs HTTP
           try {
@@ -103,12 +112,21 @@ export default async function handler(
               });
               
               if (retryResponse.ok) {
-                const retryData = await retryResponse.json();
-                return res.status(retryResponse.status).json({
-                  ...retryData,
-                  redirectTo: '/',
-                  _redirectAfterAuth: true
-                });
+                try {
+                  const retryData = await retryResponse.json();
+                  return res.status(retryResponse.status).json({
+                    ...retryData,
+                    redirectTo: '/',
+                    _redirectAfterAuth: true
+                  });
+                } catch (retryJsonError) {
+                  console.error(`[API Proxy] Erreur lors du parsing de la réponse JSON pour la tentative CSRF:`, retryJsonError);
+                  return res.status(502).json({
+                    success: false,
+                    error: "Erreur de traitement de la réponse",
+                    details: { general: "La réponse du serveur n'est pas un JSON valide" }
+                  });
+                }
               }
               
               // Si la seconde tentative échoue également, renvoyer une erreur générique
@@ -127,14 +145,24 @@ export default async function handler(
             });
           } catch (parseError) {
             // Si la réponse n'est pas du JSON valide
-            const errorText = await response.text();
-            console.error(`[API Proxy] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
-            
-            return res.status(response.status).json({
-              success: false,
-              error: `Erreur ${response.status}: ${response.statusText}`,
-              details: { general: 'Réponse invalide du serveur' }
-            });
+            try {
+              const errorText = await response.text();
+              console.error(`[API Proxy] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
+              
+              return res.status(response.status).json({
+                success: false,
+                error: `Erreur ${response.status}: ${response.statusText}`,
+                details: { general: 'Réponse invalide du serveur' }
+              });
+            } catch (textError) {
+              console.error(`[API Proxy] Impossible de lire le corps de la réponse:`, textError);
+              
+              return res.status(response.status).json({
+                success: false,
+                error: `Erreur ${response.status}: ${response.statusText}`,
+                details: { general: 'Impossible de lire la réponse du serveur' }
+              });
+            }
           }
         }
       } catch (fetchError) {
