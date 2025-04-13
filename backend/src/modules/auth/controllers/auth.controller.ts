@@ -74,9 +74,14 @@ export class AuthController {
   @ApiBody({ type: RegisterDto })
   async register(@Body() registerDto: RegisterDto) {
     try {
+      // Log the received data for debugging
+      this.logger.debug(`Données reçues pour l'inscription: ${JSON.stringify(registerDto, null, 2)}`);
       return await this.authService.register(registerDto);
     } catch (error) {
       this.logger.error(`Erreur lors de l'inscription: ${error.message}`);
+      if (error instanceof BadRequestException) {
+        this.logger.debug(`Détails de l'erreur de validation: ${error.message}`);
+      }
       throw error;
     }
   }

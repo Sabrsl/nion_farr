@@ -185,13 +185,23 @@ class AuthService {
         lastName: userData.fullName.split(' ').slice(1).join(' ') || userData.fullName.split(' ')[0], // Fallback si pas de nom de famille
         password: userData.password,
         role: userData.role.toUpperCase(),
-        // Champs optionnels
+        // Champs optionnels que le backend ne traite pas mais qui ne causent pas d'erreur
         phoneNumber: userData.phone,
         username: userData.username,
         termsAccepted: userData.acceptTerms
       };
 
-      console.log("📦 Données formatées:", { ...apiData, password: '***' });
+      // Rendre ces champs facultatifs sous forme de structure pour le backend
+      // Vérifions si chacun des champs est défini
+      const formattedApiData = {
+        email: userData.email,
+        firstName: userData.fullName.split(' ')[0],
+        lastName: userData.fullName.split(' ').slice(1).join(' ') || userData.fullName.split(' ')[0],
+        password: userData.password,
+        role: userData.role.toUpperCase(),
+      };
+
+      console.log("📦 Données formatées:", { ...formattedApiData, password: '***' });
 
       // Vérification de l'URL du backend
       if (!this.apiUrl || this.apiUrl === '/api') {
@@ -220,7 +230,7 @@ class AuthService {
             'Accept': 'application/json',
             'Origin': window.location.origin
           },
-          body: JSON.stringify(apiData),
+          body: JSON.stringify(formattedApiData),
           credentials: 'include'
         });
         

@@ -489,6 +489,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
             placeholder="••••••••"
           />
         </div>
+        <p className="mt-1 text-xs text-gray-500">
+          Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
+        </p>
       </div>
 
       {/* Confirmer mot de passe */}
