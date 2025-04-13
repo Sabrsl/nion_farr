@@ -4,9 +4,6 @@
 
 // Memory-optimized options for MongoDB connections
 export const getMongooseMemoryOptions = () => ({
-  // Set a smaller batch size for more efficient memory usage
-  batchSize: 100,
-  
   // Disable automatic indexing which requires memory
   autoIndex: false,
   

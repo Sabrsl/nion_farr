@@ -54,6 +54,8 @@
     "mongodb:prepare": "node scripts/prepare-mongodb-for-production.js",
     "mongodb:schedule-audit": "node scripts/schedule-mongodb-audit.js",
     "mongodb:validate": "npm run test:mongodb && npm run mongodb:audit",
+    "mongodb:validate-options": "node scripts/validate-mongodb-options.js",
+    "pre-deploy": "node scripts/pre-deployment.js",
     "fix:dist": "node scripts/fix-dist-structure.js",
     "fix:entities": "node scripts/fix-entity-relations.js",
     "fix:missing-entities": "node scripts/fix-missing-entities.js",

@@ -103,8 +103,6 @@ import { PerformanceModule } from './performance/performance.module';
         return {
           uri: configService.get<string>('MONGODB_URI'),
           ...(memoryConfig.isConstrained ? getMongooseMemoryOptions() : {
-            retryAttempts: 3,
-            retryDelay: 3000,
             serverSelectionTimeoutMS: 5000,
             connectTimeoutMS: 10000,
           }),

@@ -1,0 +1,28 @@
+{
+  "name": "mongodb-connection-tests",
+  "version": "1.0.0",
+  "description": "Tests de connexion MongoDB pour l'application NionFar",
+  "main": "run-all-tests.js",
+  "scripts": {
+    "test": "node run-all-tests.js",
+    "test:uri": "node test-uri-parsing.js",
+    "test:basic": "node test-connection.js",
+    "test:direct": "node test-direct-connection.js",
+    "test:nestjs": "node test-nestjs-connection.js",
+    "test:all": "node run-all-tests.js"
+  },
+  "keywords": [
+    "mongodb",
+    "test",
+    "connection",
+    "nestjs"
+  ],
+  "author": "NionFar Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "mongodb": "^5.7.0",
+    "mongoose": "^7.4.3"
+  }
+} 
