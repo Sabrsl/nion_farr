@@ -108,7 +108,8 @@ class AuthService {
     this.apiUrl = getBaseApiUrl();
     
     // Vérifier et corriger l'URL si nécessaire
-    if (this.apiUrl.includes('railway') || this.apiUrl.includes('render')) {
+    if (this.apiUrl.includes('railway') || 
+        (this.apiUrl.includes('vercel') && !this.apiUrl.includes('nionfar-backend.onrender.com'))) {
       console.error('❌ URL API incorrecte détectée:', this.apiUrl);
       this.apiUrl = RENDER_API_URL;
       

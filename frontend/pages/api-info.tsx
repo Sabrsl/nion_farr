@@ -10,7 +10,7 @@ export default function ApiInfo() {
   const [countdown, setCountdown] = useState(5);
   
   // URL correcte de l'API
-  const correctApiUrl = 'https://nion-farr-backend.vercel.app/api';
+  const correctApiUrl = 'https://nionfar-backend.onrender.com/api';
   
   useEffect(() => {
     setIsClient(true);
