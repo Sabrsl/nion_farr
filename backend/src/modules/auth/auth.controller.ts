@@ -32,6 +32,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Requête invalide' })
   async register(@Body() registerDto: RegisterDto) {
     this.logger.log(`Tentative d'inscription pour l'utilisateur: ${registerDto.email}`);
+    console.log('📥 Données reçues pour inscription:', JSON.stringify(registerDto, null, 2));
     return this.authService.register(registerDto);
   }
 

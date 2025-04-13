@@ -74,13 +74,25 @@ export class AuthController {
   @ApiBody({ type: RegisterDto })
   async register(@Body() registerDto: RegisterDto) {
     try {
-      // Log the received data for debugging
-      this.logger.debug(`Données reçues pour l'inscription: ${JSON.stringify(registerDto, null, 2)}`);
+      // Log détaillé des données reçues
+      this.logger.log(`🔍 Tentative d'inscription - Données reçues: ${JSON.stringify({
+        ...registerDto,
+        password: registerDto.password ? '[MASKED]' : undefined
+      })}`);
+      
+      // Vérifier manuellement le schéma pour un log plus précis des erreurs
+      const validationResult = registerSchema.safeParse(registerDto);
+      if (!validationResult.success) {
+        this.logger.error(`❌ Validation échouée pour l'inscription: ${JSON.stringify(validationResult.error.format())}`);
+        throw new BadRequestException(validationResult.error.format());
+      }
+      
       return await this.authService.register(registerDto);
     } catch (error) {
-      this.logger.error(`Erreur lors de l'inscription: ${error.message}`);
       if (error instanceof BadRequestException) {
-        this.logger.debug(`Détails de l'erreur de validation: ${error.message}`);
+        this.logger.error(`❌ Erreur de validation lors de l'inscription: ${JSON.stringify(error.getResponse())}`);
+      } else {
+        this.logger.error(`❌ Erreur lors de l'inscription: ${error.message}`);
       }
       throw error;
     }
@@ -341,5 +353,24 @@ export class AuthController {
   })
   getProfile(@Req() req: RequestWithUser) {
     return req.user;
+  }
+
+  @Public()
+  @Get('test-register')
+  @ApiOperation({ summary: 'Test de l\'endpoint d\'inscription' })
+  @ApiResponse({ status: 200, description: 'Test réussi' })
+  async testRegisterEndpoint() {
+    this.logger.log('🧪 Test de l\'endpoint d\'inscription appelé');
+    return { 
+      success: true, 
+      message: 'Endpoint d\'inscription disponible', 
+      expectedFormat: {
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        password: 'Password123!',
+        role: 'CLIENT'
+      } 
+    };
   }
 } 
