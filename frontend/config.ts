@@ -1,7 +1,7 @@
 // Configuration de l'application
 export const API_BASE_URL = 'https://nionfar-backend.onrender.com/api';
 export const BACKEND_URL = 'https://nionfar-backend.onrender.com';
-export const APP_BASE_URL = 'https://nion-farr.vercel.app';
+export const APP_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://nion-farr.vercel.app';
 
 // Fonction utilitaire pour obtenir l'URL de l'API de manière cohérente
 export const getApiBaseUrl = () => {
