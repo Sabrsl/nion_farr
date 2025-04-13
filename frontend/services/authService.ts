@@ -430,12 +430,17 @@ class AuthService {
         
         console.log("🔗 URL de proxy local:", proxyUrl);
         
+        // Récupérer le token CSRF pour la requête proxy
+        const csrfToken = localStorage.getItem('csrf_token');
+        console.log("🔐 Token CSRF utilisé pour proxy:", csrfToken ? "Présent" : "Absent");
+        
         const proxyResponse = await fetch(proxyUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfToken || ''
           },
           body: JSON.stringify(requestBody),
           credentials: 'same-origin'
@@ -1074,13 +1079,16 @@ class AuthService {
         ? this.apiUrl.replace(/\/api$/, '')
         : RENDER_BACKEND_URL;
       
-      const csrfUrl = `${apiBaseUrl}/sanctum/csrf-cookie`;
+      // Utiliser les bonnes URLs pour récupérer le jeton CSRF
+      const csrfProxyUrl = '/api/security/csrf-tokens';
+      const csrfDirectUrl = `${apiBaseUrl}/api/security/csrf-tokens`;
       
-      console.log("🔄 URL CSRF:", csrfUrl);
+      console.log("🔄 URL CSRF Proxy:", csrfProxyUrl);
+      console.log("🔄 URL CSRF Direct:", csrfDirectUrl);
       
       try {
         // Essayer d'abord via le proxy local
-        const proxyResponse = await fetch('/api/security/csrf-tokens', {
+        const proxyResponse = await fetch(csrfProxyUrl, {
           method: 'GET',
           credentials: 'same-origin',
           headers: {
@@ -1104,30 +1112,63 @@ class AuthService {
         // Continuer avec la méthode directe
       }
       
-      // Méthode directe
-      const response = await fetch(csrfUrl, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
+      // Méthode directe - essayer d'abord avec /security/csrf-tokens
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/security/csrf-tokens`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.token) {
+            localStorage.setItem('csrf_token', data.token);
+            console.log('✅ Token CSRF récupéré avec succès via /api/security/csrf-tokens');
+            return true;
+          }
         }
-      });
-
-      if (!response.ok) {
-        console.error('Erreur lors de la récupération des tokens CSRF:', response.status);
-        return false;
-      }
-
-      const data = await response.json();
-      
-      if (data.token) {
-        localStorage.setItem('csrf_token', data.token);
-        console.log('✅ Token CSRF récupéré avec succès via méthode directe');
-      } else {
-        console.warn('⚠️ Token CSRF manquant dans la réponse');
+      } catch (error) {
+        console.error('❌ Erreur avec /api/security/csrf-tokens:', error);
       }
       
-      return !!data.token;
+      // Essayer avec /auth/csrf-tokens comme alternative
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/auth/csrf-tokens`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.token) {
+            localStorage.setItem('csrf_token', data.token);
+            console.log('✅ Token CSRF récupéré avec succès via /api/auth/csrf-tokens');
+            return true;
+          } else {
+            console.warn('⚠️ Token CSRF manquant dans la réponse');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Erreur avec /api/auth/csrf-tokens:', error);
+      }
+      
+      // Si tout échoue, créer un token temporaire côté client (pour le développement uniquement)
+      if (process.env.NODE_ENV !== 'production') {
+        const tempToken = 'temp-' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('csrf_token', tempToken);
+        console.warn('⚠️ Utilisation d\'un token temporaire généré côté client:', tempToken);
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des tokens CSRF:', error);
       return false;
@@ -1144,6 +1185,10 @@ class AuthService {
       
     const loginUrl = `${backendUrl}/auth/login`;
     
+    // Récupérer le token CSRF depuis localStorage
+    const csrfToken = localStorage.getItem('csrf_token');
+    console.log("🔐 Token CSRF utilisé:", csrfToken ? "Présent" : "Absent");
+    
     try {
       // S'assurer de toujours utiliser POST et non GET
       const response = await fetch(loginUrl, {
@@ -1152,7 +1197,8 @@ class AuthService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Origin': window.location.origin,
-          'X-Requested-With': 'XMLHttpRequest' // Indique une requête AJAX
+          'X-Requested-With': 'XMLHttpRequest', // Indique une requête AJAX
+          'X-CSRF-Token': csrfToken || '' // Inclure le jeton CSRF
         },
         body: JSON.stringify(requestBody), // Corps de la requête pour POST
         mode: 'cors',
