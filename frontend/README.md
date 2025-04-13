@@ -1,8 +1,32 @@
 # Nionfar Frontend
 
+## Note personnelle
+
+Ce frontend est développé pour mon usage personnel et n'est pas destiné à être utilisé ou maintenu par d'autres personnes. Les fonctionnalités sont ajustées selon mes besoins spécifiques.
+
 ## Déploiement sur Vercel
 
-Pour déployer l'application frontend sur Vercel, suivez ces étapes:
+L'application frontend est déployée sur Vercel à l'URL suivante :
+- https://nion-farr.vercel.app
+
+### Configuration actuelle
+
+- **Backend API URL** : https://nionfar-backend.onrender.com/api
+- Le backend est déployé sur Render (et non sur Vercel)
+
+### Variables d'environnement importantes
+
+- `NEXT_PUBLIC_API_URL` : URL de l'API (https://nionfar-backend.onrender.com/api)
+- `NEXT_PUBLIC_APP_URL` : URL du frontend (https://nion-farr.vercel.app)
+- `RESEND_API_KEY` : Clé API pour l'envoi d'emails
+
+### Tests après déploiement
+
+Après le déploiement, vérifier les fonctionnalités suivantes :
+- Authentification
+- Upload d'images
+- Connexion API avec le backend
+- Formulaires et soumissions de données
 
 ### Prérequis
 - Un compte [Vercel](https://vercel.com)

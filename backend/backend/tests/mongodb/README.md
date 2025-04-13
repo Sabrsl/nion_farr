@@ -1,6 +1,8 @@
 # Tests de connexion MongoDB pour NionFar
 
-Ce répertoire contient des scripts de test pour vérifier et diagnostiquer les problèmes de connexion MongoDB, particulièrement après la correction du problème `batchSize` qui empêchait le déploiement sur Render.
+## Note personnelle
+
+Ce module est développé pour mon usage personnel et n'est pas destiné à être utilisé ou maintenu par d'autres personnes. Les fonctionnalités sont ajustées selon mes besoins spécifiques.
 
 ## Contexte du problème
 

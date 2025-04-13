@@ -27,7 +27,7 @@ export class ResendService {
   private readonly isProduction: boolean;
 
   constructor(private readonly configService: ConfigService) {
-    const resendApiKey = this.configService.get<string>('RESEND_API_KEY') || 're_a4PMNnRv_AByeDNM1QaHhFqWcHFrB5h2Q';
+    const resendApiKey = this.configService.get<string>('RESEND_API_KEY') || 'your_resend_api_key_here';
     this.defaultFromEmail = this.configService.get<string>('MAIL_FROM') || 'onboarding@resend.dev';
     this.defaultFromName = this.configService.get<string>('MAIL_FROM_NAME') || 'NionFar';
     this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';

@@ -1,5 +1,9 @@
 # NionFar API Backend
 
+## Note personnelle
+
+Ce backend est développé pour mon usage personnel et n'est pas destiné à être utilisé ou maintenu par d'autres personnes. Les fonctionnalités sont ajustées selon mes besoins spécifiques.
+
 ## Présentation
 
 Backend de l'application NionFar, construit avec NestJS et MongoDB.
@@ -26,7 +30,7 @@ backend/
 ├── scripts/                    # Scripts de déploiement et maintenance
 ├── logs/                       # Journaux d'application
 ├── .env                        # Variables d'environnement locales
-└── vercel.json                # Configuration pour Vercel
+└── render.yaml                # Configuration pour Render
 ```
 
 ## Environnements et Déploiement
@@ -43,16 +47,12 @@ La configuration de l'application se fait via les variables d'environnement:
 - `FRONTEND_URL`: URL du frontend pour la configuration CORS
 - `MEMORY_OPTIMIZED`: Active le mode d'optimisation mémoire (`true`/`false`)
 
-### Déploiement sur Vercel
+### Déploiement sur Render
 
-Le déploiement sur Vercel est géré par la configuration dans `vercel.json` et le point d'entrée serverless dans le dossier `api/`.
+Le déploiement est configuré pour Render grâce au fichier `render.yaml` et au script `render-build.sh`.
 
-#### Étapes de déploiement:
-
-1. Vercel clone le dépôt
-2. Le build est lancé via la commande `npm run build:vercel`
-3. Les fonctions serverless sont initialisées à partir du point d'entrée
-4. Les requêtes vers `/api/*` sont routées vers l'application NestJS
+#### URL de déploiement
+- Backend : https://nionfar-backend.onrender.com
 
 #### Variables d'environnement:
 
@@ -60,7 +60,7 @@ Configuration requise:
 - `MONGODB_URI`: URI de connexion à MongoDB
 - `JWT_SECRET`: Clé secrète pour les tokens JWT
 - `NODE_ENV`: Environnement (production)
-- `VERCEL`: Défini automatiquement à '1' par Vercel
+- `IS_RENDER`: Défini automatiquement à 'true' pour Render
 
 ### Migration de la base de données
 

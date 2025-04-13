@@ -4,22 +4,12 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
-// Charger les variables d'environnement manuellement
-let uri;
-try {
-  const envPath = path.resolve(__dirname, '.env');
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  const mongoMatch = envContent.match(/MONGODB_URI=([^\n]+)/);
-  if (mongoMatch && mongoMatch[1]) {
-    uri = mongoMatch[1];
-  } else {
-    // URI de secours
-    uri = 'mongodb+srv://vynalapp:uVmENC9K21dkMfma@clusternionfar.rjuvvf7.mongodb.net/nionfar?retryWrites=true&w=majority&appName=Clusternionfar';
-  }
-} catch (err) {
-  // URI de secours
-  uri = 'mongodb+srv://vynalapp:uVmENC9K21dkMfma@clusternionfar.rjuvvf7.mongodb.net/nionfar?retryWrites=true&w=majority&appName=Clusternionfar';
-  console.log('Fichier .env non trouvé, utilisation de l\'URI de secours');
+// Remplacer les identifiants de connexion par des placeholders
+let uri = 'mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority';
+
+// Pour le test avec des options supplémentaires
+if (process.argv.includes('--with-options')) {
+  uri = 'mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority';
 }
 
 async function testMongoAPI() {

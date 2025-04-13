@@ -5,7 +5,7 @@ console.log('NEXT_PUBLIC_BASE_URL:', process.env.NEXT_PUBLIC_BASE_URL);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
 // Initialiser l'API Resend
-export const resend = new Resend(process.env.RESEND_API_KEY || 're_a4PMNnRv_AByeDNM1QaHhFqWcHFrB5h2Q');
+export const resend = new Resend(process.env.RESEND_API_KEY || 'your_resend_api_key_here');
 
 // Types d'événements qui nécessitent l'envoi d'un email
 export enum EmailEventType {

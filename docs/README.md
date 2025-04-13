@@ -1,6 +1,8 @@
 # Documentation du Projet NionFar
 
-Ce dossier contient la documentation complète du projet NionFar.
+## Note personnelle
+
+Ce projet est en développement pour mon usage personnel et n'est pas destiné à être utilisé ou maintenu par d'autres personnes. Les fonctionnalités sont ajustées selon mes besoins spécifiques.
 
 ## Contenu
 
@@ -17,8 +19,6 @@ Pour installer toutes les dépendances du projet :
 npm run install:all
 ```
 
-Si vous rencontrez des problèmes d'installation, veuillez consulter le [Guide de maintenance](./maintenance.md).
-
 ## Démarrage du projet
 
 ```bash
@@ -30,11 +30,11 @@ npm run backend
 
 # Démarrer les deux simultanément
 npm run dev:all
-
-# Démarrer avec Docker
-npm run dev:docker
 ```
 
-## Déploiement
+## Déploiement actuel
 
-Pour déployer l'application, suivez les étapes du guide de déploiement et vérifiez tous les points de la [checklist post-déploiement](./post-deployment-checklist.md) pour assurer une bonne connexion entre le frontend et le backend. 
+- **Frontend** : Déployé sur Vercel - https://nion-farr.vercel.app
+- **Backend** : Déployé sur Render - https://nionfar-backend.onrender.com
+
+Pour les vérifications post-déploiement, consultez la [checklist post-déploiement](./post-deployment-checklist.md). 

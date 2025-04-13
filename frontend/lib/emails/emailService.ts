@@ -3,7 +3,7 @@ import { EmailEventType, EMAIL_CONFIG, EmailRecipient } from './emailConfig';
 import { getEmailTemplate, EmailTemplate } from './emailTemplates';
 
 // Initialize Resend with API key
-const resendApiKey = process.env.RESEND_API_KEY || 're_a4PMNnRv_AByeDNM1QaHhFqWcHFrB5h2Q';
+const resendApiKey = process.env.RESEND_API_KEY || 'your_resend_api_key_here';
 console.log('Initialisation de Resend avec clé:', resendApiKey ? 'Clé présente' : 'Clé manquante');
 const resend = new Resend(resendApiKey);
 

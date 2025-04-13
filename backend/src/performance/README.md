@@ -1,6 +1,8 @@
 # Module de Performance pour NionFar
 
-Ce module fournit une solution complète pour la surveillance, l'analyse et l'optimisation des performances de la plateforme NionFar.
+## Note personnelle
+
+Ce module est développé pour mon usage personnel et n'est pas destiné à être utilisé ou maintenu par d'autres personnes. Les fonctionnalités sont ajustées selon mes besoins spécifiques.
 
 ## Fonctionnalités
 

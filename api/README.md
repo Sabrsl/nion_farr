@@ -1,6 +1,32 @@
-# Déploiement de l'API NionFar sur Vercel
+# Déploiement de l'API NionFar sur Render
 
-Ce dossier contient les fichiers nécessaires pour déployer l'API NionFar sur Vercel en tant que fonction serverless.
+Ce dossier contient les fichiers qui étaient destinés au déploiement de l'API NionFar sur Vercel. Actuellement, le backend est déployé sur Render.
+
+## Note personnelle
+
+Ce projet est pour mon usage personnel et n'est pas destiné à être utilisé ou maintenu par d'autres personnes.
+
+## Informations actuelles de déploiement
+
+Le backend de NionFar est maintenant déployé sur Render :
+- URL : https://nionfar-backend.onrender.com
+
+## Configuration
+
+Pour la configuration du backend sur Render, veuillez consulter :
+- Le fichier `render.yaml` à la racine du projet
+- Le script `render-build.sh` dans le dossier backend
+
+## Intégration avec le Front-end
+
+Le front-end déployé sur Vercel (`https://nion-farr.vercel.app`) communique avec l'API déployée sur `https://nionfar-backend.onrender.com/api`.
+
+## Variables d'environnement importantes
+
+- `MONGODB_URI` : MongoDB
+- `JWT_SECRET` et `JWT_REFRESH_SECRET` : Auth
+- `RESEND_API_KEY` : Emails
+- `CORS_ALLOWED_ORIGINS` : Liste des origines autorisées
 
 ## Structure
 
@@ -30,24 +56,6 @@ Ce dossier contient les fichiers nécessaires pour déployer l'API NionFar sur V
    - **Framework** : `Other`
    - **Build Command** : `cd backend && npm run build:vercel`
    - **Output Directory** : Laissez vide
-
-### Intégration avec le Front-end
-
-Le front-end déployé sur Vercel (`https://nion-farr.vercel.app`) peut communiquer avec l'API déployée sur `https://nion-farr-backend.vercel.app/api`. Par exemple, pour appeler l'endpoint d'authentification :
-
-```javascript
-// Front-end
-const response = await fetch('https://nion-farr-backend.vercel.app/api/auth/login', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    email: 'user@example.com',
-    password: 'password123',
-  }),
-});
-```
 
 ## Dépannage
 

@@ -9,7 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
-        value: mongodb+srv://vynalapp:uVmENC9K21dkMfma@clusternionfar.rjuvvf7.mongodb.net/?retryWrites=true&w=majority&appName=Clusternionfar
+        sync: false # Configure dans le dashboard Render
       - key: APP_URL
         value: https://nionfar-backend.onrender.com
       - key: FRONTEND_URL
@@ -22,16 +22,6 @@ services:
         value: api
       - key: CORS_ALLOWED_ORIGINS
         value: https://nionfar-frontend.onrender.com,http://localhost:3000
-      - key: DB_HOST
-        value: clusternionfar.rjuvvf7.mongodb.net
-      - key: DB_PORT
-        value: 27017
-      - key: DB_USERNAME
-        value: vynalapp
-      - key: DB_DATABASE
-        value: nionfar
-      - key: DB_AUTH_SOURCE
-        value: admin
       - key: JWT_EXPIRES_IN
         value: 1h
       - key: JWT_REFRESH_EXPIRES_IN
@@ -63,7 +53,12 @@ services:
       # Variables sensibles à configurer dans le dashboard Render
       # - key: JWT_SECRET
       # - key: JWT_REFRESH_SECRET
+      # - key: MONGODB_URI
+      # - key: DB_HOST
+      # - key: DB_PORT
+      # - key: DB_USERNAME
       # - key: DB_PASSWORD
+      # - key: DB_DATABASE
       # - key: MAIL_PASSWORD
       # - key: RESEND_API_KEY
       # - key: SENDGRID_API_KEY
