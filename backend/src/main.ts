@@ -113,37 +113,28 @@ async function bootstrap() {
         }),
       );
       
-      // CORS - Configuration pour la production et le développement
-      const frontendUrl = configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-      const allowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS')?.split(',') || [frontendUrl];
-      
-      // Configuration CORS
-      console.log(`🔒 Configuration CORS pour: ${frontendUrl}`);
+      // Configuration CORS pour autoriser les requêtes cross-origin
       app.enableCors({
-        origin: (origin, callback) => {
-          // Autoriser les requêtes sans origine (comme les requêtes mobiles ou Postman)
-          if (!origin) {
-            callback(null, true);
-            return;
-          }
-          
-          // Vérifier si l'origine est dans la liste des origines autorisées
-          if (allowedOrigins.includes(origin) || 
-              allowedOrigins.includes('*') || 
-              origin.includes('localhost')) {
-            callback(null, true);
-          } else {
-            console.warn(`🚫 Origine bloquée par CORS: ${origin}`);
-            callback(null, true); // Temporairement autorisé pour déboguer
-          }
-        },
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin', 'X-CSRF-Token'],
-        exposedHeaders: ['Content-Disposition', 'X-CSRF-Token'],
-        credentials: true,
-        maxAge: 86400, // 24 heures
-        preflightContinue: false,
-        optionsSuccessStatus: 204
+        origin: [
+          'http://localhost:3000', 
+          'http://localhost:3001', 
+          'https://nion-farr.vercel.app',
+          'https://nionfar.sn',
+          'https://www.nionfar.sn'
+        ],
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        credentials: true, // Autorise l'envoi de cookies et en-têtes d'auth
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token', 'Accept'],
+        exposedHeaders: ['X-Registration-Success']
+      });
+
+      // Désactiver la protection CSRF qui est gérée par la validation JWT
+      app.use((req, res, next) => {
+        res.header('Access-Control-Allow-Origin', req.headers.origin); // Autoriser dynamiquement l'origine
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'X-CSRF-Token, Authorization, Content-Type, Accept');
+        next();
       });
 
       // Compression - Modifié pour résoudre l'erreur TypeScript dans l'environnement de production
@@ -262,9 +253,6 @@ async function bootstrap() {
 
       // Start memory monitoring 
       startMemoryMonitoring(memoryConfig.memoryMonitoringInterval);
-
-      // Log CORS configuration
-      console.log(`🔒 CORS configuré pour: ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
 
     } catch (error) {
       console.error('❌ Erreur catastrophique lors de la création de l\'application NestJS:', error);

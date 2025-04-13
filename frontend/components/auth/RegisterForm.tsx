@@ -85,44 +85,39 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
 
   // Gestionnaire d'erreurs amélioré
   const handleApiError = (errorMessage: string) => {
-    console.error("📛 Erreur d'API traitée:", errorMessage);
-    
-    // Traiter les erreurs de réseau de manière spécifique
-    if (errorMessage.includes('impossible de communiquer') || 
-        errorMessage.includes('failed to fetch') || 
-        errorMessage.includes('network error') ||
-        errorMessage.toLowerCase().includes('cors')) {
+    // Analyser si l'erreur est liée au CSRF
+    if (errorMessage.toLowerCase().includes('csrf') || 
+        errorMessage.toLowerCase().includes('sécurité') ||
+        errorMessage.toLowerCase().includes('token') ||
+        errorMessage.toLowerCase().includes('refresh')) {
+      console.error('⚠️ Erreur CSRF détectée:', errorMessage);
       
-      const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api';
-      
-      // Vérifier si le backend a été précédemment détecté comme hors ligne
-      const backendStatus = localStorage.getItem('backendStatus');
-      const lastCheck = localStorage.getItem('lastBackendCheck');
-      
-      if (backendStatus === 'offline' && lastCheck) {
-        const checkTime = new Date(lastCheck).toLocaleTimeString();
-        setError(`Le serveur (${serverUrl}) semble être temporairement indisponible (dernière vérification à ${checkTime}). 
-                  L'équipe technique a été informée de ce problème. Veuillez réessayer ultérieurement ou contacter le support.`);
-      } else {
-        setError(`Impossible de se connecter au serveur (${serverUrl}). 
-                  Le serveur est peut-être temporairement indisponible ou en maintenance. Veuillez réessayer dans quelques instants.`);
+      // Réinitialiser tout token existant
+      try {
+        localStorage.removeItem('csrf_token');
+      } catch (e) {
+        console.error('Erreur lors de la suppression du token CSRF:', e);
       }
       
-      console.error("🌐 URL backend configurée:", serverUrl);
+      // Nous informons l'utilisateur et réessayons automatiquement
+      setError('Erreur de validation temporaire. Nouvelle tentative en cours...');
+      
+      // Attendre un court délai puis réessayer
+      setTimeout(() => {
+        handleSubmit(new Event('retry') as any);
+      }, 1000);
       
       return;
     }
     
-    // Erreur CSRF
-    if (errorMessage.toLowerCase().includes('csrf')) {
-      setError("Erreur de sécurité (CSRF). Rafraîchissez la page et réessayez.");
+    // Gestion spécifique des erreurs connues
+    if (errorMessage.includes('existe déjà')) {
+      setError('Cet email est déjà utilisé. Essayez de vous connecter ou utilisez un autre email.');
       return;
     }
     
-    // Erreur d'authentification 
-    if (errorMessage.toLowerCase().includes('unauthorized') || 
-        errorMessage.toLowerCase().includes('non autorisé')) {
-      setError("Authentification non autorisée. Veuillez réessayer.");
+    if (errorMessage.includes('mot de passe')) {
+      setError('Votre mot de passe ne respecte pas les critères requis. Il doit contenir au moins 8 caractères, incluant des majuscules, des minuscules et des chiffres.');
       return;
     }
     
