@@ -60,20 +60,17 @@ lerna-debug.log*
 **/.env.development.local
 **/.env.test.local
 **/.env.production.local
-**/.env.production
-**/frontend/.env.production
-**/backend/.env.production
 # Permet aux fichiers d'exemple d'être inclus
 !**/.env.example
 !**/.env-sample
 !**/.env.*.example
 !**/.env.build
 
-# Ne pas utiliser de fichiers de production directement dans le dépôt
-# !**/.env.production
-# !frontend/.env.production
-# !backend/.env.production
-# !.env.production
+# Permet aux fichiers de production de templates d'être inclus
+!**/.env.production
+!frontend/.env.production
+!backend/.env.production
+!.env.production
 
 # Fichiers de build
 **/dist/
