@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual, ILike } from 'typeorm';
 import { Service } from '../entities/service.entity';
 import { ServiceCategory } from '../entities/service-category.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class ServicesService {
@@ -11,11 +12,81 @@ export class ServicesService {
     private serviceRepository: Repository<Service>,
     @InjectRepository(ServiceCategory)
     private categoryRepository: Repository<ServiceCategory>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async create(createServiceDto: any) {
-    const service = this.serviceRepository.create(createServiceDto);
-    return this.serviceRepository.save(service);
+    try {
+      // Vérifier que l'utilisateur (provider) existe
+      const provider = await this.userRepository.findOne({ 
+        where: { id: createServiceDto.providerId }
+      });
+      
+      if (!provider) {
+        throw new NotFoundException(`Provider with ID ${createServiceDto.providerId} not found`);
+      }
+      
+      // Vérifier que la catégorie existe
+      const category = await this.categoryRepository.findOne({
+        where: { id: createServiceDto.categoryId }
+      });
+      
+      if (!category) {
+        throw new NotFoundException(`Category with ID ${createServiceDto.categoryId} not found`);
+      }
+      
+      // Préparer les données avec les relations initialisées pour éviter les erreurs createValueMap
+      const serviceData = {
+        ...createServiceDto,
+        // Initialiser toutes les relations avec des tableaux vides
+        options: createServiceDto.options || [],
+        reviews: [],
+        orders: [],
+        likedBy: [],
+        validationHistory: []
+      };
+      
+      // Créer le service
+      const service = this.serviceRepository.create(serviceData);
+      
+      // Sauvegarder le service
+      const savedService = await this.serviceRepository.save(service);
+      
+      // Déterminer l'ID à utiliser pour la recherche
+      const serviceId = Array.isArray(savedService) 
+        ? savedService[0]?.id 
+        : (savedService as Service).id;
+        
+      if (!serviceId) {
+        throw new Error('Failed to retrieve service ID after saving');
+      }
+      
+      // Retourner le service avec les relations chargées
+      return this.serviceRepository.findOne({
+        where: { id: serviceId },
+        relations: ['provider', 'category']
+      });
+    } catch (error) {
+      // Si c'est une erreur déjà gérée (NotFoundException), la propager
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      
+      // Gérer les erreurs TypeORM spécifiques
+      if (error.message && error.message.includes('createValueMap')) {
+        console.error('Erreur TypeORM createValueMap:', error);
+        throw new Error('Erreur lors de la création du service: données invalides ou relations manquantes');
+      }
+      
+      // Gérer les violations de contrainte d'unicité
+      if (error.code === '23505') {
+        throw new Error('Un service avec ces informations existe déjà');
+      }
+      
+      // Erreur générique
+      throw new Error(`Erreur lors de la création du service: ${error.message}`);
+    }
   }
 
   async findAll(query: any) {

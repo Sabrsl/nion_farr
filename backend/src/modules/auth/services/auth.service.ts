@@ -172,46 +172,83 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
       const verificationToken = uuidv4();
       
-      // Pour éviter les erreurs liées aux propriétés undefined, s'assurer que tous les champs
-      // obligatoires sont présents et que les relations sont soit initialisées avec des valeurs par défaut,
-      // soit omises (si elles sont optionnelles)
+      // Initialiser toutes les propriétés de l'utilisateur selon la définition de l'entité User
       const userData = {
         email: registerDto.email,
         username: registerDto.username || registerDto.email.split('@')[0],
-        firstName: registerDto.firstName,
-        lastName: registerDto.lastName,
+        firstName: registerDto.firstName || '',
+        lastName: registerDto.lastName || '',
         password: hashedPassword,
+        role: registerDto.role?.toLowerCase() || 'client',
+        status: UserStatus.PENDING_VERIFICATION,
+        isFreelancer: registerDto.isFreelancer || registerDto.role?.toLowerCase() === 'freelancer',
+        
+        // Propriétés de vérification
         emailVerificationToken: verificationToken,
         isEmailVerified: false,
-        role: registerDto.role?.toLowerCase() || 'client',
-        isFreelancer: registerDto.isFreelancer || registerDto.role?.toLowerCase() === 'freelancer',
-        status: UserStatus.PENDING_VERIFICATION,
-        // Initialiser les relations avec des tableaux vides pour éviter les erreurs createValueMap
-        services: [],
-        clientOrders: [],
-        freelancerOrders: [],
-        givenReviews: [],
-        receivedReviews: [],
-        sentMessages: [],
-        receivedMessages: [],
-        following: [],
-        followers: []
+        isPhoneVerified: false,
+        isIdentityVerified: false,
+        
+        // Propriétés de contact et profil
+        phoneNumber: registerDto.phoneNumber || null,
+        phone: registerDto.phoneNumber || null,
+        address: null,
+        city: null,
+        country: null,
+        bio: '',
+        bioText: '',
+        skills: [],
+        avatar: null,
+        
+        // Propriétés pour l'authentification
+        isTwoFactorEnabled: false,
+        twoFactorSecret: null,
+        refreshToken: null,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+        
+        // Propriétés de statistiques et de profil
+        isActive: true,
+        lastLogin: null,
+        memberSince: new Date(),
+        completedOrders: 0,
+        rating: 0,
+        totalReviews: 0,
+        balance: 0,
+        
+        // Propriétés par défaut des objets JSON
+        providerProfile: null,
+        paymentInfo: null,
+        notificationPreferences: {
+          email: true,
+          sms: false,
+          browserPush: false,
+          orderUpdates: true,
+          marketingEmails: false,
+          newMessages: true
+        },
+        
+        // Timestamps
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
       this.logger.debug(`Création d'utilisateur avec les données: ${JSON.stringify({
-        ...userData,
-        password: '[MASKED]',
+        email: userData.email,
+        username: userData.username,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role,
+        isFreelancer: userData.isFreelancer,
+        status: userData.status
       })}`);
       
       try {
-        // Utiliser repository.create() qui gère correctement le mapping des propriétés d'entité
+        // Créer l'entité utilisateur en utilisant repository.create pour initialiser correctement l'entité
         const newUser = this.usersRepository.create(userData);
         
         // Sauvegarder l'utilisateur dans la base de données
         const savedUser = await this.usersRepository.save(newUser);
-        
-        // Log pour vérifier que le mot de passe est bien hashé
-        this.logger.debug(`✅ Utilisateur créé avec mot de passe hashé: ${savedUser.password?.substring(0, 20)}...`);
         
         this.logger.log(`Utilisateur créé avec succès: ${savedUser.id}`);
         
@@ -247,8 +284,8 @@ export class AuthService {
           throw new ConflictException('Un utilisateur avec cet email ou ce nom d\'utilisateur existe déjà');
         }
         if (dbError.message.includes('createValueMap')) {
-          this.logger.error('Erreur TypeORM createValueMap - Données invalides:', userData);
-          throw new BadRequestException('Données d\'utilisateur invalides ou incomplètes');
+          this.logger.error('Erreur TypeORM createValueMap - Détails:', dbError);
+          throw new BadRequestException('Erreur lors de la création de l\'utilisateur: problème avec les données fournies');
         }
         throw new BadRequestException(`Erreur lors de la création de l'utilisateur: ${dbError.message}`);
       }

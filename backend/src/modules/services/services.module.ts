@@ -10,6 +10,7 @@ import { ServiceValidationHistory } from './entities/service-validation-history.
 import { ServiceValidationController } from './controllers/service-validation.controller';
 import { ServiceValidationService } from './services/service-validation.service';
 import { UsersModule } from '../users/users.module';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { UsersModule } from '../users/users.module';
       ServiceCategory, 
       ServiceOption, 
       ServiceValidationResult, 
-      ServiceValidationHistory
+      ServiceValidationHistory,
+      User
     ]),
     UsersModule
   ],
