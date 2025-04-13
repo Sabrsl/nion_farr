@@ -22,10 +22,13 @@ jobs:
           node-version: '18'
           cache: 'npm'
       
+      - name: Update package-lock.json if needed
+        run: npm install --package-lock-only
+        
       - name: Install dependencies
         run: |
           npm ci
-          npm install -g ts-prune knip depcheck
+          npm install -g ts-prune depcheck
       
       - name: Check for unused code with ts-prune
         run: |
@@ -34,12 +37,6 @@ jobs:
           # Également filtrer ceux marqués comme "used in module"
           npx ts-prune | grep -v "@ts-prune-ignore" | grep -v "(used in module)" | sort > ts-prune-results.txt || true
           echo "✅ Analyse ts-prune terminée. Trouvé $(cat ts-prune-results.txt | wc -l) exports potentiellement non utilisés."
-      
-      - name: Check for dead code with knip
-        run: |
-          echo "🔍 Checking for dead code with knip..."
-          npx knip --no-gitignore > knip-results.txt || true
-          echo "✅ Analyse knip terminée."
       
       - name: Check for unused dependencies with depcheck
         run: |
@@ -54,12 +51,6 @@ jobs:
           echo "#### Unused Exports (ts-prune)" >> report.md
           echo '```' >> report.md
           cd backend && npx ts-prune 2>&1 | grep -v "@ts-prune-ignore" | grep -v "(used in module)" | sort | head -n 50 >> ../report.md || true
-          cd ..
-          echo '```' >> report.md
-          
-          echo "#### Dead Code (knip)" >> report.md
-          echo '```' >> report.md
-          cd backend && npx knip --no-gitignore 2>&1 | head -n 50 >> ../report.md || true
           cd ..
           echo '```' >> report.md
           
@@ -86,12 +77,6 @@ jobs:
           cd ..
           echo '```' >> report-frontend.md
           
-          echo "#### Dead Code (knip)" >> report-frontend.md
-          echo '```' >> report-frontend.md
-          cd frontend && npx knip --no-gitignore 2>&1 | head -n 50 >> ../report-frontend.md || true
-          cd ..
-          echo '```' >> report-frontend.md
-          
           echo "#### Unused Dependencies (depcheck)" >> report-frontend.md
           echo '```' >> report-frontend.md
           cd frontend && npx depcheck --ignores="@types/*,eslint*,*-loader,*-webpack-plugin,@testing-library/*" 2>&1 | head -n 50 >> ../report-frontend.md || true
@@ -104,16 +89,13 @@ jobs:
             -X POST \
             -d "{\"body\": $(echo "$pr_comment" | jq -s -R .)}" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
-      
+            
       - name: Create summary report
         run: |
           echo "# Code Cleanup Results" > $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## ts-prune (Unused exports)" >> $GITHUB_STEP_SUMMARY
           echo "Nombre d'exports potentiellement non utilisés: $(cat ts-prune-results.txt | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## knip (Dead code)" >> $GITHUB_STEP_SUMMARY
-          echo "Voir le fichier knip-results.txt pour les détails" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## depcheck (Unused dependencies)" >> $GITHUB_STEP_SUMMARY
           echo "Voir le fichier depcheck-results.txt pour les détails" >> $GITHUB_STEP_SUMMARY 

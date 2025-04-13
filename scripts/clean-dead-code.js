@@ -17,7 +17,6 @@ const rl = readline.createInterface({
 
 // Liste des fichiers prioritaires contenant du code mort potentiel
 const PRIORITY_FILES = [
-  'frontend/config.ts',
   'frontend/data/index.ts',
   'frontend/utils/index.ts',
   'frontend/components/ui/index.ts'
@@ -25,18 +24,8 @@ const PRIORITY_FILES = [
 
 // Liste des exports non utilisés d'après ts-prune (extrait partiel)
 const UNUSED_EXPORTS = {
-  'frontend/config.ts': [
-    'APP_NAME',
-    'DEFAULT_LANGUAGE',
-    'PRODUCTS_PER_PAGE',
-    'CURRENCY',
-    'IMAGE_PLACEHOLDER',
-    'AVATAR_PLACEHOLDER',
-    'REQUEST_TIMEOUT'
-  ],
   'frontend/data/index.ts': [
     'currentUser',
-    'mockServices',
     'freelancerServices',
     'freelancerOrders',
     'freelancerStats',
@@ -172,6 +161,9 @@ function getUnusedExportsWithTsPrune() {
 async function main() {
   try {
     console.log('🧹 Détection et nettoyage du code mort dans le projet');
+    console.log('ℹ️ Code mort récemment nettoyé:');
+    console.log('  ✓ Suppression de frontend/config.ts (inutilisé)');
+    console.log('  ✓ Suppression de frontend/data/mock-data.ts (redondant avec mockData.ts)');
     
     // 1. Obtenir les exports non utilisés avec ts-prune
     const unusedExports = getUnusedExportsWithTsPrune();
