@@ -12,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { TokenService } from '../../../auth/token.service';
+import { UserStatus } from '../../users/entities/user-status.enum';
 
 @Injectable()
 export class AuthService {
@@ -28,16 +29,55 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
-    // TODO: Implémenter la validation utilisateur avec la base de données
-    const user = { id: '1', email: 'test@example.com', password: await bcrypt.hash('password', 10), role: 'user', isTwoFactorEnabled: false };
+    this.logger.log(`Validation de l'utilisateur: ${email}`);
     
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    try {
+      // Rechercher l'utilisateur par email
+      const user = await this.usersRepository.findOne({ 
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+          role: true,
+          isFreelancer: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          isActive: true,
+          status: true
+        }
+      });
+      
+      // Vérifier si l'utilisateur existe
+      if (!user) {
+        this.logger.warn(`Échec de la validation: l'utilisateur avec l'email ${email} n'existe pas`);
+        return null;
+      }
+      
+      // Si l'utilisateur existe, vérifier si son compte est actif
+      if (user.status !== UserStatus.ACTIVE && user.status !== UserStatus.PENDING_VERIFICATION) {
+        this.logger.warn(`Échec de la validation: l'utilisateur ${email} est désactivé (status: ${user.status})`);
+        return null;
+      }
+      
+      // Vérifier le mot de passe
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        this.logger.warn(`Échec de la validation: mot de passe incorrect pour l'utilisateur ${email}`);
+        return null;
+      }
+      
+      // Utilisateur trouvé et mot de passe valide
+      this.logger.log(`Validation réussie pour l'utilisateur: ${email}`);
+      
+      // Supprimer le mot de passe du résultat
+      const { password: _, ...result } = user;
+      return result;
+    } catch (error) {
+      this.logger.error(`Erreur lors de la validation de l'utilisateur: ${error.message}`);
       return null;
     }
-    
-    const { password: _, ...result } = user;
-    return result;
   }
 
   async login(user: any, rememberMe?: boolean) {

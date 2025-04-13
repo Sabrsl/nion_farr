@@ -13,11 +13,19 @@ export class ZodValidationPipe implements PipeTransform {
       return result;
     } catch (error) {
       if (error instanceof ZodError) {
-        // Convertir les erreurs Zod en message d'erreur lisible
+        // Convertir les erreurs Zod en format lisible pour le débogage
+        const formattedError = error.format();
+        console.error('❌ Erreur de validation ZOD:', JSON.stringify(formattedError, null, 2));
+        
+        // Convertir les erreurs Zod en message d'erreur lisible pour la réponse
         const validationError = fromZodError(error);
+        
         throw new BadRequestException({
           message: 'Erreur de validation',
           errors: validationError.details,
+          validation: error.errors.map(err => err.message),
+          pipe: 'ZodValidationPipe',
+          formattedErrors: formattedError,
           statusCode: 400,
         });
       }

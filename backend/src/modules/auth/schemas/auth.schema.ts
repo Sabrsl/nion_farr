@@ -18,9 +18,9 @@ export const registerSchema = z.object({
     .regex(/[a-z]/, 'Le mot de passe doit contenir au moins une minuscule')
     .regex(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre')
     .regex(/[^A-Za-z0-9]/, 'Le mot de passe doit contenir au moins un caractère spécial'),
-  role: z.enum(['CLIENT', 'PROVIDER', 'ADMIN', 'SUPER_ADMIN', 'USER', 'FREELANCER'], {
-    errorMap: () => ({ message: 'Rôle invalide' })
-  })
+  role: z.enum(['client', 'provider', 'admin', 'super_admin', 'user', 'freelancer', 'CLIENT', 'PROVIDER', 'ADMIN', 'SUPER_ADMIN', 'USER', 'FREELANCER'], {
+    errorMap: () => ({ message: 'role must be one of the following values: client, provider, admin, super_admin, user, freelancer' })
+  }).transform(val => val.toLowerCase())
 });
 
 // Schéma pour la réinitialisation du mot de passe (demande)
