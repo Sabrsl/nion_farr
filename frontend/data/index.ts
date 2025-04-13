@@ -2,34 +2,28 @@
 export { categories } from './categories';
 export { productionServices, getServicesByCategory, getServiceById, getServiceBySlug } from './production-services';
 
-// DEAD_CODE: Ces exports ne sont pas utilisés dans le code de production
-// Ils peuvent être supprimés ou remplacés par des stubs vides
-export {
-  currentUser,
-  freelancerServices,
-  freelancerOrders,
-  freelancerStats,
-  userNotifications,
-  userTransactions,
-  userWithdrawals
-} from './mock-data';
+// Stubs pour les données qui ne sont plus utilisées en production
+// Conservés pour la compatibilité avec le code existant
+export const currentUser = {};
+export const freelancerServices = [];
+export const freelancerOrders = [];
+export const freelancerStats = { orders: 0, revenue: 0, rating: 0 };
+export const userNotifications = [];
+export const userTransactions = [];
+export const userWithdrawals = [];
 
-// DEAD_CODE: Ces exports de données fictives ne sont pas utilisés dans le code de production
-export {
-  conversations,
-  messages,
-  getMessagesByConversationId,
-  getConversationById,
-  getConversationsByUserId
-} from './mockMessages';
+// Stubs pour les conversations et messages
+export const conversations = [];
+export const messages = [];
+export const getMessagesByConversationId = () => [];
+export const getConversationById = () => null;
+export const getConversationsByUserId = () => [];
 
-// DEAD_CODE: Ces exports de données fictives ne sont pas utilisés dans le code de production
-export {
-  reviews,
-  getReviewsByServiceId,
-  getReviewsByUserId,
-  getReviewById
-} from './reviews';
+// Stubs pour les avis
+export const reviews = [];
+export const getReviewsByServiceId = () => [];
+export const getReviewsByUserId = () => [];
+export const getReviewById = () => null;
 
 // Pour la compatibilité avec le code existant, nous réexportons également les anciennes données
 export * from './services'; 
