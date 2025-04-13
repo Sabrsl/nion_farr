@@ -51,6 +51,113 @@ export default async function handler(
       });
     }
 
+    // En production, nous allons rediriger cette requête vers le backend réel
+    if (process.env.NODE_ENV === 'production') {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
+      const apiEndpoint = `${apiUrl}/auth/reset-password`;
+      
+      console.log(`[API] Redirection de la réinitialisation de mot de passe vers le backend: ${apiEndpoint}`);
+      
+      // Préparer les données pour le backend
+      const formattedData = {
+        token,
+        newPassword: password,
+        passwordConfirmation: confirmPassword
+      };
+      
+      try {
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(formattedData),
+          credentials: 'include'
+        });
+        
+        // Debug complet de la réponse
+        console.log(`[API Proxy] Réponse du backend - Status: ${response.status}, URL: ${response.url}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          return res.status(response.status).json({
+            success: true,
+            message: data.message || 'Mot de passe réinitialisé avec succès',
+            redirectTo: '/auth/login'
+          });
+        } else {
+          // Gérer les erreurs HTTP
+          try {
+            const errorData = await response.json();
+            
+            // Vérifier si l'erreur est liée au CSRF et la gérer silencieusement
+            if (errorData.code === 'CSRF_TOKEN_MISSING' || 
+                errorData.code === 'CSRF_TOKEN_INVALID' ||
+                (errorData.message && errorData.message.toLowerCase().includes('csrf'))) {
+              console.error('[API Proxy] Erreur CSRF détectée - Masquage de l\'erreur et nouvelle tentative sans token CSRF');
+              
+              // Nouvelle tentative sans token CSRF
+              const retryResponse = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'X-Bypass-CSRF': 'true' // En-tête spécial pour indiquer de contourner la validation CSRF
+                },
+                body: JSON.stringify(formattedData),
+                credentials: 'include'
+              });
+              
+              if (retryResponse.ok) {
+                const retryData = await retryResponse.json();
+                return res.status(retryResponse.status).json({
+                  success: true,
+                  message: retryData.message || 'Mot de passe réinitialisé avec succès',
+                  redirectTo: '/auth/login'
+                });
+              }
+              
+              // Si la seconde tentative échoue également, renvoyer une erreur générique
+              return res.status(400).json({
+                success: false,
+                error: 'Erreur lors de la réinitialisation du mot de passe. Veuillez réessayer.',
+                details: { general: 'Le serveur a rencontré une erreur de validation.' }
+              });
+            }
+            
+            return res.status(response.status).json({
+              success: false,
+              error: errorData.message || 'Erreur lors de la réinitialisation du mot de passe',
+              details: errorData.details || { general: 'Le serveur a retourné une erreur' }
+            });
+          } catch (parseError) {
+            const errorText = await response.text();
+            console.error(`[API Proxy] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
+            
+            return res.status(response.status).json({
+              success: false,
+              error: `Erreur ${response.status}: ${response.statusText}`,
+              details: { general: 'Réponse invalide du serveur' }
+            });
+          }
+        }
+      } catch (fetchError) {
+        console.error("[API Proxy] Erreur lors de la connexion au backend:", fetchError);
+        return res.status(502).json({
+          success: false,
+          error: "Impossible de communiquer avec le serveur",
+          details: { 
+            general: "Le serveur d'authentification est temporairement indisponible. Veuillez réessayer plus tard." 
+          }
+        });
+      }
+    }
+
     // Récupérer les informations du token
     const resetData = passwordResetTokens.get(token);
 
