@@ -1,0 +1,24 @@
+{
+  "ignores": [
+    "@types/*",
+    "eslint-*",
+    "typescript",
+    "ts-node",
+    "husky",
+    "prettier",
+    "webpack",
+    "@babel/*",
+    "@testing-library/*",
+    "jest",
+    "babel-*",
+    "dotenv-*"
+  ],
+  "skip-missing": true,
+  "ignore-patterns": [
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    "coverage"
+  ]
+} 

@@ -1,0 +1,13 @@
+{
+  "ignore": [
+    "**/*.d.ts",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "frontend/pages/_app.tsx",
+    "frontend/pages/_document.tsx",
+    "frontend/pages/api/**"
+  ]
+} 

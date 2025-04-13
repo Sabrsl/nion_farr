@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "backend/src/main.ts", 
+    "frontend/pages/**/*.{ts,tsx}",
+    "frontend/components/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "backend/**/*.ts",
+    "frontend/**/*.{ts,tsx}"
+  ],
+  "ignore": [
+    "**/node_modules/**",
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}",
+    "**/*.d.ts",
+    "**/dist/**",
+    "**/build/**",
+    "**/mocks/**",
+    "**/tests/**"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "duplicateExports": "warning",
+    "unlisted": "warning",
+    "exports": "error",
+    "types": "error",
+    "files": "error",
+    "dependencies": "warning",
+    "devDependencies": "warning"
+  }
+} 
