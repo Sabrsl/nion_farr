@@ -2,8 +2,8 @@
  * Script de correction des URLs Railway vers les URLs Render
  */
 
-const RENDER_BACKEND_URL = 'https://nionfar-backend.onrender.com';
-const RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
+const FIX_RENDER_BACKEND_URL = 'https://nionfar-backend.onrender.com';
+const FIX_RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
 
 // Anciens URLs (obsolètes)
 const VERCEL_BACKEND_URL = 'https://nion-farr-backend.vercel.app';
@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   try {
     // Définir les variables globales
-    window.__CORRECT_API_URL = RENDER_API_URL;
-    window.__CORRECT_BACKEND_URL = RENDER_BACKEND_URL;
+    window.__CORRECT_API_URL = FIX_RENDER_API_URL;
+    window.__CORRECT_BACKEND_URL = FIX_RENDER_BACKEND_URL;
     
     // Vérifier localStorage
     if (typeof localStorage === 'undefined') {
@@ -52,8 +52,8 @@ document.addEventListener('DOMContentLoaded', function() {
           let newValue = value;
           
           // Remplacer les URLs complètes
-          newValue = newValue.replace(/https:\/\/[^\/]*railway\.app\/api/gi, RENDER_API_URL);
-          newValue = newValue.replace(/https:\/\/[^\/]*railway\.app/gi, RENDER_BACKEND_URL);
+          newValue = newValue.replace(/https:\/\/[^\/]*railway\.app\/api/gi, FIX_RENDER_API_URL);
+          newValue = newValue.replace(/https:\/\/[^\/]*railway\.app/gi, FIX_RENDER_BACKEND_URL);
           
           // Si la valeur a été modifiée, mettre à jour localStorage
           if (newValue !== value) {
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Vérifier et corriger les anciennes URLs Vercel
         if (value === VERCEL_API_URL || value === VERCEL_BACKEND_URL) {
-          const newValue = value === VERCEL_API_URL ? RENDER_API_URL : RENDER_BACKEND_URL;
+          const newValue = value === VERCEL_API_URL ? FIX_RENDER_API_URL : FIX_RENDER_BACKEND_URL;
           localStorage.setItem(key, newValue);
           console.log(`✅ Corrigé ${key}: ${value} → ${newValue}`);
           fixed = true;
@@ -74,8 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Forcer les valeurs correctes pour les clés importantes
-    localStorage.setItem('NEXT_PUBLIC_API_URL', RENDER_API_URL);
-    localStorage.setItem('API_URL', RENDER_API_URL);
+    localStorage.setItem('NEXT_PUBLIC_API_URL', FIX_RENDER_API_URL);
+    localStorage.setItem('API_URL', FIX_RENDER_API_URL);
     
     // Marquer comme corrigé
     localStorage.setItem('railway_fixed', 'true');

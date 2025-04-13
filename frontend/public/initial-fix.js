@@ -4,8 +4,8 @@
  */
 
 // Configuration des URLs correctes
-const RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
-const RENDER_BACKEND_URL = 'https://nionfar-backend.onrender.com';
+const INITIAL_RENDER_API_URL = 'https://nionfar-backend.onrender.com/api';
+const INITIAL_RENDER_BACKEND_URL = 'https://nionfar-backend.onrender.com';
 
 // Ancien URLs Vercel (obsolètes)
 const VERCEL_API_URL = 'https://nion-farr-backend.vercel.app/api';
@@ -29,8 +29,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   try {
     // Définir les variables globales pour l'accès depuis d'autres scripts
-    window.__CORRECT_API_URL = RENDER_API_URL;
-    window.__CORRECT_BACKEND_URL = RENDER_BACKEND_URL;
+    window.__CORRECT_API_URL = INITIAL_RENDER_API_URL;
+    window.__CORRECT_BACKEND_URL = INITIAL_RENDER_BACKEND_URL;
     
     // Si localStorage est disponible, corriger les URLs
     if (typeof localStorage !== 'undefined') {
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Déterminer s'il s'agit d'une URL d'API ou de backend
             const isApiUrl = value.endsWith('/api');
-            const correctUrl = isApiUrl ? RENDER_API_URL : RENDER_BACKEND_URL;
+            const correctUrl = isApiUrl ? INITIAL_RENDER_API_URL : INITIAL_RENDER_BACKEND_URL;
             
             // Mettre à jour avec l'URL correcte
             localStorage.setItem(key, correctUrl);
