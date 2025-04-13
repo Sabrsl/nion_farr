@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-import compression from 'compression';
+import * as compressionModule from 'compression';
 import { AppModule } from './app.module';
 import { rateLimit } from 'express-rate-limit';
 import { ConfigService } from '@nestjs/config';
@@ -146,7 +146,8 @@ async function bootstrap() {
         optionsSuccessStatus: 204
       });
 
-      // Compression
+      // Compression - Modifié pour résoudre l'erreur TypeScript dans l'environnement de production
+      const compression = compressionModule as unknown as () => any;
       app.use(compression());
 
       // Validation globale
