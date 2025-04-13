@@ -180,20 +180,18 @@ class AuthService {
       
       // Préparer les données pour l'API backend
       const apiData = {
-        username: userData.username,
         email: userData.email,
-        phoneNumber: userData.phone,
-        password: userData.password,
-        passwordConfirm: userData.password,
         firstName: userData.fullName.split(' ')[0],
-        lastName: userData.fullName.split(' ').slice(1).join(' '),
-        fullName: userData.fullName,
-        termsAccepted: userData.acceptTerms,
+        lastName: userData.fullName.split(' ').slice(1).join(' ') || userData.fullName.split(' ')[0], // Fallback si pas de nom de famille
+        password: userData.password,
         role: userData.role.toUpperCase(),
-        isFreelancer: userData.role === 'freelance'
+        // Champs optionnels
+        phoneNumber: userData.phone,
+        username: userData.username,
+        termsAccepted: userData.acceptTerms
       };
 
-      console.log("📦 Données formatées:", { ...apiData, password: '***', passwordConfirm: '***' });
+      console.log("📦 Données formatées:", { ...apiData, password: '***' });
 
       // Vérification de l'URL du backend
       if (!this.apiUrl || this.apiUrl === '/api') {
@@ -204,15 +202,90 @@ class AuthService {
         };
       }
 
-      // Utiliser fetch avec option credentials include pour permettre l'envoi des cookies
+      // Récupérer le token CSRF
+      const csrfToken = localStorage.getItem('csrf_token') || '';
+      console.log("🔐 Token CSRF utilisé pour l'inscription:", csrfToken ? "Présent" : "Absent");
+
+      // Essayons d'abord de faire l'inscription via notre proxy local
       try {
-        console.log("🔍 Tentative d'inscription avec fetch...");
-        const response = await fetch(url, {
-          method: 'POST',
+        console.log("🔍 Tentative d'inscription via proxy local...");
+        const proxyUrl = '/api/auth/register';
+        
+        const proxyResponse = await fetch(proxyUrl, {
+          method: 'POST', // Forcer la méthode POST
           headers: {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-Token': localStorage.getItem('csrf_token') || ''
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json',
+            'Origin': window.location.origin
+          },
+          body: JSON.stringify(apiData),
+          credentials: 'include'
+        });
+        
+        const proxyTextResponse = await proxyResponse.text();
+        console.log(`📥 Réponse proxy (${proxyResponse.status}):`, proxyTextResponse.substring(0, 150));
+        
+        let proxyData;
+        try {
+          proxyData = proxyTextResponse ? JSON.parse(proxyTextResponse) : {};
+        } catch (e) {
+          console.error("❌ Erreur parsing JSON de la réponse proxy:", e);
+          proxyData = { message: proxyTextResponse || "Réponse non-JSON du proxy" };
+        }
+        
+        if (proxyResponse.ok) {
+          console.log("✅ Inscription réussie via proxy:", proxyData);
+          
+          // Stocker le token et les données utilisateur
+          if (proxyData.token) {
+            localStorage.setItem(AUTH_TOKEN_KEY, proxyData.token);
+          }
+          
+          if (proxyData.user) {
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(proxyData.user));
+            
+            // Redirection automatique
+            const redirectUrl = proxyData.user.isFreelancer ? '/dashboard' : '/';
+            
+            console.log("✅ Redirection vers:", redirectUrl);
+            setTimeout(() => {
+              window.location.href = redirectUrl;
+            }, 1500);
+          }
+          
+          return { success: true, user: proxyData.user };
+        } else {
+          // Si le proxy a échoué, essayer directement le backend
+          console.log("⚠️ Échec via proxy, tentative directe au backend");
+        }
+      } catch (proxyError) {
+        console.error("❌ Erreur lors de l'inscription via proxy:", proxyError);
+        // Continuer avec la méthode directe
+      }
+
+      // Tentative directe avec le backend si le proxy a échoué
+      console.log("🔄 Tentative d'inscription directe avec le backend...");
+      
+      // Utiliser fetch avec option credentials include pour permettre l'envoi des cookies
+      try {
+        // Déterminer l'URL complète du backend
+        const backendUrl = this.apiUrl.startsWith('http')
+          ? this.apiUrl
+          : RENDER_API_URL;
+        
+        const registerUrl = `${backendUrl}/auth/register`;
+        console.log("🌐 URL d'inscription backend:", registerUrl);
+        
+        const response = await fetch(registerUrl, {
+          method: 'POST', // Forcer explicitement la méthode POST
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json',
+            'Origin': window.location.origin
           },
           body: JSON.stringify(apiData),
           mode: 'cors',
@@ -221,7 +294,7 @@ class AuthService {
         
         // Obtenir la réponse complète du serveur
         const responseText = await response.text();
-        console.log(`📥 Réponse serveur (${response.status}):`, responseText);
+        console.log(`📥 Réponse serveur (${response.status}):`, responseText.substring(0, 150));
         
         let responseData;
         try {
@@ -264,6 +337,8 @@ class AuthService {
             errorMessage = "Cet email est déjà utilisé";
           } else if (responseData.message && responseData.message.includes("mot de passe")) {
             errorMessage = responseData.message;
+          } else if (responseData.message && responseData.message.includes("Cannot")) {
+            errorMessage = "Erreur serveur: Méthode HTTP incorrecte. Réessayez plus tard.";
           } else {
             errorMessage = responseData.message || `Erreur ${response.status}: Une erreur est survenue lors de l'inscription`;
           }
@@ -278,10 +353,10 @@ class AuthService {
         
         return new Promise((resolve) => {
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', url, true);
+          xhr.open('POST', url, true); // Forcer explicitement la méthode POST
           xhr.setRequestHeader('Content-Type', 'application/json');
           xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-          xhr.setRequestHeader('X-CSRF-Token', localStorage.getItem('csrf_token') || '');
+          xhr.setRequestHeader('X-CSRF-Token', csrfToken || '');
           xhr.withCredentials = true; // Activer l'envoi des cookies pour le CSRF
           xhr.timeout = 15000;
           
@@ -292,7 +367,7 @@ class AuthService {
           };
           
           xhr.onload = function() {
-            console.log(`📥 Réponse XHR reçue (${xhr.status}):`, xhr.responseText);
+            console.log(`📥 Réponse XHR reçue (${xhr.status}):`, xhr.responseText.substring(0, 150));
             
             try {
               const response = xhr.responseText ? JSON.parse(xhr.responseText) : {};
@@ -325,6 +400,8 @@ class AuthService {
                   errorMessage = "Cet email est déjà utilisé";
                 } else if (response.message && response.message.includes("mot de passe")) {
                   errorMessage = response.message;
+                } else if (response.message && response.message.includes("Cannot")) {
+                  errorMessage = "Erreur serveur: Méthode HTTP incorrecte. Réessayez plus tard.";
                 } else {
                   errorMessage = response.message || `Erreur ${xhr.status}: Une erreur est survenue lors de l'inscription`;
                 }

@@ -232,6 +232,87 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
     checkBackendStatus();
   }, []);
 
+  // Récupérer le jeton CSRF lors du chargement
+  React.useEffect(() => {
+    async function fetchCsrfToken() {
+      try {
+        console.log("🔄 Tentative de récupération du token CSRF pour le formulaire d'inscription");
+        // Essayer d'abord via le proxy local
+        const csrfResponse = await fetch('/api/security/csrf-tokens', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (csrfResponse.ok) {
+          const data = await csrfResponse.json();
+          if (data.token) {
+            localStorage.setItem('csrf_token', data.token);
+            console.log('✅ Token CSRF récupéré avec succès pour le formulaire d\'inscription');
+          }
+        } else {
+          // Essayer directement avec le backend
+          const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
+          const backendUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl.substring(0, apiBaseUrl.length - 4) : apiBaseUrl;
+          
+          console.log('⚠️ Tentative directe de récupération du token CSRF depuis:', `${backendUrl}/api/security/csrf-tokens`);
+          
+          const directResponse = await fetch(`${backendUrl}/api/security/csrf-tokens`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json',
+              'Origin': window.location.origin
+            }
+          });
+          
+          if (directResponse.ok) {
+            const directData = await directResponse.json();
+            if (directData.token) {
+              localStorage.setItem('csrf_token', directData.token);
+              console.log('✅ Token CSRF récupéré avec succès via requête directe');
+            }
+          } else {
+            console.warn('⚠️ Impossible de récupérer le token CSRF directement');
+            
+            // Dernière tentative avec le endpoint auth
+            try {
+              const authResponse = await fetch(`${backendUrl}/api/auth/csrf-tokens`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Accept': 'application/json',
+                  'Origin': window.location.origin
+                }
+              });
+              
+              if (authResponse.ok) {
+                const authData = await authResponse.json();
+                if (authData.token) {
+                  localStorage.setItem('csrf_token', authData.token);
+                  console.log('✅ Token CSRF récupéré avec succès via /api/auth/csrf-tokens');
+                }
+              } else {
+                console.warn('⚠️ Impossible de récupérer le token CSRF via /api/auth/csrf-tokens');
+              }
+            } catch (authError) {
+              console.error('❌ Erreur lors de la récupération du token CSRF via auth:', authError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors de la récupération du token CSRF:', error);
+      }
+    }
+    
+    fetchCsrfToken();
+  }, []);
+
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       {/* Messages d'erreur/succès */}
