@@ -22,10 +22,6 @@ export const getMongooseMemoryOptions = () => ({
   // Compression to reduce network traffic and memory usage
   compressors: 'zlib',
   
-  // Use new URL parser and unified topology
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  
   // Not keeping track of writes can save memory
   writeConcern: {
     w: 1,
@@ -39,10 +35,6 @@ export const getMongooseMemoryOptions = () => ({
 
 // Memory-optimized options for TypeORM MongoDB
 export const getTypeOrmMemoryOptions = () => ({
-  // Connection settings
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  
   // Disable synchronization to prevent extensive memory operations
   synchronize: false,
   

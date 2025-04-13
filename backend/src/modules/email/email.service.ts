@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { ResendService } from './resend.service';
 
 interface EmailOptions {
   to: string;
@@ -10,77 +11,141 @@ interface EmailOptions {
   context?: Record<string, any>;
 }
 
+type TransporterOptions = nodemailer.TransportOptions & {
+  jsonTransport?: boolean;
+};
+
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(EmailService.name);
+  private readonly isProduction: boolean;
+  private readonly useResend: boolean;
 
-  constructor(private configService: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('EMAIL_HOST'),
-      port: this.configService.get<number>('EMAIL_PORT'),
-      secure: this.configService.get<boolean>('EMAIL_SECURE'),
-      auth: {
-        user: this.configService.get<string>('EMAIL_USER'),
-        pass: this.configService.get<string>('EMAIL_PASSWORD'),
-      },
-    });
+  constructor(
+    private configService: ConfigService,
+    private resendService: ResendService
+  ) {
+    this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    this.useResend = this.configService.get<string>('USE_RESEND') === 'true' || this.isProduction;
     
-    // Vérifier la connexion au serveur SMTP au démarrage
-    this.verifyConnection();
+    if (this.useResend) {
+      this.logger.log('Service email configuré pour utiliser Resend API');
+    }
+    
+    // Configuration du transporteur Nodemailer de secours
+    const emailHost = this.configService.get<string>('EMAIL_HOST');
+    const emailPort = this.configService.get<number>('EMAIL_PORT') || 587;
+    const emailUser = this.configService.get<string>('EMAIL_USER');
+    const emailPassword = this.configService.get<string>('EMAIL_PASSWORD');
+    const emailSecure = this.configService.get<boolean>('EMAIL_SECURE') || false;
+    
+    // Validation des configurations
+    const hasValidEmailConfig = emailHost && emailUser && emailPassword;
+    
+    if (!hasValidEmailConfig) {
+      this.logger.warn('Configuration email incomplète - création d\'un transporteur factice');
+      // Créer un transporteur factice qui journalise mais n'envoie pas
+      this.transporter = nodemailer.createTransport({
+        jsonTransport: true
+      } as TransporterOptions);
+    } else {
+      // Configuration standard avec gestion plus robuste des erreurs
+      try {
+        this.logger.log(`Configuration du service email avec le serveur ${emailHost}:${emailPort}`);
+        this.transporter = nodemailer.createTransport({
+          host: emailHost,
+          port: emailPort,
+          secure: emailSecure,
+          auth: {
+            user: emailUser,
+            pass: emailPassword,
+          },
+          // Ajouter un timeout pour éviter les blocages
+          connectionTimeout: 10000, // 10 secondes
+          greetingTimeout: 10000,
+          socketTimeout: 15000,
+        });
+        
+        // Vérifier la connexion au serveur SMTP seulement en développement et si Resend n'est pas utilisé
+        if (!this.isProduction && !this.useResend) {
+          this.verifyConnection();
+        }
+      } catch (error) {
+        this.logger.error('Erreur lors de la création du transporteur email:', error);
+        // Fallback en cas d'erreur
+        this.transporter = nodemailer.createTransport({
+          jsonTransport: true
+        } as TransporterOptions);
+      }
+    }
   }
   
   // Vérification de la connexion au serveur SMTP
   private async verifyConnection(): Promise<void> {
     try {
+      const options = this.transporter.options as TransporterOptions;
+      if (options.jsonTransport) {
+        this.logger.warn('Transporteur factice - vérification SMTP ignorée');
+        return;
+      }
+      
       await this.transporter.verify();
-      this.logger.log('Connection au serveur SMTP établie avec succès');
+      this.logger.log('Connexion au serveur SMTP établie avec succès');
     } catch (error) {
       this.logger.error('Erreur de connexion au serveur SMTP:', error);
+      // Ne pas faire échouer l'application en cas d'erreur SMTP
     }
   }
 
-  async sendEmail(options: EmailOptions): Promise<void>;
-  async sendEmail(to: string, subject: string, html: string): Promise<void>;
-  async sendEmail(
-    toOrOptions: string | EmailOptions,
-    subject?: string,
-    html?: string
-  ): Promise<void> {
-    try {
-      if (typeof toOrOptions === 'string') {
-        // Format ancien
-        this.logger.debug(`Envoi d'email à ${toOrOptions}: ${subject}`);
-        
-        await this.transporter.sendMail({
-          from: `"${this.configService.get<string>('EMAIL_FROM_NAME')}" <${this.configService.get<string>('EMAIL_FROM')}>`,
-          to: toOrOptions,
-          subject,
-          html,
+  // Méthode pour envoyer un email
+  async sendEmail(options: EmailOptions): Promise<boolean> {
+    // Utiliser Resend API si configuré
+    if (this.useResend) {
+      try {
+        const result = await this.resendService.sendEmail({
+          to: options.to,
+          subject: options.subject,
+          html: options.html || '',
         });
         
-        this.logger.debug(`Email envoyé avec succès à ${toOrOptions}`);
-      } else {
-        // Format avec options
-        const { to, subject, html: htmlContent, template, context } = toOrOptions;
-        
-        this.logger.debug(`Envoi d'email à ${to}: ${subject} (${template ? 'avec template' : 'sans template'})`);
-        
-        // TODO: implémenter le traitement des templates si nécessaire
-        const finalHtml = htmlContent || `Template: ${template}, Context: ${JSON.stringify(context)}`;
-        
-        await this.transporter.sendMail({
-          from: `"${this.configService.get<string>('EMAIL_FROM_NAME')}" <${this.configService.get<string>('EMAIL_FROM')}>`,
-          to,
-          subject,
-          html: finalHtml,
-        });
-        
-        this.logger.debug(`Email envoyé avec succès à ${to}`);
+        return !!result;
+      } catch (error) {
+        this.logger.error('Erreur lors de l\'envoi via Resend, tentative via SMTP:', error);
+        // Continuer avec le transporteur SMTP en cas d'échec
       }
+    }
+    
+    // Fallback vers Nodemailer
+    try {
+      const from = this.configService.get<string>('EMAIL_FROM') || 'noreply@nionfar.com';
+      
+      const mailOptions = {
+        from,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      };
+      
+      // Journaliser en mode développement
+      if (!this.isProduction) {
+        this.logger.debug(`Envoi d'email à ${options.to}: ${options.subject}`);
+      }
+      
+      const transporterOptions = this.transporter.options as TransporterOptions;
+      if (transporterOptions.jsonTransport) {
+        // Simuler l'envoi en mode factice
+        this.logger.log(`[SIMULATION] Email à ${options.to}: ${options.subject}`);
+        return true;
+      }
+      
+      const info = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Email envoyé à ${options.to}, ID: ${info.messageId}`);
+      return true;
     } catch (error) {
-      this.logger.error('Erreur lors de l\'envoi de l\'email:', error);
-      throw error;
+      this.logger.error(`Erreur lors de l'envoi de l'email à ${options.to}:`, error);
+      // Ne pas faire échouer l'application en cas d'erreur d'envoi
+      return false;
     }
   }
   
@@ -97,7 +162,7 @@ export class EmailService {
       <p>L'équipe Nionfar</p>
     `;
     
-    await this.sendEmail(to, subject, html);
+    await this.sendEmail({ to, subject, html });
   }
   
   /**
@@ -118,7 +183,7 @@ export class EmailService {
       <p>L'équipe Nionfar</p>
     `;
     
-    await this.sendEmail(to, subject, html);
+    await this.sendEmail({ to, subject, html });
   }
   
   /**
@@ -139,6 +204,6 @@ export class EmailService {
       <p>L'équipe Nionfar</p>
     `;
     
-    await this.sendEmail(to, subject, html);
+    await this.sendEmail({ to, subject, html });
   }
 } 
