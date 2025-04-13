@@ -56,10 +56,14 @@ lerna-debug.log*
 **/.env.local
 **/.env.development
 **/.env.test
+**/.env.*.local
 # Permet aux fichiers d'exemple d'être inclus
 !**/.env.example
-# Nous maintenons le fichier de production dans le dépôt pour Vercel
+# Nous maintenons les fichiers de production dans le dépôt pour les déploiements
 !**/.env.production
+!frontend/.env.production
+!backend/.env.production
+!.env.production
 
 # Fichiers de build
 **/dist/
@@ -400,7 +404,6 @@ backups/
 # Fichiers spécifiques à NionFar qu'il faut absolument exclure
 **/nionfar-secrets/
 **/nionfar-keys/
-backend/.env.production
 backend/.env.staging
 backend/.env.test
 
