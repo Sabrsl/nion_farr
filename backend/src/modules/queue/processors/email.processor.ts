@@ -31,7 +31,11 @@ export class EmailQueueProcessor {
         });
       } else if (html) {
         // Sinon, envoyer l'email avec le contenu HTML fourni
-        await this.emailService.sendEmail(to, subject, html);
+        await this.emailService.sendEmail({
+          to,
+          subject,
+          html
+        });
       } else {
         throw new Error('Aucun contenu d\'email spécifié (template ou HTML)');
       }
