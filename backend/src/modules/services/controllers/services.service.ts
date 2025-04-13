@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { Repository, MoreThanOrEqual, ILike } from 'typeorm';
 import { Service } from '../entities/service.entity';
 import { ServiceCategory } from '../entities/service-category.entity';
 
@@ -36,15 +36,12 @@ export class ServicesService {
     
     // Si une recherche par texte est fournie, filtrer par titre ou description
     if (query.search) {
-      // Utiliser find() avec une requête regex au lieu de createQueryBuilder
+      // Utiliser ILike au lieu de $regex pour les recherches insensibles à la casse
       return this.serviceRepository.find({
-        where: {
-          ...baseWhere,
-          $or: [
-            { title: { $regex: query.search, $options: 'i' } },
-            { description: { $regex: query.search, $options: 'i' } }
-          ]
-        },
+        where: [
+          { ...baseWhere, title: ILike(`%${query.search}%`) },
+          { ...baseWhere, description: ILike(`%${query.search}%`) }
+        ],
         relations: ['provider', 'category', 'reviews'],
         order: { createdAt: 'DESC' }
       });
