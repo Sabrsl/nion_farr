@@ -34,7 +34,7 @@ export default async function handler(
           password: req.body.password,
           passwordConfirm: req.body.passwordConfirm || req.body.password, // Assurer que passwordConfirm est présent
           termsAccepted: req.body.termsAccepted || req.body.acceptTerms || true,
-          role: (req.body.role || 'CLIENT').toUpperCase(),
+          role: (req.body.role || 'client').toLowerCase(),
           isFreelancer: req.body.role?.toLowerCase() === 'freelance' || req.body.isFreelancer || false
         };
       }
