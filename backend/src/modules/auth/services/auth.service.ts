@@ -172,7 +172,9 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
       const verificationToken = uuidv4();
       
-      // Pour éviter les erreurs liées aux propriétés undefined
+      // Pour éviter les erreurs liées aux propriétés undefined, s'assurer que tous les champs
+      // obligatoires sont présents et que les relations sont soit initialisées avec des valeurs par défaut,
+      // soit omises (si elles sont optionnelles)
       const userData = {
         email: registerDto.email,
         username: registerDto.username || registerDto.email.split('@')[0],
@@ -183,7 +185,17 @@ export class AuthService {
         isEmailVerified: false,
         role: registerDto.role?.toLowerCase() || 'client',
         isFreelancer: registerDto.isFreelancer || registerDto.role?.toLowerCase() === 'freelancer',
-        status: UserStatus.PENDING_VERIFICATION
+        status: UserStatus.PENDING_VERIFICATION,
+        // Initialiser les relations avec des tableaux vides pour éviter les erreurs createValueMap
+        services: [],
+        clientOrders: [],
+        freelancerOrders: [],
+        givenReviews: [],
+        receivedReviews: [],
+        sentMessages: [],
+        receivedMessages: [],
+        following: [],
+        followers: []
       };
       
       this.logger.debug(`Création d'utilisateur avec les données: ${JSON.stringify({
@@ -192,10 +204,10 @@ export class AuthService {
       })}`);
       
       try {
-        // Créer une instance explicite de l'entité User pour éviter les erreurs createValueMap
-        const newUser = new User(userData);
+        // Utiliser repository.create() qui gère correctement le mapping des propriétés d'entité
+        const newUser = this.usersRepository.create(userData);
         
-        // Sauvegarder l'utilisateur dans la base de données directement
+        // Sauvegarder l'utilisateur dans la base de données
         const savedUser = await this.usersRepository.save(newUser);
         
         // Log pour vérifier que le mot de passe est bien hashé
