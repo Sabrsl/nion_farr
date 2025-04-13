@@ -31,6 +31,32 @@ export default function ResetPasswordPage() {
   const [message, setMessage] = useState('');
   const [passwordScore, setPasswordScore] = useState(0);
 
+  // Récupérer le jeton CSRF au chargement de la page
+  useEffect(() => {
+    async function fetchCsrfToken() {
+      try {
+        // Essayer d'abord via le proxy local
+        const response = await fetch('/api/security/csrf-tokens', {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.token) {
+            localStorage.setItem('csrf_token', data.token);
+            console.log('✅ Token CSRF récupéré avec succès');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors de la récupération du token CSRF:', error);
+      }
+    }
+    
+    fetchCsrfToken();
+  }, []);
+
   // Vérifier si un token est présent
   useEffect(() => {
     if (!token && router.isReady) {
@@ -68,10 +94,15 @@ export default function ResetPasswordPage() {
     setIsSubmitting(true);
     
     try {
+      // Récupérer le jeton CSRF du localStorage
+      const csrfToken = localStorage.getItem('csrf_token');
+      
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-Token': csrfToken || ''
         },
         body: JSON.stringify({
           token,

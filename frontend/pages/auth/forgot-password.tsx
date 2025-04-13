@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
@@ -10,6 +10,32 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  // Récupérer le jeton CSRF au chargement de la page
+  useEffect(() => {
+    async function fetchCsrfToken() {
+      try {
+        // Essayer d'abord via le proxy local
+        const response = await fetch('/api/security/csrf-tokens', {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.token) {
+            localStorage.setItem('csrf_token', data.token);
+            console.log('✅ Token CSRF récupéré avec succès');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors de la récupération du token CSRF:', error);
+      }
+    }
+    
+    fetchCsrfToken();
+  }, []);
 
   // Gérer la soumission du formulaire
   async function handleSubmit(e: React.FormEvent) {
@@ -24,9 +50,16 @@ export default function ForgotPassword() {
     setMessage(null);
 
     try {
+      // Récupérer le jeton CSRF du localStorage
+      const csrfToken = localStorage.getItem('csrf_token');
+
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-Token': csrfToken || ''
+        },
         body: JSON.stringify({ email })
       });
 
