@@ -15,6 +15,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
 
   async validate(email: string, password: string) {
     this.logger.debug(`🔐 Tentative d'authentification pour l'email: ${email}`);
+    this.logger.debug(`📝 LocalStrategy va appeler authService.validateUser qui utilise bcrypt.compare`);
     
     try {
       const user = await this.authService.validateUser(email, password);
@@ -24,7 +25,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('Identifiants invalides');
       }
       
-      this.logger.debug(`✅ Authentification réussie pour l'email: ${email}`);
+      this.logger.debug(`✅ Authentification réussie pour l'email: ${email} - bcrypt.compare a validé le mot de passe`);
       return user;
     } catch (error) {
       this.logger.error(`❌ Erreur lors de l'authentification pour l'email: ${email} - ${error.message}`);

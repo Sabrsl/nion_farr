@@ -61,15 +61,20 @@ export class AuthService {
         return null;
       }
       
+      // Log pour voir le format du mot de passe hashé récupéré de la base
+      this.logger.debug(`📋 Mot de passe hashé récupéré de la base: ${user.password?.substring(0, 20)}...`);
+      
       // Vérifier le mot de passe
+      this.logger.debug(`🔐 Vérification du mot de passe avec bcrypt.compare pour l'utilisateur: ${email}`);
       const isPasswordValid = await bcrypt.compare(password, user.password);
+      
       if (!isPasswordValid) {
-        this.logger.warn(`Échec de la validation: mot de passe incorrect pour l'utilisateur ${email}`);
+        this.logger.warn(`❌ Échec de la validation: mot de passe incorrect pour l'utilisateur ${email}`);
         return null;
       }
       
       // Utilisateur trouvé et mot de passe valide
-      this.logger.log(`Validation réussie pour l'utilisateur: ${email}`);
+      this.logger.log(`✅ Validation réussie pour l'utilisateur: ${email} - bcrypt.compare a retourné true`);
       
       // Supprimer le mot de passe du résultat
       const { password: _, ...result } = user;
@@ -187,11 +192,15 @@ export class AuthService {
       })}`);
       
       try {
-        // Créer une nouvelle entité utilisateur avec les données fournies
-        const newUser = this.usersRepository.create(userData);
+        // Créer une instance explicite de l'entité User pour éviter les erreurs createValueMap
+        const newUser = new User(userData);
         
-        // Sauvegarder l'utilisateur dans la base de données
+        // Sauvegarder l'utilisateur dans la base de données directement
         const savedUser = await this.usersRepository.save(newUser);
+        
+        // Log pour vérifier que le mot de passe est bien hashé
+        this.logger.debug(`✅ Utilisateur créé avec mot de passe hashé: ${savedUser.password?.substring(0, 20)}...`);
+        
         this.logger.log(`Utilisateur créé avec succès: ${savedUser.id}`);
         
         // Essayer d'envoyer un email de vérification
