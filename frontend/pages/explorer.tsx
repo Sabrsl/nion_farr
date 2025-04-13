@@ -92,7 +92,7 @@ const Explorer: NextPage = () => {
     try {
       setIsLoading(true);
       // Use the new API for fetching services
-      const response = await axios.get('/api/services', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/services`, {
         params: {
           ...filters,
           search: searchQuery,
@@ -118,7 +118,7 @@ const Explorer: NextPage = () => {
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('/api/services/categories');
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/services/categories`);
       if (response.data && response.data.categories) {
         setFeaturedCategories(response.data.categories);
       }
@@ -133,12 +133,12 @@ const Explorer: NextPage = () => {
   const fetchStats = async () => {
     try {
       // Récupérer les statistiques des services
-      const response = await axios.get('/api/services/stats');
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/services/stats`);
       
       // Récupérer les statistiques de la plateforme
       let platformStats = {};
       try {
-        const platformResponse = await axios.get('/api/admin/stats/platform');
+        const platformResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats/platform`);
         if (platformResponse.data && platformResponse.data.stats) {
           platformStats = {
             freelancersCount: platformResponse.data.stats.freelancersCount ? 
@@ -181,7 +181,7 @@ const Explorer: NextPage = () => {
   // Récupérer le nombre de clients
   const fetchClientsCount = async (): Promise<string> => {
     try {
-      const response = await axios.get('/api/users/stats/count?role=client');
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/users/stats/count?role=client`);
       if (response.data && response.data.count) {
         return `${response.data.count.toLocaleString()}+`;
       }

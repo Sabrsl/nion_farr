@@ -144,7 +144,7 @@ const EnSavoirPlusFreelance = () => {
     // Fonction pour récupérer le nombre de freelances depuis l'API
     const fetchFreelancerCount = async () => {
       try {
-        const response = await axios.get('/api/users/stats/count?role=provider');
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/users/stats/count?role=provider`);
         if (response.data && response.data.count) {
           setFreelancerCount(response.data.count);
         }

@@ -95,7 +95,7 @@ const Home: NextPage = () => {
     const fetchCategoriesWithCount = async () => {
       try {
         // Dans une application réelle, vous appelleriez votre API
-        // const response = await axios.get('/api/categories');
+        // const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`);
         // const data = response.data;
         
         setIsLoading(false);

@@ -43,7 +43,7 @@ const useStatsData = () => {
       try {
         setIsLoading(true);
         // Appel à l'API pour récupérer les statistiques de la plateforme
-        const response = await axios.get('/api/admin/stats/platform');
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats/platform`);
         
         if (response.data && response.data.stats) {
           const { visitors, payments, satisfaction } = response.data.stats;
@@ -70,7 +70,7 @@ const useStatsData = () => {
         // Récupérer les visiteurs
         let activeClients = 0;
         try {
-          const visitorsResponse = await axios.get('/api/admin/stats/visitors');
+          const visitorsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats/visitors`);
           if (visitorsResponse.data && typeof visitorsResponse.data.count === 'number') {
             activeClients = visitorsResponse.data.count;
           }
@@ -81,7 +81,7 @@ const useStatsData = () => {
         // Récupérer les paiements
         let paymentsToFreelancers = 0;
         try {
-          const paymentsResponse = await axios.get('/api/admin/stats/payments');
+          const paymentsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats/payments`);
           if (paymentsResponse.data && typeof paymentsResponse.data.total === 'number') {
             paymentsToFreelancers = paymentsResponse.data.total;
           }

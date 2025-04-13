@@ -6,7 +6,11 @@ import axios from 'axios';
  * @returns Axios instance
  */
 export const createApi = (config = {}) => {
+  // Assurez-vous que baseURL est correctement configuré
+  // Si NEXT_PUBLIC_API_URL est défini, utilisez-le, sinon utilisez '/api' comme fallback
   const baseURL = process.env.NEXT_PUBLIC_API_URL || '/api';
+  
+  console.log('API baseURL:', baseURL);
   
   const api = axios.create({
     baseURL,
