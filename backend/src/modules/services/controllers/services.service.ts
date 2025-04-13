@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThanOrEqual } from 'typeorm';
 import { Service } from '../entities/service.entity';
 import { ServiceCategory } from '../entities/service-category.entity';
 
@@ -198,11 +198,11 @@ export class ServicesService {
    * @returns Les meilleurs services
    */
   async findTopServices(limit: number = 4, minReviews: number = 5): Promise<Service[]> {
-    // Utiliser find() avec des critères MongoDB au lieu de createQueryBuilder
+    // Utiliser find() avec MoreThanOrEqual au lieu de l'opérateur MongoDB
     return this.serviceRepository.find({
       where: {
         isActive: true,
-        totalReviews: { $gte: minReviews }
+        totalReviews: MoreThanOrEqual(minReviews)
       },
       relations: ['provider', 'category', 'reviews'],
       order: { totalOrders: 'DESC' },

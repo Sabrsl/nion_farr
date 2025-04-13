@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In } from 'typeorm';
+import { Repository, Like, In, ILike } from 'typeorm';
 import { Service } from '../entities/service.entity';
 import { ServiceValidationHistory } from '../entities/service-validation-history.entity';
 import { ServiceValidationResult } from '../entities/service-validation-result.entity';
@@ -29,10 +29,10 @@ export class ServiceValidationService {
   async getPendingServices(filters: ValidationFilters) {
     const { status, category, search, page, limit, sortBy, sortDirection } = filters;
     
-    // Build query with MongoDB compatible filters
+    // Build query avec des filtres compatibles TypeORM
     const whereConditions: any = {};
     
-    // Apply filters
+    // Appliquer les filtres
     if (status) {
       whereConditions['validationResult.status'] = status;
     }
@@ -42,10 +42,19 @@ export class ServiceValidationService {
     }
     
     if (search) {
-      whereConditions.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+      // Utiliser ILike au lieu de $regex
+      return this.servicesRepository.find({
+        where: [
+          { title: ILike(`%${search}%`) },
+          { description: ILike(`%${search}%`) }
+        ],
+        relations: ['provider', 'category', 'validationResult'],
+        order: sortBy 
+          ? { [sortBy]: sortDirection === 'desc' ? 'DESC' : 'ASC' } 
+          : { createdAt: 'ASC' },
+        skip: (page - 1) * limit,
+        take: limit
+      });
     }
     
     // Setup sorting
