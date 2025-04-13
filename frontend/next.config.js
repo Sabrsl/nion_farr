@@ -42,11 +42,11 @@ const nextConfig = {
   // Désactivation complète des tests
   typescript: {
     // Désactiver la vérification TypeScript en production pour accélérer le build
-    ignoreBuildErrors: process.env.VERCEL === '1',
+    ignoreBuildErrors: process.env.NODE_ENV === 'production',
   },
   eslint: {
     // Désactiver ESLint en production pour accélérer le build
-    ignoreDuringBuilds: process.env.VERCEL === '1',
+    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
   },
   
   // Passer les erreurs de redirection de slash
@@ -60,32 +60,24 @@ const nextConfig = {
     NEXT_PUBLIC_ENVIRONMENT: 'production',
   },
 
-  // Forcer l'utilisation du runtime React et désactiver Edge Runtime
+  // Options expérimentales simplifiées et supportées
   experimental: {
-    esmExternals: 'loose',
+    // Support pour les modules ESM
+    esmExternals: true,
+    // Packages externes pour Server Components
     serverComponentsExternalPackages: ['mongoose'],
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
-    // Désactiver les fonctionnalités Edge Runtime problématiques
+    // Actions serveur
+    serverActions: true,
+    // Désactiver l'optimisation du chargement (peut causer des problèmes)
     disableOptimizedLoading: true,
+    // Inclure répertoires externes
     externalDir: true,
-    // Désactiver complètement les OG Images et Edge Runtime
-    images: {
-      disableStaticImages: false,
-      unoptimized: true
-    },
-    // Désactiver le Edge Runtime complètement
-    runtime: 'nodejs',
-    // Memory optimization - add these specifically for low memory environments
-    disableStaticGenerationConcurrency: process.env.MEMORY_OPTIMIZED === 'true',
-    // Exclude unnecessary files from the build
+    // Exclure des fichiers du traçage des sorties
     outputFileTracingExcludes: {
       '*': [
         'node_modules/@swc/core-linux-x64-gnu',
         'node_modules/@swc/core-linux-x64-musl',
         'node_modules/@esbuild/linux-x64',
-        // Exclude unnecessary platform-specific packages
         'node_modules/@swc/core-darwin-*',
         'node_modules/@swc/core-win32-*',
         'node_modules/@esbuild/win32-*',
@@ -94,13 +86,7 @@ const nextConfig = {
     },
   },
 
-  // Désactiver explicitement l'Edge Runtime
-  serverRuntimeConfig: {
-    // Utilise le runtime Node.js au lieu de Edge
-    runtime: 'nodejs',
-  },
-
-  // Désactiver certains avertissements React
+  // Modulariser les imports
   modularizeImports: {
     'util/': {
       transform: 'util/{{member}}',
@@ -176,14 +162,6 @@ const nextConfig = {
       },
     ];
   },
-
-  // Variables publiques pour le CSP
-  publicRuntimeConfig: {
-    cors: {
-      value: process.env.NEXT_PUBLIC_CORS_ALLOWED_ORIGINS || 'https://nion-farr.vercel.app,https://nionfar-backend.onrender.com',
-      key: 'CORS_ALLOWED_ORIGINS',
-    },
-  },
 }
 
 // Check if we're in a memory-constrained environment
@@ -220,13 +198,6 @@ if (process.env.MEMORY_OPTIMIZED === 'true') {
     return config;
   };
 }
-
-// Configuration des proxies pour le développement
-const setupDevProxies = () => {
-  // Si les urls locales ne sont pas définies, utiliser les URLs de production
-  const productionApiUrl = 'https://nionfar-backend.onrender.com/api';
-  // ... existing code ...
-};
 
 // Afficher la configuration dans les logs
 console.log(`[Next.js Config] URL de l'API configurée: ${process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api'}`);
