@@ -23,11 +23,11 @@ jobs:
           cache: 'npm'
       
       - name: Update package-lock.json if needed
-        run: npm install --package-lock-only
+        run: npm install --package-lock-only --ignore-scripts
         
       - name: Install dependencies
         run: |
-          npm ci
+          npm ci --ignore-scripts
           npm install -g ts-prune depcheck
       
       - name: Check for unused code with ts-prune
