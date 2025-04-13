@@ -17,10 +17,37 @@ export default async function handler(
   try {
     // En production, nous allons rediriger cette requête vers le backend réel
     if (process.env.NODE_ENV === 'production') {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nion-farr-backend.vercel.app/api';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api';
       const apiEndpoint = `${apiUrl}/auth/register`;
       
       console.log(`[API] Redirection de l'inscription vers le backend: ${apiEndpoint}`);
+      
+      // Formater les données pour correspondre au schéma attendu par le backend
+      let formattedData = req.body;
+      
+      // Si nous recevons les données du frontend dans un format différent, reformater
+      if (req.body.fullName) {
+        const nameParts = req.body.fullName.split(' ');
+        formattedData = {
+          email: req.body.email,
+          firstName: nameParts[0],
+          lastName: nameParts.slice(1).join(' ') || nameParts[0],
+          password: req.body.password,
+          role: req.body.role?.toUpperCase() || 'CLIENT'
+        };
+      } else if (req.body.username) {
+        // Si nous recevons le format alternatif
+        formattedData = {
+          email: req.body.email,
+          firstName: req.body.fullName?.split(' ')[0] || req.body.username,
+          lastName: req.body.fullName?.split(' ').slice(1).join(' ') || '',
+          password: req.body.password,
+          role: req.body.role?.toUpperCase() || 'CLIENT'
+        };
+      }
+      
+      console.log(`[API] Données formatées envoyées au backend:`, 
+        { ...formattedData, password: '***' });
       
       try {
         const response = await fetch(apiEndpoint, {
@@ -31,7 +58,7 @@ export default async function handler(
             'Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
             'X-Requested-With': 'XMLHttpRequest'
           },
-          body: JSON.stringify(req.body || {}),
+          body: JSON.stringify(formattedData),
           credentials: 'include'
         });
         
@@ -76,7 +103,7 @@ export default async function handler(
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
               },
-              body: JSON.stringify(req.body || {}),
+              body: JSON.stringify(formattedData),
               credentials: 'include'
             });
             
@@ -136,10 +163,22 @@ export default async function handler(
       });
     }
     
+    // Tentative d'opérations sur le stockage en mode développement uniquement
+    const IS_DEV = process.env.NODE_ENV === 'development';
+    const IS_SERVERLESS = Boolean(
+      process.env.VERCEL || 
+      process.env.RENDER || 
+      (process.env.NODE_ENV && process.env.NODE_ENV !== 'development')
+    );
+
+    console.log(`[API Registration] Environnement: ${IS_DEV ? 'development' : 'production'}, Serverless: ${IS_SERVERLESS ? 'oui' : 'non'}`);
+
     // Vérifier si l'utilisateur existe déjà
     let userExists = false;
     try {
-      userExists = userStorage.exists(email);
+      if (IS_DEV && !IS_SERVERLESS) {
+        userExists = userStorage.exists(email);
+      }
     } catch (storageError) {
       console.error('Erreur d\'accès au stockage lors de la vérification d\'email:', storageError);
       // Continuer sans bloquer
@@ -156,7 +195,9 @@ export default async function handler(
     // Vérifier si un code existe déjà pour cet email (éviter le spam)
     let existingCode;
     try {
-      existingCode = verificationCodes.get(email);
+      if (IS_DEV && !IS_SERVERLESS) {
+        existingCode = verificationCodes.get(email);
+      }
     } catch (codeError) {
       console.error('Erreur lors de la récupération du code de vérification:', codeError);
       // Continuer sans bloquer
@@ -190,18 +231,20 @@ export default async function handler(
     
     // Stocker le code de vérification
     try {
-      verificationCodes.set(email, {
-        email,
-        code: verificationCode,
-        expiresAt: expirationDate.toISOString()
-      });
+      if (IS_DEV && !IS_SERVERLESS) {
+        verificationCodes.set(email, {
+          email,
+          code: verificationCode,
+          expiresAt: expirationDate.toISOString()
+        });
+      }
     } catch (setCodeError) {
       console.error('Erreur lors du stockage du code de vérification:', setCodeError);
       // Continuer sans bloquer car l'email contiendra le code
     }
 
     // En mode développement, on peut auto-créer un utilisateur pour faciliter les tests
-    if (process.env.NODE_ENV === 'development') {
+    if (IS_DEV && !IS_SERVERLESS) {
       try {
         // Créer un nouvel utilisateur avec un ID unique
         const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;

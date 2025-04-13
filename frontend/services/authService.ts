@@ -156,53 +156,28 @@ class AuthService {
     if (!userData.email && !userData.phone) {
       return { success: false, error: "Email ou numéro de téléphone requis" };
     }
+    
+    // Formatage des données pour le backend - conforme aux attentes du DTO et du schéma Zod
+    const formatUserDataForBackend = (data: RegisterData) => {
+      // Diviser le nom complet en prénom et nom
+      const nameParts = data.fullName.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0]; // Si pas de nom, utiliser le prénom
+      
+      return {
+        email: data.email,
+        firstName: firstName,
+        lastName: lastName,
+        password: data.password,
+        role: data.role.toUpperCase()
+      };
+    };
+    
+    // Données formatées selon la structure attendue par le backend
+    const formattedData = formatUserDataForBackend(userData);
+    console.log("📦 Données formatées pour le backend:", { ...formattedData, password: '***' });
 
     try {
-      // Récupérer les tokens CSRF avant l'inscription
-      const csrfTokensRetrieved = await this.fetchCsrfTokens();
-      if (!csrfTokensRetrieved) {
-        console.warn("⚠️ Impossible de récupérer les tokens CSRF, tentative d'inscription sans tokens");
-      }
-      
-      // Vérifier la disponibilité du serveur avant de tenter l'inscription
-      const isServerAvailable = await this.checkServerAvailability();
-      if (!isServerAvailable) {
-        const serverUrl = this.apiUrl || 'le serveur';
-        return { 
-          success: false, 
-          error: `Impossible de communiquer avec le serveur (${serverUrl}). Le serveur est peut-être temporairement indisponible ou en maintenance. Veuillez réessayer dans quelques instants.`
-        };
-      }
-
-      // Construire l'URL spécifique
-      const url = `${this.apiUrl}/auth/register`;
-      console.log("🌐 URL d'inscription complète:", url);
-      
-      // Préparer les données pour l'API backend
-      const apiData = {
-        email: userData.email,
-        firstName: userData.fullName.split(' ')[0],
-        lastName: userData.fullName.split(' ').slice(1).join(' ') || userData.fullName.split(' ')[0], // Fallback si pas de nom de famille
-        password: userData.password,
-        role: userData.role.toUpperCase(),
-        // Champs optionnels que le backend ne traite pas mais qui ne causent pas d'erreur
-        phoneNumber: userData.phone,
-        username: userData.username,
-        termsAccepted: userData.acceptTerms
-      };
-
-      // Rendre ces champs facultatifs sous forme de structure pour le backend
-      // Vérifions si chacun des champs est défini
-      const formattedApiData = {
-        email: userData.email,
-        firstName: userData.fullName.split(' ')[0],
-        lastName: userData.fullName.split(' ').slice(1).join(' ') || userData.fullName.split(' ')[0],
-        password: userData.password,
-        role: userData.role.toUpperCase(),
-      };
-
-      console.log("📦 Données formatées:", { ...formattedApiData, password: '***' });
-
       // Vérification de l'URL du backend
       if (!this.apiUrl || this.apiUrl === '/api') {
         console.error("❌ URL de l'API non configurée correctement:", this.apiUrl);
@@ -230,7 +205,7 @@ class AuthService {
             'Accept': 'application/json',
             'Origin': window.location.origin
           },
-          body: JSON.stringify(formattedApiData),
+          body: JSON.stringify(formattedData), // ⚠️ Utiliser les données formatées pour le backend
           credentials: 'include'
         });
         
@@ -297,7 +272,7 @@ class AuthService {
             'Accept': 'application/json',
             'Origin': window.location.origin
           },
-          body: JSON.stringify(apiData),
+          body: JSON.stringify(formattedData),
           mode: 'cors',
           credentials: 'include' // Inclure les cookies pour le CSRF
         });
@@ -361,9 +336,16 @@ class AuthService {
         console.error("❌ Erreur fetch:", fetchError);
         console.log("⚠️ Retour au fallback XMLHttpRequest...");
         
+        // Déterminer l'URL complète du backend pour XMLHttpRequest
+        const backendUrl = this.apiUrl.startsWith('http')
+          ? this.apiUrl
+          : RENDER_API_URL;
+        const registerUrl = `${backendUrl}/auth/register`;
+        console.log("🌐 URL d'inscription XHR:", registerUrl);
+        
         return new Promise((resolve) => {
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', url, true); // Forcer explicitement la méthode POST
+          xhr.open('POST', registerUrl, true); // Forcer explicitement la méthode POST
           xhr.setRequestHeader('Content-Type', 'application/json');
           xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
           xhr.setRequestHeader('X-CSRF-Token', csrfToken || '');
@@ -440,7 +422,7 @@ class AuthService {
             });
           };
           
-          xhr.send(JSON.stringify(apiData));
+          xhr.send(JSON.stringify(formattedData));
         });
       }
     } catch (error) {

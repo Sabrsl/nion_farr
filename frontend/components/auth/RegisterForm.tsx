@@ -56,13 +56,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
     }
 
     // Vérifier les champs obligatoires
-    if ((!email && !phone) || !password || !username || !fullName) {
-      setError('Veuillez remplir tous les champs obligatoires.');
+    if (!email || !password || !fullName || !userType) {
+      setError('Veuillez remplir tous les champs obligatoires (email, nom complet, mot de passe, type de compte).');
       return false;
     }
 
     // Validation de l'email si fourni
-    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       setError('Veuillez entrer une adresse email valide.');
       return false;
     }
@@ -86,14 +86,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
       return false;
     }
 
-    // Validation du nom d'utilisateur (alphanumériques + quelques caractères spéciaux)
-    if (!username.match(/^[a-zA-Z0-9._-]{3,20}$/)) {
+    // Validation du nom d'utilisateur (alphanumériques + quelques caractères spéciaux) si fourni
+    if (username && !username.match(/^[a-zA-Z0-9._-]{3,20}$/)) {
       setError('Le nom d\'utilisateur doit contenir entre 3 et 20 caractères (lettres, chiffres, ., _, -).');
       return false;
     }
 
     return true;
-  }, [email, phone, password, confirmPassword, username, fullName, acceptTerms]);
+  }, [email, phone, password, confirmPassword, username, fullName, acceptTerms, userType]);
 
   // Gestionnaire d'erreurs amélioré
   const handleApiError = (errorMessage: string) => {
@@ -151,12 +151,27 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
     
     setIsLoading(true);
     
+    // Préparation des données selon le format attendu par le backend
+    const firstName = fullName.split(' ')[0];
+    const lastName = fullName.split(' ').slice(1).join(' ') || firstName;
+    
+    // Formulaire formaté pour le backend
+    const formattedData = {
+      email,
+      firstName,
+      lastName,
+      password,
+      role: userType.toUpperCase(),
+    };
+    
+    console.log("📝 Données formatées pour l'inscription:", { ...formattedData, password: '***' });
+    
     try {
       console.log("Tentative d'inscription via authService...");
       const result = await authService.register({
         username,
-        email: email || undefined,
-        phone: phone || undefined,
+        email,
+        phone,
         password,
         fullName,
         acceptTerms,
@@ -314,243 +329,250 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
   }, []);
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
-      {/* Messages d'erreur/succès */}
-      {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <FiAlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                {error}
-              </h3>
-            </div>
+    <div>
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-blue-700">
+              <strong>Champs obligatoires</strong> marqués d'un <span className="text-red-500">*</span> : 
+              <strong>Email</strong>, 
+              <strong>Nom complet</strong>, 
+              <strong>Mot de passe</strong>, 
+              <strong>Type de compte</strong> et 
+              <strong>Conditions d'utilisation</strong>.
+            </p>
           </div>
         </div>
-      )}
+      </div>
+      
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {/* Messages d'erreur/succès */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded-md flex items-center">
+            <FiAlertCircle className="text-red-500 mr-2 flex-shrink-0" />
+            <span className="text-red-700 text-sm">{error}</span>
+          </div>
+        )}
 
-      {success && (
-        <div className="rounded-md bg-green-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <FiCheckCircle className="h-5 w-5 text-green-400" aria-hidden="true" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-green-800">
-                {success}
-              </h3>
-            </div>
+        {success && (
+          <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 rounded-md flex items-center">
+            <FiCheckCircle className="text-green-500 mr-2 flex-shrink-0" />
+            <span className="text-green-700 text-sm">{success}</span>
+          </div>
+        )}
+
+        {/* Type de compte */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Type de compte <span className="text-red-500">*</span>
+          </label>
+          <div className="mt-1 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setUserType('client')}
+              className={`${
+                userType === 'client'
+                  ? 'border-indigo-500 ring-2 ring-indigo-500 bg-indigo-50 text-indigo-700'
+                  : 'border-gray-300 text-gray-700 bg-white'
+              } relative border rounded-md py-2 px-3 flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500`}
+            >
+              <span className="flex items-center">
+                <FiUser className={`${userType === 'client' ? 'text-indigo-500' : 'text-gray-400'} mr-2`} />
+                <span>Client</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setUserType('freelance')}
+              className={`${
+                userType === 'freelance'
+                  ? 'border-indigo-500 ring-2 ring-indigo-500 bg-indigo-50 text-indigo-700'
+                  : 'border-gray-300 text-gray-700 bg-white'
+              } relative border rounded-md py-2 px-3 flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500`}
+            >
+              <span className="flex items-center">
+                <FiBriefcase className={`${userType === 'freelance' ? 'text-indigo-500' : 'text-gray-400'} mr-2`} />
+                <span>Freelance</span>
+              </span>
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Type de compte */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Type de compte
-        </label>
-        <div className="flex space-x-4">
+        {/* Nom complet */}
+        <div>
+          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+            Nom complet <span className="text-red-500">*</span>
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiUser className="text-gray-400" />
+            </div>
+            <input
+              id="fullName"
+              name="fullName"
+              type="text"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="Prénom et Nom"
+            />
+          </div>
+        </div>
+
+        {/* Nom d'utilisateur */}
+        <div>
+          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+            Nom d'utilisateur <span className="text-xs text-gray-500">(Facultatif)</span>
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 sm:text-sm">@</span>
+            </div>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="username"
+            />
+          </div>
+        </div>
+
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            Email <span className="text-red-500">*</span>
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiMail className="text-gray-400" />
+            </div>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="vous@exemple.com"
+            />
+          </div>
+        </div>
+
+        {/* Téléphone */}
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+            Téléphone <span className="text-xs text-gray-500">(Facultatif)</span>
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiPhone className="text-gray-400" />
+            </div>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="77 123 45 67"
+            />
+          </div>
+        </div>
+
+        {/* Mot de passe */}
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            Mot de passe <span className="text-red-500">*</span>
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiLock className="text-gray-400" />
+            </div>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="••••••••"
+            />
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
+          </p>
+        </div>
+
+        {/* Confirmer mot de passe */}
+        <div>
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+            Confirmer le mot de passe
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiLock className="text-gray-400" />
+            </div>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="••••••••"
+            />
+          </div>
+        </div>
+
+        {/* Acceptation des conditions */}
+        <div className="flex items-center">
+          <input
+            id="acceptTerms"
+            name="acceptTerms"
+            type="checkbox"
+            required
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          />
+          <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-700">
+            J'accepte les <a href="/conditions" className="text-indigo-600 hover:text-indigo-500">conditions d'utilisation</a> et la <a href="/privacy" className="text-indigo-600 hover:text-indigo-500">politique de confidentialité</a>
+          </label>
+        </div>
+
+        <div className="text-sm text-gray-500 mb-4">
+          <span className="text-red-500">*</span> Champs obligatoires
+        </div>
+
+        <div>
           <button
-            type="button"
-            className={`flex-1 flex items-center justify-center px-4 py-3 border ${
-              userType === 'client' 
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-700' 
-                : 'border-gray-300 text-gray-700 bg-white'
-            } rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none transition-colors`}
-            onClick={() => setUserType('client')}
+            type="submit"
+            disabled={isLoading}
+            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+              isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+            }`}
           >
-            <FiUser className="mr-2" />
-            Client
-          </button>
-          
-          <button
-            type="button"
-            className={`flex-1 flex items-center justify-center px-4 py-3 border ${
-              userType === 'freelance' 
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-700' 
-                : 'border-gray-300 text-gray-700 bg-white'
-            } rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none transition-colors`}
-            onClick={() => setUserType('freelance')}
-          >
-            <FiBriefcase className="mr-2" />
-            Freelance
+            {isLoading ? 'Création du compte...' : 'Créer un compte'}
           </button>
         </div>
-      </div>
-
-      {/* Nom complet */}
-      <div>
-        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-          Nom complet
-        </label>
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiUser className="text-gray-400" />
-          </div>
-          <input
-            id="fullName"
-            name="fullName"
-            type="text"
-            required
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="Prénom et Nom"
-          />
-        </div>
-      </div>
-
-      {/* Nom d'utilisateur */}
-      <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-          Nom d'utilisateur
-        </label>
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className="text-gray-500 sm:text-sm">@</span>
-          </div>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="username"
-          />
-        </div>
-      </div>
-
-      {/* Email */}
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiMail className="text-gray-400" />
-          </div>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="vous@exemple.com"
-          />
-        </div>
-      </div>
-
-      {/* Téléphone */}
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-          Téléphone
-        </label>
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiPhone className="text-gray-400" />
-          </div>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="77 123 45 67"
-          />
-        </div>
-      </div>
-
-      {/* Mot de passe */}
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Mot de passe
-        </label>
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiLock className="text-gray-400" />
-          </div>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="••••••••"
-          />
-        </div>
-        <p className="mt-1 text-xs text-gray-500">
-          Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
-        </p>
-      </div>
-
-      {/* Confirmer mot de passe */}
-      <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-          Confirmer le mot de passe
-        </label>
-        <div className="mt-1 relative rounded-md shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiLock className="text-gray-400" />
-          </div>
-          <input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="••••••••"
-          />
-        </div>
-      </div>
-
-      {/* Accepter les conditions */}
-      <div className="flex items-center">
-        <input
-          id="accept-terms"
-          name="accept-terms"
-          type="checkbox"
-          checked={acceptTerms}
-          onChange={(e) => setAcceptTerms(e.target.checked)}
-          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-        />
-        <label htmlFor="accept-terms" className="ml-2 block text-sm text-gray-700">
-          J'accepte les{' '}
-          <Link href="/conditions-utilisation" className="font-medium text-indigo-600 hover:text-indigo-500">
-            conditions d'utilisation
-          </Link>
-          {' '}et la{' '}
-          <Link href="/politique-confidentialite" className="font-medium text-indigo-600 hover:text-indigo-500">
-            politique de confidentialité
-          </Link>
-        </label>
-      </div>
-
-      <div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-            isLoading ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
-        >
-          {isLoading ? 'Création du compte...' : 'Créer un compte'}
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 
