@@ -29,56 +29,63 @@ export class ServiceValidationService {
   async getPendingServices(filters: ValidationFilters) {
     const { status, category, search, page, limit, sortBy, sortDirection } = filters;
     
-    // Build query with filters
-    const query = this.servicesRepository.createQueryBuilder('service')
-      .leftJoinAndSelect('service.provider', 'provider')
-      .leftJoinAndSelect('service.category', 'category')
-      .leftJoinAndSelect('service.validationResult', 'validationResult');
-      
+    // Build query with MongoDB compatible filters
+    const whereConditions: any = {};
+    
     // Apply filters
     if (status) {
-      query.andWhere('validationResult.status = :status', { status });
+      whereConditions['validationResult.status'] = status;
     }
     
     if (category) {
-      query.andWhere('category.id = :category', { category });
+      whereConditions['category.id'] = category;
     }
     
     if (search) {
-      query.andWhere('(service.title LIKE :search OR service.description LIKE :search)', { 
-        search: `%${search}%` 
-      });
+      whereConditions.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
     }
     
-    // Sort options
+    // Setup sorting
+    const orderBy: any = {};
+    
     if (sortBy) {
       const direction = sortDirection === 'desc' ? 'DESC' : 'ASC';
       
       if (sortBy === 'score') {
-        query.orderBy('validationResult.score', direction as 'ASC' | 'DESC');
+        orderBy['validationResult.score'] = direction;
       } else if (sortBy === 'status') {
-        query.orderBy('validationResult.status', direction as 'ASC' | 'DESC');
+        orderBy['validationResult.status'] = direction;
       } else if (sortBy === 'price') {
-        query.orderBy('service.price', direction as 'ASC' | 'DESC');
+        orderBy['price'] = direction;
       } else if (sortBy === 'provider') {
-        query.orderBy('provider.name', direction as 'ASC' | 'DESC');
+        orderBy['provider.name'] = direction;
       } else {
-        query.orderBy(`service.${sortBy}`, direction as 'ASC' | 'DESC');
+        orderBy[sortBy] = direction;
       }
     } else {
       // Default sort by creation date
-      query.orderBy('service.createdAt', 'ASC');
+      orderBy['createdAt'] = 'ASC';
     }
     
     // Count total before pagination
-    const total = await query.getCount();
+    const total = await this.servicesRepository.count({
+      where: whereConditions
+    });
     
-    // Apply pagination
+    // Calculate pagination
     const skip = (page - 1) * limit;
-    query.skip(skip).take(limit);
     
-    // Execute query
-    const services = await query.getMany();
+    // Execute query with MongoDB compatible approach
+    const services = await this.servicesRepository.find({
+      where: whereConditions,
+      relations: ['provider', 'category', 'validationResult'],
+      order: orderBy,
+      skip,
+      take: limit
+    });
     
     return {
       services,

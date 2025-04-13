@@ -36,16 +36,18 @@ export class ServicesService {
     
     // Si une recherche par texte est fournie, filtrer par titre ou description
     if (query.search) {
-      return this.serviceRepository
-        .createQueryBuilder('service')
-        .leftJoinAndSelect('service.provider', 'provider')
-        .leftJoinAndSelect('service.category', 'category')
-        .leftJoinAndSelect('service.reviews', 'reviews')
-        .where(baseWhere)
-        .andWhere('(service.title LIKE :search OR service.description LIKE :search)', 
-          { search: `%${query.search}%` })
-        .orderBy('service.createdAt', 'DESC')
-        .getMany();
+      // Utiliser find() avec une requête regex au lieu de createQueryBuilder
+      return this.serviceRepository.find({
+        where: {
+          ...baseWhere,
+          $or: [
+            { title: { $regex: query.search, $options: 'i' } },
+            { description: { $regex: query.search, $options: 'i' } }
+          ]
+        },
+        relations: ['provider', 'category', 'reviews'],
+        order: { createdAt: 'DESC' }
+      });
     }
     
     // Requête standard sans recherche textuelle
@@ -196,19 +198,15 @@ export class ServicesService {
    * @returns Les meilleurs services
    */
   async findTopServices(limit: number = 4, minReviews: number = 5): Promise<Service[]> {
-    // Créer une requête pour récupérer les services avec plus de minReviews avis
-    // et triés par nombre de commandes (totalOrders) décroissant
-    const topServices = await this.serviceRepository
-      .createQueryBuilder('service')
-      .leftJoinAndSelect('service.provider', 'provider')
-      .leftJoinAndSelect('service.category', 'category')
-      .leftJoinAndSelect('service.reviews', 'reviews')
-      .where('service.isActive = :isActive', { isActive: true })
-      .andWhere('service.totalReviews >= :minReviews', { minReviews })
-      .orderBy('service.totalOrders', 'DESC')
-      .limit(limit)
-      .getMany();
-    
-    return topServices;
+    // Utiliser find() avec des critères MongoDB au lieu de createQueryBuilder
+    return this.serviceRepository.find({
+      where: {
+        isActive: true,
+        totalReviews: { $gte: minReviews }
+      },
+      relations: ['provider', 'category', 'reviews'],
+      order: { totalOrders: 'DESC' },
+      take: limit
+    });
   }
 } 
