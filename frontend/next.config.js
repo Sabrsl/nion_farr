@@ -2,14 +2,14 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Définir le mode de rendu sur "standalone" pour que tout soit généré à la demande
+  // Configuration optimisée pour Vercel
   output: 'standalone',
   
   // Configuration des images
   images: {
-    domains: ['nion-farr.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
+    domains: ['nion-farr.vercel.app', 'nion-farr-backend.vercel.app', 'nionfar-backend.onrender.com', 'localhost', 'res.cloudinary.com'],
     formats: ['image/avif', 'image/webp'],
-    unoptimized: true, // Désactive l'optimisation d'images qui utilise Edge Runtime
+    unoptimized: true,
   },
   
   // Configuration de production
@@ -22,9 +22,7 @@ const nextConfig = {
   // Configuration du compilateur
   compiler: {
     // Suppression des console.log en production
-    removeConsole: {
-      exclude: ['error'], // Only keep error logs
-    },
+    removeConsole: process.env.NODE_ENV === 'production',
     // Configuration explicite du JSX runtime
     reactRemoveProperties: true,
     styledComponents: true,
@@ -44,11 +42,11 @@ const nextConfig = {
   // Désactivation complète des tests
   typescript: {
     // Désactiver la vérification TypeScript en production pour accélérer le build
-    ignoreBuildErrors: process.env.NODE_ENV === 'production',
+    ignoreBuildErrors: process.env.VERCEL === '1',
   },
   eslint: {
     // Désactiver ESLint en production pour accélérer le build
-    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
+    ignoreDuringBuilds: process.env.VERCEL === '1',
   },
   
   // Passer les erreurs de redirection de slash
@@ -57,9 +55,9 @@ const nextConfig = {
   
   // Configuration du proxy API pour les requêtes backend
   env: {
-    NEXT_PUBLIC_ENVIRONMENT: process.env.NODE_ENV || 'development',
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://nion-farr.vercel.app',
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://nionfar-backend.onrender.com/api',
+    NEXT_PUBLIC_API_URL: 'https://nionfar-backend.onrender.com/api',
+    NEXT_PUBLIC_APP_URL: 'https://nion-farr.vercel.app',
+    NEXT_PUBLIC_ENVIRONMENT: 'production',
   },
 
   // Forcer l'utilisation du runtime React et désactiver Edge Runtime
@@ -160,90 +158,11 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // En production, utiliser toujours l'URL de production Vercel
-    const isProduction = process.env.NODE_ENV === 'production';
-    const productionApiUrl = 'https://nionfar-backend.onrender.com/api';
-    // Forcer l'URL de production en production
-    const apiUrl = isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL || productionApiUrl);
-    
-    // Configuration des redirections API vers Vercel
-    console.log(`[Next.js Config] Configuration des redirections API vers: ${productionApiUrl}`);
-    console.log(`[Next.js Config] Environnement: ${process.env.NODE_ENV}`);
-    
     return [
-      // Requêtes générales vers l'API
       {
         source: '/api/:path*',
-        destination: `${productionApiUrl}/:path*`,
-      },
-      // Routes d'authentification
-      {
-        source: '/api/auth/login',
-        destination: `${productionApiUrl}/auth/login`,
-      },
-      {
-        source: '/api/auth/register',
-        destination: `${productionApiUrl}/auth/register`,
-      },
-      {
-        source: '/api/auth/logout',
-        destination: `${productionApiUrl}/auth/logout`,
-      },
-      {
-        source: '/api/auth/me',
-        destination: `${productionApiUrl}/auth/me`,
-      },
-      {
-        source: '/api/v1/auth/login',
-        destination: `${productionApiUrl}/auth/login`,
-      },
-      // Routes utilisateur
-      {
-        source: '/api/user/profile',
-        destination: `${productionApiUrl}/user/profile`,
-      },
-      // Routes des services freelance
-      {
-        source: '/api/services',
-        destination: `${productionApiUrl}/services`,
-      },
-      {
-        source: '/api/services/:id',
-        destination: `${productionApiUrl}/services/:id`,
-      },
-      // Routes des commandes
-      {
-        source: '/api/orders',
-        destination: `${productionApiUrl}/orders`,
-      },
-      {
-        source: '/api/orders/:id',
-        destination: `${productionApiUrl}/orders/:id`,
-      },
-      // Routes des litiges
-      {
-        source: '/api/disputes',
-        destination: `${productionApiUrl}/disputes`,
-      },
-      {
-        source: '/api/disputes/:id',
-        destination: `${productionApiUrl}/disputes/:id`,
-      },
-      // Route pour les tokens CSRF
-      {
-        source: '/api/security/csrf-tokens',
-        destination: `${productionApiUrl}/security/csrf-tokens`,
-      },
-      // Route pour le statut
-      {
-        source: '/api/status',
-        destination: `${productionApiUrl}/status`,
-      },
-      // Route pour le healthcheck
-      {
-        source: '/api/health',
-        destination: `${productionApiUrl}/health`,
-      },
+        destination: 'https://nionfar-backend.onrender.com/api/:path*'
+      }
     ];
   },
   
