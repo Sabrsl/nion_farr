@@ -8,6 +8,12 @@
     "**/build/**",
     "frontend/pages/_app.tsx",
     "frontend/pages/_document.tsx",
-    "frontend/pages/api/**"
+    "frontend/pages/api/**",
+    "frontend/config.ts:(AUTH_TOKEN_KEY|REFRESH_TOKEN_KEY|STORAGE_PREFIX)",
+    "frontend/data/index.ts:(currentUser|freelancerServices|freelancerOrders|freelancerStats|userNotifications|userTransactions|userWithdrawals|conversations|messages|getMessagesByConversationId|getConversationById|getConversationsByUserId|reviews|getReviewsByServiceId|getReviewsByUserId|getReviewById)",
+    "frontend/middleware.ts",
+    "frontend/components/(Footer|Layout|background-gradient-demo|ClientOnly|lazy).tsx?",
+    "frontend/__tests__/server.ts",
+    "src/msw-init.ts"
   ]
 } 

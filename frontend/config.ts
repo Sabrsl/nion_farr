@@ -48,8 +48,13 @@ if (typeof window !== 'undefined') {
 }
 
 // Configuration des tokens d'authentification
+// Ces constantes sont utilisées dans les services d'authentification et de stockage
+// @ts-prune-ignore
 export const AUTH_TOKEN_KEY = 'auth_token';
+// @ts-prune-ignore
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 
 // Configuration pour le stockage local
+// Utilisé comme préfixe pour les clés de localStorage dans plusieurs services
+// @ts-prune-ignore
 export const STORAGE_PREFIX = 'nionfar_'; 

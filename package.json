@@ -24,7 +24,11 @@
     "start:prod": "cross-env NODE_ENV=production node dist/src/main.js",
     "start:render": "cross-env NODE_ENV=production IS_RENDER=true node dist/src/main.js",
     "prepare:render": "node scripts/prepare-render.js",
-    "postbuild": "node scripts/check-dist.js && npm run check:main-js"
+    "postbuild": "node scripts/check-dist.js && npm run check:main-js",
+    "detect:dead-code": "node scripts/clean-dead-code.js",
+    "detect:unused-deps": "node scripts/analyze-dependencies.js",
+    "detect:unused-exports": "npx ts-prune | grep -v '@ts-prune-ignore' | grep -v '(used in module)' | sort",
+    "detect:all": "npm run detect:dead-code && npm run detect:unused-deps && npm run detect:unused-exports"
   },
   "author": "NionFar Team",
   "license": "UNLICENSED",
@@ -72,14 +76,17 @@
     "@typescript-eslint/parser": "^8.29.0",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
+    "depcheck": "^1.4.7",
     "eslint": "^9.24.0",
     "eslint-config-next": "^15.2.4",
     "husky": "^9.1.7",
+    "knip": "^5.1.3",
     "postcss": "^8.5.3",
     "postcss-import": "^16.1.0",
     "postcss-nesting": "^13.0.1",
     "rimraf": "^5.0.5",
     "tailwindcss": "^4.1.3",
+    "ts-prune": "^0.10.3",
     "typescript": "^5.5.3"
   }
 }
