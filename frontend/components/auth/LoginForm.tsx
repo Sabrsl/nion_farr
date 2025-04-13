@@ -11,7 +11,7 @@ interface LoginFormProps {
 const LoginForm = ({ redirectUrl }: LoginFormProps) => {
   const router = useRouter();
   const [credentials, setCredentials] = useState({
-    emailOrPhone: '',
+    email: '',
     password: '',
     rememberMe: false
   });
@@ -28,7 +28,7 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
     }));
     
     // Effacer les erreurs quand l'utilisateur modifie les champs
-    if (errorMessage && (name === 'emailOrPhone' || name === 'password')) {
+    if (errorMessage && (name === 'email' || name === 'password')) {
       setErrorMessage('');
     }
   };
@@ -39,8 +39,8 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
     setErrorMessage('');
 
     // Validation de base côté client
-    if (!credentials.emailOrPhone.trim()) {
-      setErrorMessage('Veuillez entrer votre email ou numéro de téléphone');
+    if (!credentials.email.trim()) {
+      setErrorMessage('Veuillez entrer votre email');
       setIsLoading(false);
       return;
     }
@@ -68,6 +68,22 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
               
               if (!retryResponse.success) {
                 setErrorMessage(retryResponse.error || 'Échec de la connexion après nouvelle tentative');
+              } else {
+                // Connexion réussie après nouvelle tentative
+                // Ajouter le signal de mise à jour d'authentification et déclencher l'événement
+                localStorage.setItem('auth_updated', Date.now().toString());
+                window.dispatchEvent(new Event('storage'));
+                
+                // Forcer une redirection manuelle si autoRedirect est activé
+                console.log("🔄 Redirection manuelle après connexion réussie");
+                
+                // Utiliser la fonction globale de redirection si disponible
+                if (typeof window.forceRedirect === 'function') {
+                  window.forceRedirect(redirectUrl || '/');
+                } else {
+                  // Fallback sur la méthode classique
+                  window.location.replace(redirectUrl || '/');
+                }
               }
             } catch (retryError) {
               console.error('Erreur lors de la nouvelle tentative:', retryError);
@@ -84,6 +100,22 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
         
         // Afficher l'erreur
         setErrorMessage(response.error || 'Identifiants incorrects. Veuillez réessayer.');
+      } else {
+        // Connexion réussie
+        // Ajouter le signal de mise à jour d'authentification et déclencher l'événement
+        localStorage.setItem('auth_updated', Date.now().toString());
+        window.dispatchEvent(new Event('storage'));
+        
+        // Forcer une redirection manuelle si autoRedirect est activé
+        console.log("🔄 Redirection manuelle après connexion réussie");
+        
+        // Utiliser la fonction globale de redirection si disponible
+        if (typeof window.forceRedirect === 'function') {
+          window.forceRedirect(redirectUrl || '/');
+        } else {
+          // Fallback sur la méthode classique
+          window.location.replace(redirectUrl || '/');
+        }
       }
     } catch (error) {
       console.error('Erreur de connexion:', error);
@@ -126,23 +158,23 @@ const LoginForm = ({ redirectUrl }: LoginFormProps) => {
       )}
 
       <div>
-        <label htmlFor="emailOrPhone" className="block text-sm font-medium text-gray-700">
-          Email ou téléphone
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          Email
         </label>
         <div className="mt-1 relative rounded-md shadow-sm">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <FiMail className="h-5 w-5 text-gray-400" />
           </div>
           <input
-            id="emailOrPhone"
-            name="emailOrPhone"
-            type="text"
+            id="email"
+            name="email"
+            type="email"
             autoComplete="email"
             required
-            value={credentials.emailOrPhone}
+            value={credentials.email}
             onChange={handleChange}
             className="pl-10 appearance-none block w-full px-3 py-2.5 sm:py-3 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-base"
-            placeholder="votre@email.com ou +221XXXXXXXXX"
+            placeholder="votre@email.com"
           />
         </div>
       </div>

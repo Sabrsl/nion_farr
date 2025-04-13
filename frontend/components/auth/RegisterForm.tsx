@@ -67,12 +67,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
       return false;
     }
 
-    // Validation du téléphone si fourni
-    if (phone && !phone.match(/^[0-9]{9,10}$/)) {
-      setError('Veuillez entrer un numéro de téléphone valide (9-10 chiffres).');
-      return false;
-    }
-
     // Validation du mot de passe
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
@@ -86,14 +80,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
       return false;
     }
 
-    // Validation du nom d'utilisateur (alphanumériques + quelques caractères spéciaux) si fourni
-    if (username && !username.match(/^[a-zA-Z0-9._-]{3,20}$/)) {
-      setError('Le nom d\'utilisateur doit contenir entre 3 et 20 caractères (lettres, chiffres, ., _, -).');
-      return false;
-    }
-
     return true;
-  }, [email, phone, password, confirmPassword, username, fullName, acceptTerms, userType]);
+  }, [acceptTerms, email, password, confirmPassword, fullName, userType]);
 
   // Gestionnaire d'erreurs amélioré
   const handleApiError = (errorMessage: string) => {
@@ -155,40 +143,126 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
     const firstName = fullName.split(' ')[0];
     const lastName = fullName.split(' ').slice(1).join(' ') || firstName;
     
-    // Formulaire formaté pour le backend
-    const formattedData = {
+    console.log("📝 Données formatées pour l'inscription:", { 
       email,
       firstName,
       lastName,
-      password,
-      role: userType.toUpperCase(),
-    };
-    
-    console.log("📝 Données formatées pour l'inscription:", { ...formattedData, password: '***' });
+      password: '***',
+      role: userType.toUpperCase()
+    });
     
     try {
       console.log("Tentative d'inscription via authService...");
-      const result = await authService.register({
-        username,
-        email,
-        phone,
-        password,
-        fullName,
-        acceptTerms,
-        role: userType
+      
+      // Utiliser spécifiquement notre point d'entrée API pour éviter les problèmes de méthode
+      const apiUrl = '/api/auth/register';
+      
+      // Utiliser directement fetch pour s'assurer que la méthode POST est bien utilisée
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-HTTP-Method': 'POST',
+          'X-HTTP-Method-Override': 'POST'
+        },
+        body: JSON.stringify({
+          email,
+          firstName,
+          lastName,
+          password,
+          passwordConfirm: confirmPassword,
+          termsAccepted: acceptTerms,
+          role: userType.toUpperCase(),
+          isFreelancer: userType === 'freelance'
+        }),
+        cache: 'no-store'
       });
       
-      if (result.success) {
+      if (!response.ok) {
+        const errorData = await response.json();
+        setIsLoading(false);
+        handleApiError(errorData.error || errorData.message || 'Erreur lors de l\'inscription');
+        return;
+      }
+      
+      const result = await response.json();
+      
+      if (result.success || result.token || result.user) {
         console.log("✅ Inscription réussie:", result);
+        
+        // Afficher des détails supplémentaires pour le débogage
+        console.log("📊 État de l'inscription:", { 
+          success: result.success, 
+          hasToken: !!result.token, 
+          hasUser: !!result.user,
+          userDetails: result.user,
+          message: result.message,
+          redirectTo: result.redirectTo,
+          rawResult: JSON.stringify(result)
+        });
+
         setIsLoading(false);
         setSuccess('Inscription réussie ! Redirection...');
         setError('');
         
         toast.success('Inscription réussie ! Redirection...');
         
-        // La redirection est gérée par authService
+        // Stocker les données d'authentification
+        if (result.token) {
+          localStorage.setItem('auth_token', result.token);
+        }
+        
+        if (result.user) {
+          // S'assurer que l'utilisateur est enregistré avec le bon format
+          const userData = {
+            ...result.user,
+            role: result.user.role || userType.toUpperCase(),
+            isFreelancer: result.user.isFreelancer || userType === 'freelance'
+          };
+          
+          // Stocker les données utilisateur
+          localStorage.setItem('nionfarUser', JSON.stringify(userData));
+          
+          // Mémoriser explicitement le type de compte
+          const accountType = userType === 'freelance' ? 'freelancer' : 'client';
+          localStorage.setItem('accountType', accountType);
+          
+          console.log(`✅ Redirection vers la page d'accueil en tant que ${accountType}`);
+          
+          // Forcer la mise à jour du header en stockant un signal spécifique
+          localStorage.setItem('auth_updated', Date.now().toString());
+          // Déclencher un événement pour informer les autres composants
+          window.dispatchEvent(new Event('storage'));
+          
+          // Rediriger vers l'URL suggérée par l'API ou la page d'accueil par défaut
+          const redirectUrl = result.redirectTo || '/';
+          console.log(`🔄 Redirection vers: ${redirectUrl}`);
+          
+          // NOUVEAU MÉCANISME DE REDIRECTION - méthode directe avec pushState + reload
+          console.log('🚀 Méthode de redirection pushState + reload');
+          
+          try {
+            // 1. Changer l'URL avec history API
+            window.history.pushState({auth: true}, '', redirectUrl);
+            
+            // 2. Forcer un rafraîchissement complet de la page
+            window.location.reload();
+            
+            // Fallback si reload ne fonctionne pas immédiatement
+            setTimeout(() => {
+              if (window.location.pathname !== redirectUrl) {
+                console.log('⚠️ Redirection avec reload échouée, tentative avec document.location');
+                document.location.href = redirectUrl;
+              }
+            }, 200);
+          } catch (redirectError) {
+            console.error('⚠️ Erreur avec la méthode pushState:', redirectError);
+            // Méthode alternative
+            window.location.href = redirectUrl;
+          }
+        }
       } else {
-        console.error("❌ Échec de l'inscription:", result.error);
+        console.error("❌ Échec de l'inscription:", result);
         setIsLoading(false);
         setSuccess('');
         
@@ -371,35 +445,31 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
           <label className="block text-sm font-medium text-gray-700">
             Type de compte <span className="text-red-500">*</span>
           </label>
-          <div className="mt-1 grid grid-cols-2 gap-3">
-            <button
-              type="button"
+          <div className="mt-1 flex space-x-4">
+            <div 
               onClick={() => setUserType('client')}
-              className={`${
-                userType === 'client'
-                  ? 'border-indigo-500 ring-2 ring-indigo-500 bg-indigo-50 text-indigo-700'
-                  : 'border-gray-300 text-gray-700 bg-white'
-              } relative border rounded-md py-2 px-3 flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500`}
+              className={`p-3 border rounded-md cursor-pointer flex-1 text-center transition ${
+                userType === 'client' 
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700' 
+                  : 'border-gray-300 hover:border-indigo-300'
+              }`}
             >
-              <span className="flex items-center">
-                <FiUser className={`${userType === 'client' ? 'text-indigo-500' : 'text-gray-400'} mr-2`} />
-                <span>Client</span>
-              </span>
-            </button>
-            <button
-              type="button"
+              <FiUser className="w-5 h-5 mx-auto mb-1" />
+              <div className="font-medium">Client</div>
+              <div className="text-xs text-gray-500">Je souhaite embaucher</div>
+            </div>
+            <div 
               onClick={() => setUserType('freelance')}
-              className={`${
-                userType === 'freelance'
-                  ? 'border-indigo-500 ring-2 ring-indigo-500 bg-indigo-50 text-indigo-700'
-                  : 'border-gray-300 text-gray-700 bg-white'
-              } relative border rounded-md py-2 px-3 flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500`}
+              className={`p-3 border rounded-md cursor-pointer flex-1 text-center transition ${
+                userType === 'freelance' 
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700' 
+                  : 'border-gray-300 hover:border-indigo-300'
+              }`}
             >
-              <span className="flex items-center">
-                <FiBriefcase className={`${userType === 'freelance' ? 'text-indigo-500' : 'text-gray-400'} mr-2`} />
-                <span>Freelance</span>
-              </span>
-            </button>
+              <FiBriefcase className="w-5 h-5 mx-auto mb-1" />
+              <div className="font-medium">Freelance</div>
+              <div className="text-xs text-gray-500">Je cherche du travail</div>
+            </div>
           </div>
         </div>
 
@@ -425,27 +495,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
           </div>
         </div>
 
-        {/* Nom d'utilisateur */}
-        <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-            Nom d'utilisateur <span className="text-xs text-gray-500">(Facultatif)</span>
-          </label>
-          <div className="mt-1 relative rounded-md shadow-sm">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-500 sm:text-sm">@</span>
-            </div>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="username"
-            />
-          </div>
-        </div>
-
         {/* Email */}
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -465,28 +514,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ defaultAccountType = 'clien
               onChange={(e) => setEmail(e.target.value)}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               placeholder="vous@exemple.com"
-            />
-          </div>
-        </div>
-
-        {/* Téléphone */}
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Téléphone <span className="text-xs text-gray-500">(Facultatif)</span>
-          </label>
-          <div className="mt-1 relative rounded-md shadow-sm">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiPhone className="text-gray-400" />
-            </div>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="77 123 45 67"
             />
           </div>
         </div>

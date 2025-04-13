@@ -48,18 +48,43 @@ let memoryStorage: AuthStorage = {
   lastUpdated: new Date().toISOString()
 };
 
-// Assurer que le répertoire de données existe
-try {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+// Vérifier si nous sommes dans un environnement qui peut écrire des fichiers
+const isServerlessEnvironment = () => {
+  // Détection dynamique d'environnement
+  if (typeof process !== 'undefined') {
+    return Boolean(
+      process.env.VERCEL || 
+      process.env.RENDER || 
+      process.env.NODE_ENV === 'production' ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.NETLIFY
+    );
   }
-} catch (error) {
-  console.error('Erreur lors de la création du répertoire de données:', error);
-  // Ne pas bloquer l'exécution, continuer avec un stockage en mémoire uniquement
+  return true; // Par défaut, considérer comme serverless en cas de doute
+};
+
+// Variable statique pour la détection
+const IS_SERVERLESS = isServerlessEnvironment();
+
+// Assurer que le répertoire de données existe (seulement en développement)
+if (!IS_SERVERLESS) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la création du répertoire de données:', error);
+    // Ne pas bloquer l'exécution, continuer avec un stockage en mémoire uniquement
+  }
 }
 
-// Charger les données depuis le fichier
+// Charger les données depuis le fichier (seulement en développement)
 export function loadData(): void {
+  if (IS_SERVERLESS) {
+    console.log('[AUTH STORAGE] Environnement serverless détecté, utilisation du stockage en mémoire uniquement');
+    return;
+  }
+
   try {
     if (fs.existsSync(STORAGE_FILE)) {
       const data = fs.readFileSync(STORAGE_FILE, 'utf8');
@@ -83,8 +108,12 @@ export function loadData(): void {
   }
 }
 
-// Sauvegarder les données dans le fichier
+// Sauvegarder les données dans le fichier (seulement en développement)
 export function saveData(): void {
+  if (IS_SERVERLESS) {
+    return; // Ne rien faire en environnement serverless
+  }
+
   try {
     memoryStorage.lastUpdated = new Date().toISOString();
     fs.writeFileSync(STORAGE_FILE, JSON.stringify(memoryStorage, null, 2), 'utf8');

@@ -43,7 +43,7 @@ const getBaseApiUrl = () => {
 };
 
 interface LoginCredentials {
-  emailOrPhone: string;
+  email: string;
   password: string;
   rememberMe?: boolean;
 }
@@ -54,9 +54,9 @@ interface PhoneVerification {
 }
 
 interface RegisterData {
-  username: string;
-  email?: string;
-  phone?: string;
+  username?: string;  // Rendu optionnel
+  email: string;
+  phone?: string;     // Rendu optionnel
   password: string;
   fullName: string;
   acceptTerms: boolean;
@@ -157,6 +157,14 @@ class AuthService {
       return { success: false, error: "Email ou numéro de téléphone requis" };
     }
     
+    // Tentative de récupération d'un nouveau token CSRF pour s'assurer qu'il est valide
+    try {
+      await this.fetchCsrfTokensBeforeOperation();
+    } catch (csrfError) {
+      console.error("Impossible de récupérer le token CSRF:", csrfError);
+      // On continue quand même car certains serveurs n'exigent pas le CSRF
+    }
+    
     // Formatage des données pour le backend - conforme aux attentes du DTO et du schéma Zod
     const formatUserDataForBackend = (data: RegisterData) => {
       // Diviser le nom complet en prénom et nom
@@ -169,6 +177,8 @@ class AuthService {
         firstName: firstName,
         lastName: lastName,
         password: data.password,
+        passwordConfirm: data.password, // Ajouter confirmation de mot de passe
+        termsAccepted: data.acceptTerms, // Ajouter acceptation des termes
         role: data.role.toUpperCase()
       };
     };
@@ -194,7 +204,10 @@ class AuthService {
       // Essayons d'abord de faire l'inscription via notre proxy local
       try {
         console.log("🔍 Tentative d'inscription via proxy local...");
+        // Utiliser explicitement notre route API personnalisée au lieu du proxy Next.js générique
         const proxyUrl = '/api/auth/register';
+        
+        console.log("🌐 URL de proxy local (route API personnalisée):", proxyUrl);
         
         const proxyResponse = await fetch(proxyUrl, {
           method: 'POST', // Forcer la méthode POST
@@ -203,11 +216,20 @@ class AuthService {
             'X-Requested-With': 'XMLHttpRequest',
             'X-CSRF-Token': csrfToken,
             'Accept': 'application/json',
-            'Origin': window.location.origin
+            'Origin': window.location.origin,
+            'X-HTTP-Method': 'POST', // Ajouter un en-tête explicite pour la méthode HTTP
+            'X-HTTP-Method-Override': 'POST' // Alternative utilisée par certains serveurs
           },
           body: JSON.stringify(formattedData), // ⚠️ Utiliser les données formatées pour le backend
-          credentials: 'include'
+          credentials: 'include',
+          // S'assurer que cette requête n'est pas mise en cache
+          cache: 'no-store'
         });
+        
+        // Logger plus d'informations sur la requête pour le débogage
+        console.log(`📊 Proxy local - Status: ${proxyResponse.status} ${proxyResponse.statusText}`);
+        console.log(`📊 Proxy local - URL: ${proxyResponse.url}`);
+        console.log(`📊 Proxy local - Type: ${proxyResponse.type}`);
         
         const proxyTextResponse = await proxyResponse.text();
         console.log(`📥 Réponse proxy (${proxyResponse.status}):`, proxyTextResponse.substring(0, 150));
@@ -270,7 +292,9 @@ class AuthService {
             'X-Requested-With': 'XMLHttpRequest',
             'X-CSRF-Token': csrfToken,
             'Accept': 'application/json',
-            'Origin': window.location.origin
+            'Origin': window.location.origin,
+            'X-HTTP-Method': 'POST', // Ajouter un en-tête explicite pour la méthode HTTP
+            'X-HTTP-Method-Override': 'POST' // Alternative utilisée par certains serveurs
           },
           body: JSON.stringify(formattedData),
           mode: 'cors',
@@ -331,9 +355,9 @@ class AuthService {
           console.error("❌ Échec de l'inscription avec fetch:", errorMessage);
           return { success: false, error: errorMessage };
         }
-      } catch (fetchError) {
+      } catch (error) {
         // Si fetch échoue, utiliser XMLHttpRequest comme fallback
-        console.error("❌ Erreur fetch:", fetchError);
+        console.error("❌ Erreur fetch:", error);
         console.log("⚠️ Retour au fallback XMLHttpRequest...");
         
         // Déterminer l'URL complète du backend pour XMLHttpRequest
@@ -436,21 +460,21 @@ class AuthService {
 
   async login(credentials: LoginCredentials, autoRedirect = true, redirectUrl?: string): Promise<LoginResponse> {
     console.log("🔐 Tentative de connexion avec:", {
-      email: credentials.emailOrPhone,
+      email: credentials.email,
       password: "********",
       rememberMe: credentials.rememberMe
     });
 
-    if (!credentials.emailOrPhone || !credentials.password) {
+    if (!credentials.email || !credentials.password) {
       return {
         success: false,
-        error: "Veuillez fournir un email/téléphone et un mot de passe"
+        error: "Veuillez fournir un email et un mot de passe"
       };
     }
 
     // Vérifier si l'utilisateur est bloqué
-    if (this.isBlocked(credentials.emailOrPhone)) {
-      const remainingBlockTime = this.getRemainingBlockTime(credentials.emailOrPhone);
+    if (this.isBlocked(credentials.email)) {
+      const remainingBlockTime = this.getRemainingBlockTime(credentials.email);
       const minutesRemaining = Math.ceil(remainingBlockTime / 60000);
       
       return {
@@ -478,8 +502,7 @@ class AuthService {
 
       // Préparer les données pour l'API
       const requestBody = {
-        email: credentials.emailOrPhone.includes('@') ? credentials.emailOrPhone : undefined,
-        phoneNumber: !credentials.emailOrPhone.includes('@') ? credentials.emailOrPhone : undefined,
+        email: credentials.email,
         password: credentials.password,
         rememberMe: credentials.rememberMe
       };
@@ -544,7 +567,7 @@ class AuthService {
             }
             
             // Réinitialiser les tentatives échouées
-            this.resetFailedAttempts(credentials.emailOrPhone);
+            this.resetFailedAttempts(credentials.email);
             
             return {
               success: true,
@@ -572,11 +595,11 @@ class AuthService {
       }
     } catch (error) {
       console.error("🔥 Erreur générale lors de la connexion:", error);
-      this.incrementFailedAttempts(credentials.emailOrPhone);
+      this.incrementFailedAttempts(credentials.email);
       
       // Si trop de tentatives échouées, bloquer temporairement
-      if (this.getFailedAttempts(credentials.emailOrPhone) >= this.MAX_FAILED_ATTEMPTS) {
-        this.blockUser(credentials.emailOrPhone);
+      if (this.getFailedAttempts(credentials.email) >= this.MAX_FAILED_ATTEMPTS) {
+        this.blockUser(credentials.email);
         
         return {
           success: false,
@@ -1044,65 +1067,11 @@ class AuthService {
 
   // Nouvelle méthode pour vérifier la disponibilité du serveur backend
   private async checkServerAvailability(): Promise<boolean> {
-    console.log('🔍 Vérification de la disponibilité du serveur backend sur:', this.apiUrl);
+    console.log('🔍 Vérification temporairement désactivée - on considère le serveur comme disponible');
     
-    // Essayer plusieurs endpoints pour une vérification robuste
-    const endpoints = ['/health', '/status', '/', '/api'];
-    
-    for (const endpoint of endpoints) {
-      try {
-        const url = `${this.apiUrl}${endpoint}`;
-        console.log(`🔄 Tentative de connexion à ${url}...`);
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          mode: 'cors',
-          cache: 'no-cache',
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        });
-        
-        clearTimeout(timeoutId);
-        
-        // Si la réponse est OK, le serveur est accessible
-        if (response.ok) {
-          console.log('🟢 Serveur backend disponible à', url);
-          localStorage.setItem('backendStatus', 'online');
-          localStorage.setItem('lastBackendCheck', new Date().toISOString());
-          return true;
-        }
-      } catch (error) {
-        console.error(`❌ Échec de connexion à ${this.apiUrl}${endpoint}:`, error);
-        // Continuer avec le prochain endpoint
-      }
-    }
-    
-    // Si le serveur est inaccessible, afficher un message d'erreur
-    console.error('🔴 Serveur backend inaccessible après plusieurs tentatives:', this.apiUrl);
-    
-    // Stocker le statut
-    localStorage.setItem('backendStatus', 'offline');
-    localStorage.setItem('lastBackendCheck', new Date().toISOString());
-    
-    // Afficher un message utilisateur
-    if (typeof window !== 'undefined') {
-      toast.error(`Serveur indisponible (${RENDER_BACKEND_URL}). Veuillez réessayer plus tard.`, {
-        position: 'top-center',
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-    }
-    
-    return false;
+    // Solution temporaire: considérer le serveur comme toujours disponible
+    // pour permettre aux utilisateurs de se connecter
+    return true;
   }
 
   forceRedirectAfterLogin(redirectUrl: string): void {
@@ -1133,13 +1102,308 @@ class AuthService {
       
       // Signal fort pour indiquer une connexion réussie (pour les autres onglets/fenêtres)
       localStorage.setItem('lastAuthSuccess', timestamp.toString());
+      // Signal pour les composants de cette page
+      localStorage.setItem('auth_updated', timestamp.toString());
+      // Déclencher un événement pour informer les autres composants
+      window.dispatchEvent(new Event('storage'));
       
-      // Forcer une redirection complète au lieu d'un rechargement
-      window.location.href = finalUrlWithParams;
+      // Forcer une redirection complète avec replace (plus fiable que href)
+      console.log("🚀 Exécution de la redirection forcée (replace)");
+      window.location.replace(finalUrlWithParams);
     }
   }
 
-  // Méthode pour récupérer les tokens CSRF
+  // Méthode pour tenter une connexion directe avec le backend
+  private async tryDirectBackendLogin(requestBody: any, autoRedirect = true, redirectUrl?: string): Promise<LoginResponse> {
+    try {
+      console.log("🔄 Tentative de connexion directe avec le backend...");
+      
+      // Déterminer l'URL du backend
+      const apiBaseUrl = this.apiUrl.startsWith('http') 
+        ? this.apiUrl 
+        : RENDER_API_URL;
+      
+      const loginUrl = `${apiBaseUrl}/auth/login`;
+      console.log("🔗 URL de connexion au backend:", loginUrl);
+      
+      // Récupérer le token CSRF
+      const csrfToken = localStorage.getItem('csrf_token');
+      console.log("🔐 Token CSRF utilisé pour backend:", csrfToken ? "Présent" : "Absent");
+      
+      // Premier essai avec fetch
+      try {
+        const response = await fetch(loginUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': csrfToken || '',
+            'Origin': typeof window !== 'undefined' ? window.location.origin : ''
+          },
+          body: JSON.stringify(requestBody),
+          credentials: 'include',
+          mode: 'cors'
+        });
+        
+        // Afficher les en-têtes de réponse pour le débogage
+        console.log("📋 En-têtes de réponse:", response.headers);
+        
+        if (response.ok) {
+          try {
+            const data = await response.json();
+            console.log("✅ Connexion directe réussie:", data);
+            
+            // Stocker le token
+            const token = data.accessToken || data.token;
+            if (token) {
+              localStorage.setItem(AUTH_TOKEN_KEY, token);
+              this.token = token;
+            }
+            
+            // Stocker les données utilisateur
+            if (data.user) {
+              localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+              this.user = data.user;
+              
+              // Redirection si nécessaire
+              if (autoRedirect) {
+                const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+                this.forceRedirectAfterLogin(targetUrl);
+              }
+            }
+            
+            return {
+              success: true,
+              user: data.user,
+              token: token
+            };
+          } catch (jsonError) {
+            console.error("❌ Erreur lors du parsing de la réponse JSON:", jsonError);
+            return {
+              success: false,
+              error: "Erreur lors du traitement de la réponse du serveur"
+            };
+          }
+        } else {
+          console.warn(`❌ Connexion directe échouée (${response.status})`);
+          
+          try {
+            const errorText = await response.text();
+            console.error("📄 Contenu de l'erreur:", errorText);
+            
+            let errorData;
+            try {
+              errorData = JSON.parse(errorText);
+            } catch {
+              errorData = { message: errorText };
+            }
+            
+            if (response.status === 401) {
+              this.incrementFailedAttempts(requestBody.email || requestBody.phoneNumber);
+              return {
+                success: false,
+                error: "Email ou mot de passe incorrect"
+              };
+            } else if (response.status === 403) {
+              return {
+                success: false,
+                error: "Votre compte est bloqué. Veuillez contacter l'administrateur."
+              };
+            } else {
+              return {
+                success: false,
+                error: errorData.message || `Erreur ${response.status}: Une erreur est survenue lors de la connexion`
+              };
+            }
+          } catch (textError) {
+            console.error("❌ Erreur lors de la récupération du texte d'erreur:", textError);
+            return {
+              success: false,
+              error: "Impossible de se connecter au serveur"
+            };
+          }
+        }
+      } catch (fetchError) {
+        console.error("❌ Erreur fetch:", fetchError);
+        
+        // Fallback avec XMLHttpRequest
+        console.log("⚠️ Tentative avec XMLHttpRequest comme fallback");
+        
+        return new Promise((resolve) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', loginUrl, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+          if (csrfToken) {
+            xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+          }
+          xhr.withCredentials = true;
+          xhr.timeout = 15000;
+          
+          xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                console.log("✅ Connexion XHR réussie:", response);
+                
+                // Stocker le token
+                const token = response.accessToken || response.token;
+                if (token) {
+                  localStorage.setItem(AUTH_TOKEN_KEY, token);
+                }
+                
+                // Stocker les données utilisateur
+                if (response.user) {
+                  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
+                  
+                  // Redirection si nécessaire
+                  if (autoRedirect) {
+                    const targetUrl = response.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
+                    setTimeout(() => {
+                      window.location.href = targetUrl;
+                    }, 500);
+                  }
+                }
+                
+                resolve({
+                  success: true,
+                  user: response.user,
+                  token: token
+                });
+              } catch (parseError) {
+                console.error("❌ Erreur parsing XHR:", parseError);
+                resolve({
+                  success: false,
+                  error: "Erreur lors du traitement de la réponse du serveur"
+                });
+              }
+            } else {
+              let errorMsg;
+              try {
+                const response = JSON.parse(xhr.responseText);
+                errorMsg = response.message;
+              } catch {
+                errorMsg = xhr.responseText;
+              }
+              
+              if (xhr.status === 401) {
+                resolve({
+                  success: false,
+                  error: "Email ou mot de passe incorrect"
+                });
+              } else {
+                resolve({
+                  success: false,
+                  error: errorMsg || `Erreur ${xhr.status}: Une erreur est survenue lors de la connexion`
+                });
+              }
+            }
+          };
+          
+          xhr.onerror = function() {
+            console.error("❌ Erreur réseau XHR");
+            resolve({
+              success: false,
+              error: "Impossible de communiquer avec le serveur. Vérifiez votre connexion internet."
+            });
+          };
+          
+          xhr.ontimeout = function() {
+            console.error("❌ Timeout XHR");
+            resolve({
+              success: false,
+              error: "Le serveur met trop de temps à répondre. Veuillez réessayer plus tard."
+            });
+          };
+          
+          xhr.send(JSON.stringify(requestBody));
+        });
+      }
+    } catch (error) {
+      console.error("❌ Erreur générale lors de la connexion directe:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Une erreur inattendue est survenue"
+      };
+    }
+  }
+
+  private async fetchCsrfTokensBeforeOperation(): Promise<void> {
+    console.log("🔒 Récupération d'un nouveau token CSRF avant opération sensible");
+    try {
+      // Utiliser directement l'URL du backend Render pour la production
+      const apiBaseUrl = RENDER_API_URL;
+      const backendUrl = apiBaseUrl.endsWith('/api') ? apiBaseUrl.substring(0, apiBaseUrl.length - 4) : apiBaseUrl;
+      
+      // Ajouter des logs pour le débogage
+      console.log("🌐 URL utilisée pour récupérer le CSRF:", backendUrl);
+      
+      // Essayer avec le endpoint standard pour la sécurité
+      try {
+        console.log("🔄 Tentative via endpoint de sécurité...");
+        const csrfResponse = await fetch(`${backendUrl}/api/security/csrf-tokens`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Origin': typeof window !== 'undefined' ? window.location.origin : ''
+          }
+        });
+        
+        if (csrfResponse.ok) {
+          const data = await csrfResponse.json();
+          if (data.token) {
+            localStorage.setItem('csrf_token', data.token);
+            console.log('✅ Token CSRF récupéré avec succès');
+            return;
+          } else {
+            console.warn("⚠️ Réponse reçue sans token CSRF du endpoint sécurité");
+          }
+        } else {
+          console.warn(`⚠️ Échec de récupération du token CSRF via endpoint sécurité (${csrfResponse.status})`);
+        }
+      } catch (error) {
+        console.error("❌ Erreur lors de la récupération du token CSRF via endpoint sécurité:", error);
+      }
+      
+      // Fallback sur le endpoint auth
+      try {
+        console.log("🔄 Tentative fallback via endpoint auth...");
+        const authResponse = await fetch(`${backendUrl}/api/auth/csrf-tokens`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Origin': typeof window !== 'undefined' ? window.location.origin : ''
+          }
+        });
+        
+        if (authResponse.ok) {
+          const authData = await authResponse.json();
+          if (authData.token) {
+            localStorage.setItem('csrf_token', authData.token);
+            console.log('✅ Token CSRF récupéré avec succès via le endpoint auth');
+            return;
+          } else {
+            console.warn("⚠️ Réponse reçue sans token CSRF du endpoint auth");
+          }
+        } else {
+          console.warn(`⚠️ Échec de récupération du token CSRF via endpoint auth (${authResponse.status})`);
+        }
+      } catch (error) {
+        console.error("❌ Erreur lors de la récupération du token CSRF via endpoint auth:", error);
+      }
+      
+      console.warn("⚠️ Aucun endpoint n'a pu fournir un token CSRF valide");
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération du token CSRF:', error);
+      throw error;
+    }
+  }
+
   private async fetchCsrfTokens(): Promise<boolean> {
     console.log("🔄 Récupération des tokens CSRF...");
     try {
@@ -1241,212 +1505,6 @@ class AuthService {
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des tokens CSRF:', error);
       return false;
-    }
-  }
-
-  private async tryDirectBackendLogin(requestBody: any, autoRedirect: boolean, redirectUrl?: string): Promise<LoginResponse> {
-    console.log("📤 Tentative de connexion directe au backend...");
-    
-    // Déterminer l'URL complète pour l'authentification
-    const backendUrl = this.apiUrl.startsWith('http')
-      ? this.apiUrl
-      : RENDER_API_URL;
-      
-    const loginUrl = `${backendUrl}/auth/login`;
-    
-    // Récupérer le token CSRF depuis localStorage
-    const csrfToken = localStorage.getItem('csrf_token');
-    console.log("🔐 Token CSRF utilisé:", csrfToken ? "Présent" : "Absent");
-    
-    try {
-      // S'assurer de toujours utiliser POST et non GET
-      const response = await fetch(loginUrl, {
-        method: 'POST', // Insistez sur POST
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Origin': window.location.origin,
-          'X-Requested-With': 'XMLHttpRequest', // Indique une requête AJAX
-          'X-CSRF-Token': csrfToken || '' // Inclure le jeton CSRF
-        },
-        body: JSON.stringify(requestBody), // Corps de la requête pour POST
-        mode: 'cors',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        try {
-          const errorText = await response.text();
-          console.error(`❌ Erreur connexion directe (${response.status}):`, errorText.substring(0, 150));
-          
-          // Si on reçoit une erreur "Cannot GET", c'est que le navigateur ou un middleware a changé notre méthode
-          if (errorText.includes('Cannot GET')) {
-            console.error("⚠️ Erreur de méthode HTTP - le serveur a reçu une requête GET au lieu de POST");
-            
-            // Dernière tentative en utilisant un contournement pour forcer le POST
-            try {
-              console.log("🔄 Tentative avec XMLHttpRequest pour forcer le POST");
-              
-              return new Promise((resolve) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', loginUrl, true);
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.setRequestHeader('Accept', 'application/json');
-                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                xhr.withCredentials = true;
-                xhr.timeout = 15000;
-                
-                xhr.onreadystatechange = function() {
-                  if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
-                    console.log("🔍 Headers reçus:", xhr.getAllResponseHeaders());
-                  }
-                };
-                
-                xhr.onload = function() {
-                  try {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                      const data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
-                      console.log("✅ Connexion XHR réussie:", data);
-                      
-                      // Stocker le token
-                      const token = data.accessToken || data.token;
-                      if (token) {
-                        localStorage.setItem(AUTH_TOKEN_KEY, token);
-                      }
-                      
-                      // Stocker les données utilisateur
-                      if (data.user) {
-                        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-                        
-                        // Redirection si nécessaire
-                        if (autoRedirect) {
-                          const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
-                          setTimeout(() => {
-                            window.location.href = targetUrl;
-                          }, 100);
-                        }
-                      }
-                      
-                      resolve({ 
-                        success: true, 
-                        user: data.user, 
-                        token: token 
-                      });
-                    } else {
-                      console.error(`❌ Erreur XHR (${xhr.status}):`, xhr.responseText);
-                      
-                      try {
-                        const errorData = JSON.parse(xhr.responseText);
-                        resolve({ 
-                          success: false, 
-                          error: errorData.message || `Erreur ${xhr.status}: ${xhr.statusText}`
-                        });
-                      } catch (e) {
-                        resolve({ 
-                          success: false, 
-                          error: `Erreur ${xhr.status}: ${xhr.statusText}`
-                        });
-                      }
-                    }
-                  } catch (parseError) {
-                    console.error("❌ Erreur lors du traitement de la réponse XHR:", parseError);
-                    resolve({ 
-                      success: false, 
-                      error: "Erreur lors du traitement de la réponse" 
-                    });
-                  }
-                };
-                
-                xhr.onerror = function() {
-                  console.error("❌ Erreur réseau XHR");
-                  resolve({ 
-                    success: false, 
-                    error: "Erreur réseau lors de la connexion" 
-                  });
-                };
-                
-                xhr.ontimeout = function() {
-                  console.error("❌ Timeout XHR");
-                  resolve({ 
-                    success: false, 
-                    error: "La connexion a pris trop de temps" 
-                  });
-                };
-                
-                xhr.send(JSON.stringify(requestBody));
-              });
-            } catch (xhrError) {
-              console.error("❌ Échec complet avec XHR:", xhrError);
-              return { 
-                success: false, 
-                error: "Tous les mécanismes de connexion ont échoué. Veuillez réessayer plus tard." 
-              };
-            }
-          } else {
-            // Autre type d'erreur
-            let errorMessage = "Erreur lors de la connexion";
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.message || errorMessage;
-            } catch (e) {
-              // Garder le message par défaut si le parsing échoue
-            }
-            
-            return { 
-              success: false, 
-              error: errorMessage
-            };
-          }
-        } catch (textError) {
-          console.error("❌ Erreur lors de la lecture de la réponse d'erreur:", textError);
-          return { 
-            success: false, 
-            error: `Erreur ${response.status}: ${response.statusText}`
-          };
-        }
-      }
-      
-      try {
-        const data = await response.json();
-        console.log("✅ Connexion directe réussie:", data);
-        
-        // Stocker le token
-        const token = data.accessToken || data.token;
-        if (token) {
-          localStorage.setItem(AUTH_TOKEN_KEY, token);
-        }
-        
-        // Stocker les données utilisateur
-        if (data.user) {
-          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-          
-          // Redirection si nécessaire
-          if (autoRedirect) {
-            const targetUrl = data.user.isFreelancer ? '/dashboard' : (redirectUrl || '/');
-            setTimeout(() => {
-              window.location.href = targetUrl;
-            }, 100);
-          }
-        }
-        
-        return {
-          success: true,
-          user: data.user,
-          token: token
-        };
-      } catch (jsonError) {
-        console.error("❌ Erreur lors du parsing de la réponse JSON:", jsonError);
-        return { 
-          success: false, 
-          error: "Erreur lors du traitement de la réponse" 
-        };
-      }
-    } catch (fetchError) {
-      console.error("❌ Erreur fetch lors de la connexion directe:", fetchError);
-      return { 
-        success: false, 
-        error: "Erreur réseau lors de la connexion au serveur"
-      };
     }
   }
 }

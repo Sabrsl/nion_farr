@@ -1,7 +1,7 @@
 import { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiSearch, 
@@ -21,6 +21,7 @@ import TestimonialCard from '../components/ui/TestimonialCard';
 import { ContainerTextFlip } from '../components/ui/container-text-flip';
 import TrustedPartners from '../components/home/TrustedPartners';
 import serviceService from '../services/serviceService';
+import { toast } from 'react-toastify';
 
 // Performance monitoring
 import { analyzePagePerformance, initPerformanceMonitoring } from '../utils/performance';
@@ -197,6 +198,60 @@ const Home: NextPage = () => {
     return () => {
       clearTimeout(updateTimeout);
     };
+  }, []);
+
+  // Ajoutez cette logique à votre composant principal et au useEffect existant
+  useEffect(() => {
+    // Vérifier si l'utilisateur vient d'être redirigé depuis la page d'inscription
+    const checkRedirect = () => {
+      try {
+        // Vérifier s'il y a des paramètres indiquant une redirection après inscription
+        const hasAuthSuccess = 
+          new URLSearchParams(window.location.search).get('auth_success') === 'true';
+        
+        // Vérifier également si un élément a été injecté par le formulaire de redirection
+        const authInput = document.querySelector('input[name="auth_success"]');
+        const hasAuthElement = authInput instanceof HTMLInputElement && authInput.value === 'true';
+        
+        if (hasAuthSuccess || hasAuthElement) {
+          console.log('✅ Détection de redirection après inscription réussie');
+          
+          // Nettoyer l'URL
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          
+          // Forcer la mise à jour des composants d'authentification
+          localStorage.setItem('auth_updated', Date.now().toString());
+          window.dispatchEvent(new Event('storage'));
+          
+          // Afficher une notification de bienvenue
+          if (typeof toast !== 'undefined' && toast.success) {
+            toast.success('Bienvenue ! Votre compte a été créé avec succès.');
+          }
+        }
+        
+        // Vérifier également si l'utilisateur est authentifié mais que le header ne le montre pas
+        const user = localStorage.getItem('nionfarUser');
+        if (user) {
+          console.log('👤 Utilisateur authentifié détecté dans localStorage');
+          // Forcer une mise à jour
+          localStorage.setItem('auth_updated', Date.now().toString());
+          window.dispatchEvent(new Event('storage'));
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification de redirection:', error);
+      }
+    };
+    
+    // Exécuter après le chargement complet de la page
+    if (typeof window !== 'undefined') {
+      // Vérifier immédiatement
+      checkRedirect();
+      
+      // Vérifier à nouveau après un court délai (pour les cas où le DOM n'est pas encore complètement chargé)
+      setTimeout(checkRedirect, 200);
+    }
   }, []);
 
   return (

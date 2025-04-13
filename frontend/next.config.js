@@ -146,8 +146,20 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/api/auth/register',
+        has: [
+          {
+            type: 'header',
+            key: 'x-http-method',
+            value: '(.*)'
+          }
+        ],
+        destination: 'https://nionfar-backend.onrender.com/api/auth/register'
+      },
+      {
         source: '/api/:path*',
-        destination: 'https://nionfar-backend.onrender.com/api/:path*'
+        destination: 'https://nionfar-backend.onrender.com/api/:path*',
+        basePath: false
       }
     ];
   },

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User } from '../types';
 import { API_BASE_URL } from '../config';
+import { NextRouter } from 'next/router';
 
 // Clé constante pour le localStorage
 const USER_STORAGE_KEY = 'nionfarUser';
@@ -27,6 +28,7 @@ export interface AuthContextType {
   refreshAuthState: () => void;
   isFreelancer: () => boolean;
   getDashboardPath: () => string;
+  redirectToDashboard: (router?: NextRouter, customUrl?: string) => void;
 }
 
 const defaultAuthContext: AuthContextType = {
@@ -39,7 +41,8 @@ const defaultAuthContext: AuthContextType = {
   updateUser: async () => false,
   refreshAuthState: () => {},
   isFreelancer: () => false,
-  getDashboardPath: () => '/auth/login'
+  getDashboardPath: () => '/login',
+  redirectToDashboard: () => {}
 };
 
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
@@ -110,9 +113,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshAuthState();
     
     // Créer une fonction claire pour la gestion des événements de stockage
-    const handleStorageChange = (e: StorageEvent) => {
-      // Limiter le traitement uniquement à la clé de stockage utilisateur
-      if (e.key === USER_STORAGE_KEY) {
+    const handleStorageChange = (e: StorageEvent | null) => {
+      // Si c'est un événement déclenché manuellement ou si c'est la clé utilisateur qui a changé
+      if (!e || e.key === USER_STORAGE_KEY || e.key === 'auth_updated') {
         // Appliquer un délai pour éviter les problèmes de timing
         setTimeout(() => {
           refreshAuthState();
@@ -353,10 +356,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Détermine la page de tableau de bord appropriée pour l'utilisateur
    */
   const getDashboardPath = useCallback(() => {
-    if (!user) return '/auth/login';
+    if (!user) return '/login';
     
     return isFreelancer() ? '/dashboard/freelance' : '/dashboard/client';
   }, [user, isFreelancer]);
+
+  /**
+   * Méthode fiable pour rediriger l'utilisateur
+   */
+  const safeRedirect = useCallback((url: string) => {
+    console.log(`🔀 Redirection vers: ${url}`);
+    
+    // Utiliser la fonction globale de redirection si disponible
+    if (typeof window !== 'undefined' && typeof window.forceRedirect === 'function') {
+      window.forceRedirect(url);
+      return;
+    }
+    
+    // Méthodes de fallback
+    if (typeof window !== 'undefined') {
+      try {
+        // 1. Tenter avec replace
+        window.location.replace(url);
+      } catch (error) {
+        console.error('Échec de redirection avec replace:', error);
+        
+        // 2. Tenter avec href comme fallback
+        window.location.href = url;
+      }
+    }
+  }, []);
+  
+  // Mettre à jour la méthode redirectToDashboard
+  const redirectToDashboard = useCallback((router?: NextRouter, customUrl?: string) => {
+    // Utiliser la nouvelle méthode de redirection
+    if (customUrl) {
+      safeRedirect(customUrl);
+      return;
+    }
+    
+    // Déterminer l'URL de redirection
+    const url = getDashboardPath();
+    safeRedirect(url);
+  }, [safeRedirect, getDashboardPath]);
 
   // Valeur du contexte à fournir aux composants enfants
   const value: AuthContextType = {
@@ -369,7 +411,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateUser,
     refreshAuthState,
     isFreelancer,
-    getDashboardPath
+    getDashboardPath,
+    redirectToDashboard
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

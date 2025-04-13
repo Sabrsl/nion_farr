@@ -13,7 +13,7 @@ const Header = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loginPath, setLoginPath] = useState('/auth/login');
+  const [loginPath, setLoginPath] = useState('/login');
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const router = useRouter();
@@ -42,6 +42,36 @@ const Header = () => {
     }
   }, [refreshAuthState]);
 
+  // Ajouter un écouteur d'événements pour les changements d'authentification
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Fonction pour vérifier les changements spécifiques à l'authentification
+    const handleAuthChanges = (e: StorageEvent) => {
+      if (e.key === 'auth_updated' || e.key === 'nionfarUser' || e.key === 'auth_token') {
+        console.log('Header: Détection de changement d\'authentification via localStorage');
+        refreshAuthState?.();
+      }
+    };
+
+    // Écouter les changements de localStorage
+    window.addEventListener('storage', handleAuthChanges);
+    
+    // Vérifier manuellement toutes les 5 secondes (fallback)
+    const intervalId = setInterval(() => {
+      const lastUpdate = localStorage.getItem('auth_updated');
+      if (lastUpdate && parseInt(lastUpdate) > Date.now() - 10000) {
+        console.log('Header: Détection de changement d\'authentification via interval');
+        refreshAuthState?.();
+      }
+    }, 5000);
+    
+    return () => {
+      window.removeEventListener('storage', handleAuthChanges);
+      clearInterval(intervalId);
+    };
+  }, [refreshAuthState]);
+
   // Rafraîchir l'état d'authentification au montage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -65,18 +95,18 @@ const Header = () => {
       
       // Ne pas ajouter de redirection pour les pages d'authentification
       if (currentPath.includes('/auth/') || currentPath.includes('/logout')) {
-        setLoginPath('/auth/login');
+        setLoginPath('/login');
         return;
       }
       
       // Sécurité : vérifier que le chemin n'est pas vide
       if (!currentPath || currentPath === '/') {
-        setLoginPath('/auth/login?redirect=%2F');
+        setLoginPath('/login?redirect=%2F');
         return;
       }
       
       // Créer l'URL de connexion avec redirection
-      setLoginPath(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+      setLoginPath(`/login?redirect=${encodeURIComponent(currentPath)}`);
     }
   }, [router.asPath, router.isReady]);
 
@@ -384,7 +414,7 @@ const Header = () => {
                         </Link>
                         
                         <Link
-                          href="/auth/register"
+                          href="/register"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 flex items-center transition-colors"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
@@ -564,7 +594,7 @@ const Header = () => {
                     </Link>
                     
                     <Link
-                      href="/auth/register"
+                      href="/register"
                       className="flex items-center py-2 text-base text-gray-700 hover:text-indigo-600"
                       onClick={() => setIsMenuOpen(false)}
                     >

@@ -25,29 +25,22 @@ export default async function handler(
       // Formater les données pour correspondre au schéma attendu par le backend
       let formattedData = req.body;
       
-      // Si nous recevons les données du frontend dans un format différent, reformater
-      if (req.body.fullName) {
-        const nameParts = req.body.fullName.split(' ');
+      // S'assurer que les champs requis sont présents et correctement formatés
+      if (req.body) {
         formattedData = {
           email: req.body.email,
-          firstName: nameParts[0],
-          lastName: nameParts.slice(1).join(' ') || nameParts[0],
+          firstName: req.body.firstName || (req.body.fullName ? req.body.fullName.split(' ')[0] : ''),
+          lastName: req.body.lastName || (req.body.fullName ? req.body.fullName.split(' ').slice(1).join(' ') : ''),
           password: req.body.password,
-          role: req.body.role?.toUpperCase() || 'CLIENT'
-        };
-      } else if (req.body.username) {
-        // Si nous recevons le format alternatif
-        formattedData = {
-          email: req.body.email,
-          firstName: req.body.fullName?.split(' ')[0] || req.body.username,
-          lastName: req.body.fullName?.split(' ').slice(1).join(' ') || '',
-          password: req.body.password,
-          role: req.body.role?.toUpperCase() || 'CLIENT'
+          passwordConfirm: req.body.passwordConfirm || req.body.password, // Assurer que passwordConfirm est présent
+          termsAccepted: req.body.termsAccepted || req.body.acceptTerms || true,
+          role: (req.body.role || 'CLIENT').toUpperCase(),
+          isFreelancer: req.body.role?.toLowerCase() === 'freelance' || req.body.isFreelancer || false
         };
       }
       
       console.log(`[API] Données formatées envoyées au backend:`, 
-        { ...formattedData, password: '***' });
+        { ...formattedData, password: '***', passwordConfirm: '***' });
       
       try {
         const response = await fetch(apiEndpoint, {
@@ -62,14 +55,33 @@ export default async function handler(
           credentials: 'include'
         });
         
+        // Debug complet de la réponse
+        console.log(`[API Proxy] Réponse du backend - Status: ${response.status}, URL: ${response.url}`);
+        
         // Vérifier si la réponse est correcte
         if (response.ok) {
           const data = await response.json();
-          return res.status(response.status).json(data);
+          console.log(`[API Proxy] Inscription réussie:`, data);
+          
+          // Ajouter des en-têtes personnalisés pour éviter la mise en cache et forcer la redirection côté client
+          res.setHeader('X-Registration-Success', 'true');
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          
+          // Inclure une suggestion de redirection au client
+          const responseWithRedirect = {
+            ...data,
+            redirectTo: '/',
+            _redirectAfterAuth: true
+          };
+          
+          return res.status(response.status).json(responseWithRedirect);
         } else {
           // Gérer les erreurs HTTP
           try {
             const errorData = await response.json();
+            console.error(`[API Proxy] Échec d'inscription (${response.status}):`, errorData);
             return res.status(response.status).json({
               success: false,
               error: errorData.message || 'Erreur lors de l\'inscription',
@@ -78,7 +90,7 @@ export default async function handler(
           } catch (parseError) {
             // Si la réponse n'est pas du JSON valide
             const errorText = await response.text();
-            console.error(`[API] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
+            console.error(`[API Proxy] Erreur de parsing, texte brut: ${errorText.substring(0, 200)}`);
             
             return res.status(response.status).json({
               success: false,
@@ -127,7 +139,8 @@ export default async function handler(
       }
     }
 
-    const { email, name, password, role = 'client' } = req.body;
+    // Extraire les données du corps de la requête
+    const { email, firstName, lastName, password, role = 'CLIENT' } = req.body;
 
     // Valider les champs requis
     if (!email) {
@@ -146,11 +159,11 @@ export default async function handler(
       });
     }
 
-    if (!name) {
+    if (!firstName || !lastName) {
       return res.status(400).json({
         success: false,
         error: 'Nom requis',
-        details: { name: 'Veuillez fournir votre nom' }
+        details: { firstName: 'Veuillez fournir votre prénom et nom' }
       });
     }
 
@@ -252,7 +265,7 @@ export default async function handler(
         userStorage.create({
           id: userId,
           email,
-          name,
+          name: `${firstName} ${lastName}`,
           role: role as 'client' | 'freelancer' | 'admin',
           password: `hashed_${password}`, // En production, ce serait hashé avec bcrypt
           isVerified: process.env.AUTO_VERIFY === 'true',
@@ -286,7 +299,7 @@ export default async function handler(
       const emailResult = await EmailManager.sendAccountVerification(
         recipientEmail,
         {
-          userName: name || email.split('@')[0],
+          userName: `${firstName} ${lastName}`,
           verificationCode: verificationCode,
           verificationLink: verificationLink,
           expirationTime: '24 heures'
