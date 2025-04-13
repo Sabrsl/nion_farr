@@ -2,7 +2,8 @@
 export { categories } from './categories';
 export { productionServices, getServicesByCategory, getServiceById, getServiceBySlug } from './production-services';
 
-// Export des données utilisateur (minimales pour la production)
+// DEAD_CODE: Ces exports ne sont pas utilisés dans le code de production
+// Ils peuvent être supprimés ou remplacés par des stubs vides
 export {
   currentUser,
   freelancerServices,
@@ -13,7 +14,7 @@ export {
   userWithdrawals
 } from './mock-data';
 
-// Export des données de conversations (vides pour la production)
+// DEAD_CODE: Ces exports de données fictives ne sont pas utilisés dans le code de production
 export {
   conversations,
   messages,
@@ -22,7 +23,7 @@ export {
   getConversationsByUserId
 } from './mockMessages';
 
-// Export des données d'avis (vides pour la production)
+// DEAD_CODE: Ces exports de données fictives ne sont pas utilisés dans le code de production
 export {
   reviews,
   getReviewsByServiceId,
